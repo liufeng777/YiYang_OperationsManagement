@@ -1,0 +1,24 @@
+.page-container {
+  padding: @spacing-lg;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: @spacing-lg;
+  }
+
+  &__title {
+    margin: 0;
+    .text-title-page();
+  }
+
+  &__desc {
+    margin: @spacing-xs 0 0;
+    .text-auxiliary();
+  }
+
+  &__body {
+    min-height: 0;
+  }
+}

@@ -1,0 +1,26 @@
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, @color-primary-light 0%, @color-bg-page 100%);
+
+  &__card {
+    width: 380px;
+    .card-surface();
+    padding: @spacing-xl @spacing-xl @spacing-lg;
+  }
+
+  &__title {
+    margin: 0;
+    text-align: center;
+    .text-title-module();
+    color: @color-primary;
+  }
+
+  &__desc {
+    margin: @spacing-xs 0 @spacing-lg;
+    text-align: center;
+    .text-auxiliary();
+  }
+}

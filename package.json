@@ -1,0 +1,32 @@
+{
+  "name": "yiyang-admin",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "运营管理后台前端 - React + antd + TypeScript + axios + less + zustand",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^6.3.2",
+    "antd": "^6.6.0",
+    "axios": "^1.7.7",
+    "dayjs": "^1.11.13",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^6.30.4",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.11",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "less": "^4.2.0",
+    "typescript": "~5.5.4",
+    "vite": "^8.2.1"
+  }
+}

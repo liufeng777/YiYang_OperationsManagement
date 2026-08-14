@@ -1,0 +1,67 @@
+/**
+ * 全局基础样式
+ * 依赖 variables.less / mixins.less（vite 已自动注入 reference，这里显式声明便于单独编译理解）
+ */
+@import './variables.less';
+@import './mixins.less';
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: @font-family-base;
+  font-size: @font-size-body;
+  line-height: @line-height-body;
+  color: @color-text-primary;
+  background-color: @color-bg-page;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+// 统一滚动条样式
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(31, 45, 42, 0.2);
+  border-radius: @radius-sm;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+// 通用工具类
+.text-title-card {
+  font-size: @font-size-title-card;
+  line-height: @line-height-title-card;
+  font-weight: @font-weight-title-card;
+  color: @color-text-primary;
+}
+
+.text-primary {
+  color: @color-text-primary;
+}
+
+.text-secondary {
+  color: @color-text-secondary;
+}
+
+.text-danger {
+  color: @color-danger;
+}
+
+.text-success {
+  color: @color-primary;
+}

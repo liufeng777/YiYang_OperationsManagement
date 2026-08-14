@@ -1,0 +1,91 @@
+/**
+ * ============================================================
+ * 通用混入（Mixins）
+ * 封装高频样式组合，配合 variables.less 使用
+ * ============================================================
+ */
+
+/* ===== 文本样式混入 ===== */
+.text-title-page() {
+  font-size: @font-size-title-page;
+  line-height: @line-height-title-page;
+  font-weight: @font-weight-title-page;
+  color: @color-text-primary;
+}
+
+.text-title-module() {
+  font-size: @font-size-title-module;
+  line-height: @line-height-title-module;
+  font-weight: @font-weight-title-module;
+  color: @color-text-primary;
+}
+
+.text-title-card() {
+  font-size: @font-size-title-card;
+  line-height: @line-height-title-card;
+  font-weight: @font-weight-title-card;
+  color: @color-text-primary;
+}
+
+.text-body() {
+  font-size: @font-size-body;
+  line-height: @line-height-body;
+  font-weight: @font-weight-body;
+  color: @color-text-primary;
+}
+
+.text-body-medium() {
+  font-size: @font-size-body-medium;
+  line-height: @line-height-body-medium;
+  font-weight: @font-weight-body-medium;
+  color: @color-text-primary;
+}
+
+.text-auxiliary() {
+  font-size: @font-size-auxiliary;
+  line-height: @line-height-auxiliary;
+  font-weight: @font-weight-auxiliary;
+  color: @color-text-secondary;
+}
+
+.text-label() {
+  font-size: @font-size-label;
+  line-height: @line-height-label;
+  font-weight: @font-weight-label;
+  color: @color-text-secondary;
+}
+
+.text-metric() {
+  font-size: @font-size-metric;
+  line-height: @line-height-metric;
+  font-weight: @font-weight-metric;
+  color: @color-text-primary;
+}
+
+/* ===== 容器样式混入 ===== */
+// 卡片表面
+.card-surface() {
+  background: @color-bg-card;
+  border-radius: @radius-md;
+  box-shadow: @shadow-card;
+}
+
+// 页面内容区
+.page-surface() {
+  background: @color-bg-page;
+}
+
+// 单行文本省略
+.ellipsis() {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+// 多行文本省略
+.ellipsis-multi(@lines: 2) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: @lines;
+  overflow: hidden;
+}

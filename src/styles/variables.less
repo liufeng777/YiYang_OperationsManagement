@@ -1,0 +1,95 @@
+/**
+ * ============================================================
+ * 设计规范变量（Design Tokens）
+ * 全局唯一的设计来源：所有组件/页面样式必须优先复用此处变量
+ * 新增/修改设计规范时，请同步更新 src/config/antdTheme.ts
+ * ============================================================
+ */
+
+/* ===== 品牌色 / 功能色 ===== */
+@color-primary: #27866b; // 主品牌色
+@color-primary-dark: #185d4c; // 强调与悬停
+@color-primary-light: #e8f4f0; // 成功 / 品牌浅底色
+@color-info: #3478f6; // 信息与链接
+@color-warning: #f3b56a; // 提醒
+@color-danger: #f45b4f; // 风险与退款
+
+/* ===== 中性色 ===== */
+@color-bg-page: #faf9f6; // 页面背景
+@color-bg-card: #ffffff; // 卡片表面
+@color-text-primary: #1f2d2a; // 主文字
+@color-text-secondary: #66736f; // 次级文字
+@color-border: #ebedea; // 边框 / 分割线
+
+/* ===== 字体 ===== */
+@font-family-base: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+/* ===== 字号 / 行高 / 字重 ===== */
+// 页面主标题
+@font-size-title-page: 28px;
+@line-height-title-page: 40px;
+@font-weight-title-page: 700;
+
+// 模块标题
+@font-size-title-module: 20px;
+@line-height-title-module: 28px;
+@font-weight-title-module: 700;
+
+// 卡片标题
+@font-size-title-card: 16px;
+@line-height-title-card: 24px;
+@font-weight-title-card: 700;
+
+// 正文与表格内容
+@font-size-body: 14px;
+@line-height-body: 22px;
+@font-weight-body: 400;
+
+// 强调正文
+@font-size-body-medium: 14px;
+@line-height-body-medium: 22px;
+@font-weight-body-medium: 700;
+
+// 辅助说明
+@font-size-auxiliary: 12px;
+@line-height-auxiliary: 18px;
+@font-weight-auxiliary: 400;
+
+// 标签与字段名
+@font-size-label: 13px;
+@line-height-label: 20px;
+@font-weight-label: 700;
+
+// 经营指标
+@font-size-metric: 28px;
+@line-height-metric: 36px;
+@font-weight-metric: 700;
+
+/* ===== 间距 ===== */
+@spacing-2xs: 4px;
+@spacing-xs: 8px;
+@spacing-sm: 12px;
+@spacing-md: 16px;
+@spacing-lg: 20px;
+@spacing-xl: 24px;
+@spacing-2xl: 32px;
+@spacing-3xl: 40px;
+@spacing-touch-min: 44px;
+@spacing-button-large: 48px;
+
+/* ===== 圆角 / 阴影 ===== */
+@radius-xs: 4px;
+@radius-sm: 8px;
+@radius-md: 12px;
+@radius-lg: 16px;
+@radius-xl: 20px;
+@radius-full: 999px;
+
+// 卡片阴影（默认层级）
+@shadow-card: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+
+/* ===== 布局尺寸 ===== */
+@sider-width: 220px;
+@sider-width-collapsed: 64px;
+@header-height: 56px;

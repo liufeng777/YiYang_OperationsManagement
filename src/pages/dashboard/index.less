@@ -1,0 +1,212 @@
+/* ===== 运营首页 ===== */
+
+.dashboard-date {
+  .text-label();
+  padding-top: @spacing-xs;
+}
+
+/* 欢迎横幅 */
+.dashboard-welcome {
+  .card-surface();
+  margin-bottom: @spacing-lg;
+  padding: @spacing-xl @spacing-2xl;
+  background: linear-gradient(90deg, @color-primary-light 0%, @color-bg-card 100%);
+
+  &__title {
+    .text-title-module();
+    color: @color-primary-dark;
+  }
+
+  &__desc {
+    .text-auxiliary();
+    margin-top: @spacing-xs;
+  }
+}
+
+/* 经营指标卡 */
+.metric-card {
+  .card-surface();
+  padding: @spacing-xl;
+
+  &__label {
+    .text-label();
+    margin-bottom: @spacing-sm;
+  }
+
+  &__value {
+    .text-metric();
+    color: @color-primary;
+
+    .metric-card__unit {
+      margin-left: @spacing-2xs;
+      font-size: @font-size-body;
+      font-weight: @font-weight-body;
+      color: @color-text-secondary;
+    }
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    margin-top: @spacing-sm;
+    .text-auxiliary();
+  }
+
+  &__rate {
+    display: inline-flex;
+    align-items: center;
+    color: @color-primary;
+    font-weight: @font-weight-body-medium;
+
+    &-arrow {
+      margin-right: @spacing-2xs;
+      font-size: @font-size-auxiliary;
+    }
+  }
+
+  &__sub {
+    color: @color-text-secondary;
+  }
+
+  &--danger {
+    .metric-card__value {
+      color: @color-danger;
+    }
+  }
+}
+
+/* 第二行以下间距 */
+.dashboard-row {
+  margin-top: @spacing-lg;
+}
+
+/* 待办提醒 */
+.dashboard-todo {
+  &__item {
+    display: flex;
+    align-items: center;
+    padding: @spacing-md 0;
+    border-bottom: 1px solid @color-border;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: @radius-sm;
+    background: @color-primary-light;
+    color: @color-primary;
+    font-size: @font-size-body-medium;
+
+    &--refund {
+      background: fade(@color-danger, 10%);
+      color: @color-danger;
+    }
+
+    &--institution {
+      background: fade(@color-warning, 18%);
+      color: darken(@color-warning, 18%);
+    }
+
+    &--content {
+      background: fade(@color-info, 10%);
+      color: @color-info;
+    }
+  }
+
+  &__title {
+    flex: 1;
+    margin-left: @spacing-sm;
+    .text-body();
+  }
+
+  &__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 @spacing-xs;
+    border-radius: @radius-full;
+    background: @color-primary-light;
+    color: @color-primary-dark;
+    font-size: @font-size-auxiliary;
+    font-weight: @font-weight-body-medium;
+  }
+}
+
+/* 近 7 日订单趋势 */
+.dashboard-trend {
+  &__chart {
+    display: flex;
+    align-items: flex-end;
+    gap: @spacing-sm;
+    height: 160px;
+    padding: @spacing-sm 0 @spacing-md;
+  }
+
+  &__bar-wrap {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    height: 100%;
+  }
+
+  &__bar {
+    width: 100%;
+    min-height: 4px;
+    border-radius: @radius-xs @radius-xs 0 0;
+    background: @color-primary-light;
+    transition: background-color 0.2s ease;
+  }
+
+  &__bar--active {
+    background: @color-primary;
+  }
+
+  &__stat {
+    display: flex;
+    align-items: baseline;
+    gap: @spacing-xs;
+    padding-top: @spacing-sm;
+    border-top: 1px solid @color-border;
+  }
+
+  &__stat-label {
+    .text-label();
+  }
+
+  &__stat-value {
+    .text-title-card();
+    color: @color-primary;
+  }
+
+  &__stat-rate {
+    display: inline-flex;
+    align-items: center;
+    .text-auxiliary();
+    color: @color-primary;
+    font-weight: @font-weight-body-medium;
+
+    &-arrow {
+      margin-right: @spacing-2xs;
+      font-size: @font-size-auxiliary;
+    }
+  }
+}
+
+/* 近期订单表格 */
+.dashboard-orders {
+  .card-surface();
+
+  .ant-table-wrapper {
+    .card-surface();
+  }
+}
