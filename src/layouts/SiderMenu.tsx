@@ -21,6 +21,9 @@ export default function SiderMenu() {
         item?.children ? item.children.map((c: any) => c.key) : [item?.key],
       )
       .filter((key: string) => location.pathname.startsWith(key))
+      // 父级默认页 key（如 /institution）是子级 key（如 /institution/audit）的前缀，
+      // 会同时命中，取最长（最精确）的 key 作为选中项
+      .sort((a: string, b: string) => b.length - a.length)
     return matched.length ? [matched[0]] : [location.pathname]
   }, [items, location.pathname])
   const openKeys = useMemo(() => findOpenKeys(location.pathname), [location.pathname])

@@ -1,11 +1,14 @@
 .page-container {
-  padding: @spacing-lg;
+  padding: @spacing-xl;
 
   &__header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    margin-bottom: @spacing-lg;
+    margin-bottom: @spacing-md;
+    background: #fff;
+    padding: @spacing-xl;
+    border-radius: @radius-md;
   }
 
   &__title {
@@ -14,8 +17,11 @@
   }
 
   &__desc {
-    margin: @spacing-xs 0 0;
-    .text-auxiliary();
+    margin: @spacing-2xs 0 0;
+    font-size: @font-size-body;
+    line-height: @line-height-body;
+    font-weight: @font-weight-body;
+    color: @color-text-secondary;
   }
 
   &__body {

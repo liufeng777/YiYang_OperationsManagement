@@ -48,18 +48,28 @@ const antdTheme: ThemeConfig = {
   components: {
     Layout: {
       headerBg: '#FFFFFF',
-      siderBg: '#1F2D2A',
+      siderBg: '#FFFFFF',
       bodyBg: '#FAF9F6',
       headerHeight: 56,
     },
     Menu: {
-      darkItemBg: '#1F2D2A',
-      darkItemSelectedBg: brandPrimary,
-      darkItemSelectedColor: '#FFFFFF',
-      darkItemHoverBg: 'rgba(39, 134, 107, 0.35)',
+      // 浅色侧边栏激活样式（对齐设计稿）：
+      // - 一级项 / 父级标题选中：浅灰底 #F3F5F4 + 品牌色文字
+      // - 二级子项选中：品牌浅底色 #E8F4F0（见 layout.less 中的覆盖）
+      itemSelectedBg: '#F3F5F4',
+      itemSelectedColor: brandPrimary,
+      itemHoverBg: 'rgba(39, 134, 107, 0.08)',
+      itemHoverColor: brandPrimary,
+      subMenuItemSelectedColor: brandPrimary,
       itemBorderRadius: 6,
       itemMarginInline: 8,
       itemHeight: 42,
+    },
+    Button: {
+      // 文字/链接按钮使用品牌主色（悬停为品牌深色）
+      colorLink: brandPrimary,
+      colorLinkHover: brandPrimaryDark,
+      colorLinkActive: brandPrimaryDark,
     },
     Card: {
       headerBg: '#FFFFFF',

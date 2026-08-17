@@ -7,6 +7,24 @@
     height: 100vh;
     overflow: auto;
     background: @color-bg-card;
+
+    .ant-menu {
+      .ant-menu-item-selected {
+        font-weight: @font-weight-body-medium;
+      }
+      /* 子菜单被选中时，父级标题：浅灰底 + 品牌色文字 */
+      .ant-menu-submenu-selected > .ant-menu-submenu-title {
+        background: @color-bg-active;
+        color: @color-primary;
+        font-weight: @font-weight-body-medium;
+      }
+
+      /* 选中的二级子项：品牌浅底色 + 品牌色文字（区别于一级项的浅灰底） */
+      .ant-menu-sub .ant-menu-item-selected {
+        background: @color-primary-light;
+        color: @color-primary;
+      }
+    }
   }
 
   &__logo {
@@ -52,6 +70,14 @@
   &__right {
     display: flex;
     align-items: center;
+  }
+
+  /* 今日日期：2026 年 8 月 6 日 星期四 */
+  &__date {
+    margin-right: @spacing-md;
+    font-size: @font-size-body;
+    line-height: @line-height-body;
+    color: @color-text-secondary;
   }
 
   &__user {

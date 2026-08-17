@@ -1,114 +1,167 @@
 /**
  * 运营首页 - 数据总览
- * 布局：欢迎横幅 + 经营指标卡（今日订单 / 合作机构 / 退款待审核 / 今日活动报名）
- *       + 待办提醒 / 近 7 日订单趋势 + 近期订单表格
+ * 布局：经营指标卡（今日订单 / 运营机构 / 待办事项 / 今日活动报名）
+ *       + 待办事项 / 近 7 日订单趋势 + 近期订单表格
+ * 视觉严格对齐设计稿：docs/assets/design-reference.png
  */
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, Col, Row, Table, Tag } from 'antd'
+import { Button, Card, Col, Row, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import {
-  ArrowUpOutlined,
-  AuditOutlined,
-  FileTextOutlined,
-  HomeOutlined,
-  TeamOutlined,
-} from '@ant-design/icons'
+import { ArrowUpOutlined, BarChartOutlined, RightOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
 import type {
+  DashboardTodo,
   OverviewData,
   RecentOrder,
   TrendStat,
 } from '@/api/modules/dashboard'
 import './index.less'
 
-/** 订单状态 -> 文案 / Tag 颜色 */
-const statusMap: Record<RecentOrder['status'], { text: string; color: string }> = {
-  pending: { text: '待服务', color: 'warning' },
-  confirmed: { text: '已确认', color: 'processing' },
-  refunding: { text: '退款审核', color: 'error' },
-  finished: { text: '已完成', color: 'success' },
+/** 色调：与 variables.less 中 metric-card / todo / pill 的修饰类一一对应 */
+type Tone = 'primary' | 'info' | 'warning' | 'danger'
+
+/** 订单状态 -> 文案（样式见 .status-pill--{status}） */
+const statusText: Record<RecentOrder['status'], string> = {
+  pending: '待服务',
+  confirmed: '已确认',
+  refunding: '退款审核',
+  finished: '已完成',
 }
 
-/** 待办提醒（图标与标题） */
-const todoConfig: { key: string; title: string; count?: number; icon: ReactNode }[] = [
-  { key: 'refund', title: '退款待审核', count: 6, icon: <AuditOutlined /> },
-  { key: 'institution', title: '机构资料待完善', count: 3, icon: <TeamOutlined /> },
-  { key: 'content', title: '用户定制与服务展示内容待发布', icon: <FileTextOutlined /> },
-  { key: 'home', title: '首页配置待管理', icon: <HomeOutlined /> },
-]
+/** 待办项图标（设计稿为单色字块：退 / 商 / 内） */
+const todoIconText: Record<string, string> = {
+  refund: '退',
+  institution: '商',
+  content: '内',
+}
 
-/** 近 7 日订单量（图表展示用，后端就绪后替换） */
-const trendValues = [42, 58, 45, 66, 72, 60, 84]
-
-/** 格式化今日日期：2026 年 8 月 6 日 星期四 */
-function formatToday() {
-  const now = new Date()
-  const week = ['日', '一', '二', '三', '四', '五', '六'][now.getDay()]
-  return `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日 星期${week}`
+interface MetricCard {
+  key: string
+  label: string
+  value?: number
+  badge: string
+  tone: Tone
+  icon: ReactNode
 }
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const [overview, setOverview] = useState<OverviewData | null>(null)
+  const [todos, setTodos] = useState<DashboardTodo[]>([])
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
   const [trend, setTrend] = useState<TrendStat | null>(null)
 
   useEffect(() => {
     // TODO: 后端就绪后替换为真实接口：
     // getOverview().then(setOverview)
+    // getTodoList().then(setTodos)
     // getRecentOrders().then(setRecentOrders)
     // getTrendStat().then(setTrend)
     setOverview({
       todayOrderCount: 128,
-      todayOrderRate: 12,
-      activitySignupCount: 45,
-      activitySignupRate: 2,
+      todayOrderRate: 12.6,
+      activitySignupCount: 58,
+      activitySignupRate: 8.2,
       pendingRefundCount: 6,
+      pendingTodoCount: 18,
       totalInstitution: 36,
       pendingInstitutionCount: 3,
     })
+    setTodos([
+      { key: 'refund', title: '退款待审核', desc: '用户退款由平台最终审批', count: 6, unit: '笔' },
+      { key: 'institution', title: '机构资料待完善', desc: '影响用户定位与服务展示', count: 3, unit: '家' },
+      { key: 'content', title: '内容待发布', desc: '活动及首页推荐位待处理', count: 5, unit: '条' },
+    ])
     setRecentOrders([
       {
-        orderNo: 'xv202608060128',
+        orderNo: 'XY202608060128',
         bizType: '上门服务',
-        institution: '幸福里康养驿站',
+        institution: '幸福里健康驿站',
         customer: '李阿姨',
         amount: 168.0,
         orderTime: '08-06 10:24',
         status: 'pending',
       },
       {
-        orderNo: 'xv202608060119',
+        orderNo: 'XY202608060119',
         bizType: '活动报名',
         institution: '康乐护理院',
-        customer: '赵先生',
-        amount: 990.0,
-        orderTime: '08-06 00:46',
+        customer: '王叔叔',
+        amount: 99.0,
+        orderTime: '08-06 09:46',
         status: 'confirmed',
       },
       {
-        orderNo: 'xv202608050985',
+        orderNo: 'XY202608050986',
         bizType: '适老商品',
-        institution: '幸福里康养驿站',
-        customer: '陈阿姨',
-        amount: 326.0,
-        orderTime: '08-05 11:32',
+        institution: '幸福里健康驿站',
+        customer: '陈女士',
+        amount: 328.0,
+        orderTime: '08-05 18:32',
         status: 'refunding',
       },
       {
-        orderNo: 'xv202608050921',
-        bizType: '老龄旅游',
+        orderNo: 'XY202608050921',
+        bizType: '银龄旅游',
         institution: '怡康护理院',
-        customer: '刘叔叔',
+        customer: '赵先生',
         amount: 1299.0,
-        orderTime: '08-05 15:28',
+        orderTime: '08-05 16:08',
         status: 'finished',
       },
     ])
-    setTrend({ totalOrders: 742, totalRate: 11.8 })
+    setTrend({
+      totalOrders: 742,
+      totalRate: 11.8,
+      daily: [
+        { label: '7/31', value: 82 },
+        { label: '8/1', value: 96 },
+        { label: '8/2', value: 74 },
+        { label: '8/3', value: 118 },
+        { label: '8/4', value: 104 },
+        { label: '8/5', value: 126 },
+        { label: '今日', value: 142 },
+      ],
+    })
   }, [])
+
+  /** 经营指标卡配置（顺序与设计稿一致） */
+  const metricCards: MetricCard[] = [
+    {
+      key: 'order',
+      label: '今日订单',
+      value: overview?.todayOrderCount,
+      badge: `+${overview?.todayOrderRate ?? 0}% 较昨日`,
+      tone: 'primary',
+      icon: <BarChartOutlined />,
+    },
+    {
+      key: 'institution',
+      label: '运营机构',
+      value: overview?.totalInstitution,
+      badge: `${overview?.pendingInstitutionCount ?? 0} 家待完善资料`,
+      tone: 'info',
+      icon: <BarChartOutlined />,
+    },
+    {
+      key: 'todo',
+      label: '待办事项',
+      value: overview?.pendingTodoCount,
+      badge: `含 ${overview?.pendingRefundCount ?? 0} 笔退款审核`,
+      tone: 'warning',
+      icon: <BarChartOutlined />,
+    },
+    {
+      key: 'signup',
+      label: '今日活动报名',
+      value: overview?.activitySignupCount,
+      badge: `+${overview?.activitySignupRate ?? 0}% 较昨日`,
+      tone: 'danger',
+      icon: <BarChartOutlined />,
+    },
+  ]
 
   const columns = useMemo<ColumnsType<RecentOrder>>(
     () => [
@@ -120,7 +173,8 @@ export default function Dashboard() {
         title: '实付金额',
         dataIndex: 'amount',
         key: 'amount',
-        render: (value: number) => `¥${value.toFixed(2)}`,
+        render: (value: number) =>
+          `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       },
       { title: '下单时间', dataIndex: 'orderTime', key: 'orderTime' },
       {
@@ -128,139 +182,121 @@ export default function Dashboard() {
         dataIndex: 'status',
         key: 'status',
         render: (status: RecentOrder['status']) => (
-          <Tag color={statusMap[status].color}>{statusMap[status].text}</Tag>
+          <span className={`status-pill status-pill--${status}`}>
+            <i className="status-pill__dot" />
+            {statusText[status]}
+          </span>
         ),
       },
       {
         title: '操作',
         key: 'action',
         render: (_, record) => (
-          <a onClick={() => navigate(`/order/detail/${record.orderNo}`)}>查看详情</a>
+          <Button
+            type="link"
+            size="small"
+            className="table-link-btn"
+            onClick={() => navigate(`/order/detail/${record.orderNo}`)}
+          >
+            查看详情
+          </Button>
         ),
       },
     ],
     [navigate],
   )
 
-  const maxTrend = Math.max(...trendValues)
+  const daily = trend?.daily ?? []
+  const maxTrend = Math.max(...daily.map((d) => d.value), 1)
 
   return (
-    <PageContainer title="运营首页" extra={<span className="dashboard-date">{formatToday()}</span>}>
-      {/* 欢迎横幅 */}
-      <div className="dashboard-welcome">
-        <div className="dashboard-welcome__title">欢迎回来，以下是今日平台经营概览</div>
-        <div className="dashboard-welcome__desc">祝您今日工作顺利，及时处理平台各项待办事项</div>
-      </div>
-
+    <PageContainer title="运营首页" description="欢迎回来，以下是今日平台经营概览">
       {/* 经营指标卡 */}
-      <Row gutter={16}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="metric-card" bordered={false}>
-            <div className="metric-card__label">今日订单</div>
-            <div className="metric-card__value">
-              {overview?.todayOrderCount ?? '-'}
-              <span className="metric-card__unit">单</span>
-            </div>
-            <div className="metric-card__footer">
-              <span className="metric-card__rate">
-                <ArrowUpOutlined className="metric-card__rate-arrow" />
-                {overview?.todayOrderRate ?? 0}% 较昨日
+      <Row gutter={[16, 16]}>
+        {metricCards.map((card) => (
+          <Col xs={24} sm={12} lg={6} key={card.key}>
+            <Card className="metric-card" variant="borderless">
+              <div className="metric-card__top">
+                <span className="metric-card__label">{card.label}</span>
+                <span className={`metric-card__icon metric-card__icon--${card.tone}`}>
+                  {card.icon}
+                </span>
+              </div>
+              <div className="metric-card__value">{card.value ?? '-'}</div>
+              <span className={`metric-card__badge metric-card__badge--${card.tone}`}>
+                {card.badge}
               </span>
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="metric-card" bordered={false}>
-            <div className="metric-card__label">合作机构</div>
-            <div className="metric-card__value">
-              {overview?.totalInstitution ?? '-'}
-              <span className="metric-card__unit">家</span>
-            </div>
-            <div className="metric-card__footer">
-              <span className="metric-card__sub">待完善资料 {overview?.pendingInstitutionCount ?? 0} 家</span>
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="metric-card metric-card--danger" bordered={false}>
-            <div className="metric-card__label">退款待审核</div>
-            <div className="metric-card__value">
-              {overview?.pendingRefundCount ?? '-'}
-              <span className="metric-card__unit">笔</span>
-            </div>
-            <div className="metric-card__footer">
-              <span className="metric-card__sub">含 {overview?.pendingRefundCount ?? 0} 笔退款审核</span>
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="metric-card" bordered={false}>
-            <div className="metric-card__label">今日活动报名</div>
-            <div className="metric-card__value">
-              {overview?.activitySignupCount ?? '-'}
-              <span className="metric-card__unit">人</span>
-            </div>
-            <div className="metric-card__footer">
-              <span className="metric-card__rate">
-                <ArrowUpOutlined className="metric-card__rate-arrow" />
-                {overview?.activitySignupRate ?? 0}% 较昨日
-              </span>
-            </div>
-          </Card>
-        </Col>
+            </Card>
+          </Col>
+        ))}
       </Row>
 
-      {/* 待办提醒 + 近 7 日订单趋势 */}
-      <Row gutter={16} className="dashboard-row">
+      {/* 待办事项 + 近 7 日订单趋势 */}
+      <Row gutter={[16, 16]} className="dashboard-row">
         <Col xs={24} lg={12}>
           <Card
-            title="待办提醒"
-            bordered={false}
-            extra={<a onClick={() => navigate('/refund')}>查看全部</a>}
+            variant="borderless"
+            className="dashboard-card"
           >
             <div className="dashboard-todo">
-              {todoConfig.map((item) => (
-                <div className="dashboard-todo__item" key={item.key}>
-                  <span className={`dashboard-todo__icon dashboard-todo__icon--${item.key}`}>
-                    {item.icon}
-                  </span>
-                  <span className="dashboard-todo__title">{item.title}</span>
-                  {item.count !== undefined && (
-                    <span className="dashboard-todo__count">{item.count}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} lg={12}>
-          <Card
-            title="近 7 日订单趋势"
-            bordered={false}
-            extra={
-              <Button type="link" size="small" onClick={() => navigate('/order')}>
-                进入订单中心
-              </Button>
-            }
-          >
-            <div className="dashboard-trend">
-              <div className="dashboard-trend__chart">
-                {trendValues.map((value, index) => (
-                  <div className="dashboard-trend__bar-wrap" key={index}>
-                    <div
-                      className={`dashboard-trend__bar${index === trendValues.length - 1 ? ' dashboard-trend__bar--active' : ''}`}
-                      style={{ height: `${(value / maxTrend) * 100}%` }}
-                    />
+              <div className='dashboard__header'>
+                <span className="dashboard__title">待办事项</span>
+                <Button
+                  type="link"
+                  className="dashboard-card__link"
+                  onClick={() => navigate('/refund')}
+                >
+                  查看全部 <RightOutlined />
+                </Button>
+              </div>
+              <div className='dashboard-todo__list'>
+                {todos.map((item) => (
+                  <div className="dashboard-todo__item" key={item.key}>
+                    <span className={`dashboard-todo__icon dashboard-todo__icon--${item.key}`}>
+                      {todoIconText[item.key] ?? '待'}
+                    </span>
+                    <div className="dashboard-todo__main">
+                      <div className="dashboard-todo__title">{item.title}</div>
+                      {item.desc && <div className="dashboard-todo__desc">{item.desc}</div>}
+                    </div>
+                    {item.count !== undefined && (
+                      <span className={`dashboard-todo__count dashboard-todo__count--${item.key}`}>
+                        {item.count} {item.unit}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
-              <div className="dashboard-trend__stat">
-                <span className="dashboard-trend__stat-label">累计订单</span>
-                <span className="dashboard-trend__stat-value">{trend?.totalOrders ?? '-'} 单</span>
-                <span className="dashboard-trend__stat-rate">
-                  <ArrowUpOutlined className="dashboard-trend__stat-arrow" />
-                  {trend?.totalRate ?? 0}% 较上周
+            </div>
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <Card
+            variant="borderless"
+            className="dashboard-card"
+          >
+            <div className="dashboard-trend-container">
+              <div className='dashboard__header'>
+                <span className="dashboard__title">近 7 日订单趋势</span>
+                <span className="dashboard-trend__summary">
+                  累计 {trend?.totalOrders ?? '-'} 单
+                  <ArrowUpOutlined className="dashboard-trend__summary-arrow" />
+                  {trend?.totalRate ?? 0}%
                 </span>
+              </div>
+              <div className="dashboard-trend">
+                {daily.map((point, index) => (
+                  <div className="dashboard-trend__col" key={point.label}>
+                    <div className="dashboard-trend__plot">
+                      <span className="dashboard-trend__num">{point.value}</span>
+                      <div
+                        className={`dashboard-trend__bar${index === daily.length - 1 ? ' dashboard-trend__bar--active' : ''}`}
+                        style={{ height: `${(point.value / maxTrend) * 100}%` }}
+                      />
+                    </div>
+                    <span className="dashboard-trend__day">{point.label}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </Card>
@@ -268,15 +304,28 @@ export default function Dashboard() {
       </Row>
 
       {/* 近期订单 */}
-      <Row gutter={16} className="dashboard-row">
+      <Row gutter={[16, 16]} className="dashboard-row">
         <Col span={24}>
-          <Card title="近期订单" bordered={false} className="dashboard-orders">
+          <Card
+            variant="borderless"
+            className="dashboard-card"
+          >
+            <div className='dashboard__header'>
+              <span className="dashboard__title">近期订单</span>
+              <Button
+                type="link"
+                className="dashboard-card__link"
+                onClick={() => navigate('/order')}
+              >
+                进入订单中心 <RightOutlined />
+              </Button>
+            </div>
             <Table
               rowKey="orderNo"
               columns={columns}
               dataSource={recentOrders}
               pagination={false}
-              size="middle"
+              size="small"
             />
           </Card>
         </Col>

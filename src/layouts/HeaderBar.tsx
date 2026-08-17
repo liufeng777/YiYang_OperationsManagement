@@ -24,6 +24,13 @@ export default function HeaderBar() {
 
   const breadcrumbItems = useMemo(() => findBreadcrumb(location.pathname), [location.pathname])
 
+  /** 今日日期：2026 年 8 月 14 日 星期五 */
+  const todayText = useMemo(() => {
+    const now = new Date()
+    const week = ['日', '一', '二', '三', '四', '五', '六'][now.getDay()]
+    return `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日 星期${week}`
+  }, [])
+
   return (
     <Layout.Header className="layout-header">
       <div className="layout-header__left">
@@ -36,6 +43,7 @@ export default function HeaderBar() {
         <Breadcrumb items={breadcrumbItems} />
       </div>
       <div className="layout-header__right">
+        <span className="layout-header__date">{todayText}</span>
         <Dropdown
           menu={{
             items: [

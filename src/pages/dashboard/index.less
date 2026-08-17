@@ -1,75 +1,134 @@
-/* ===== 运营首页 ===== */
+/* ===== 运营首页（对齐设计稿 docs/assets/design-reference.png） ===== */
 
-.dashboard-date {
-  .text-label();
-  padding-top: @spacing-xs;
-}
-
-/* 欢迎横幅 */
-.dashboard-welcome {
+/* 卡片标题：设计规范 - 卡片标题 16/24 Medium */
+.dashboard-card {
   .card-surface();
-  margin-bottom: @spacing-lg;
-  padding: @spacing-xl @spacing-2xl;
-  background: linear-gradient(90deg, @color-primary-light 0%, @color-bg-card 100%);
-
-  &__title {
-    .text-title-module();
-    color: @color-primary-dark;
-  }
-
-  &__desc {
-    .text-auxiliary();
-    margin-top: @spacing-xs;
-  }
-}
-
-/* 经营指标卡 */
-.metric-card {
-  .card-surface();
-  padding: @spacing-xl;
-
-  &__label {
-    .text-label();
-    margin-bottom: @spacing-sm;
-  }
-
-  &__value {
-    .text-metric();
-    color: @color-primary;
-
-    .metric-card__unit {
-      margin-left: @spacing-2xs;
-      font-size: @font-size-body;
-      font-weight: @font-weight-body;
-      color: @color-text-secondary;
-    }
-  }
-
-  &__footer {
+  .dashboard__header {
+    height: 28px;
     display: flex;
     align-items: center;
-    margin-top: @spacing-sm;
-    .text-auxiliary();
+    justify-content: space-between;
+    margin-bottom: @spacing-sm;
+    .dashboard__title {
+      font-size: @font-size-title-card;
+      line-height: @line-height-title-card;
+      font-weight: @font-weight-title-card;
+    }
+  }
+  .ant-card-body {
+    padding: @spacing-md @spacing-lg;
   }
 
-  &__rate {
+  /* 卡片右上角跳转链接：Button type="link"，颜色由主题 Button.colorLink（品牌主色）提供 */
+  &__link {
     display: inline-flex;
     align-items: center;
-    color: @color-primary;
+    gap: @spacing-2xs;
+    height: auto;
+    padding: 0;
+    font-size: @font-size-auxiliary;
     font-weight: @font-weight-body-medium;
 
-    &-arrow {
-      margin-right: @spacing-2xs;
+    .anticon {
       font-size: @font-size-auxiliary;
     }
   }
+}
 
-  &__sub {
-    color: @color-text-secondary;
+/* 表格操作列链接按钮 */
+.table-link-btn {
+  height: auto;
+  padding: 0;
+  font-size: @font-size-body;
+}
+
+/* ===== 经营指标卡 ===== */
+.metric-card {
+  .card-surface();
+
+  .ant-card-body {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: @spacing-xl;
   }
 
-  &--danger {
-    .metric-card__value {
+  &__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  /* 标签与字段名 13/20 Medium */
+  &__label {
+    .text-label();
+  }
+
+  /* 右上角彩色图标块 */
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: @radius-sm;
+    font-size: 18px;
+
+    &--primary {
+      background: @color-primary-light;
+      color: @color-primary;
+    }
+
+    &--info {
+      background: fade(@color-info, 12%);
+      color: @color-info;
+    }
+
+    &--warning {
+      background: fade(@color-warning, 22%);
+      color: darken(@color-warning, 20%);
+    }
+
+    &--danger {
+      background: fade(@color-danger, 12%);
+      color: @color-danger;
+    }
+  }
+
+  /* 经营指标 28/36 Bold，主文字色 */
+  &__value {
+    .text-metric();
+    margin-top: @spacing-2xs;
+  }
+
+  /* 底部胶囊徽章 */
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    margin-top: @spacing-sm;
+    padding: 1px @spacing-xs;
+    border-radius: @radius-full;
+    font-size: @font-size-auxiliary;
+    line-height: @line-height-auxiliary;
+
+    &--primary {
+      background: @color-primary-light;
+      color: @color-primary;
+    }
+
+    &--info {
+      background: fade(@color-info, 12%);
+      color: @color-info;
+    }
+
+    &--warning {
+      background: fade(@color-warning, 22%);
+      color: darken(@color-warning, 20%);
+    }
+
+    &--danger {
+      background: fade(@color-danger, 12%);
       color: @color-danger;
     }
   }
@@ -77,22 +136,28 @@
 
 /* 第二行以下间距 */
 .dashboard-row {
-  margin-top: @spacing-lg;
+  margin-top: @spacing-md;
 }
 
-/* 待办提醒 */
+/* ===== 待办事项 ===== */
 .dashboard-todo {
+  height: 208px;
+  &__list {
+    height: 168px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
   &__item {
     display: flex;
     align-items: center;
-    padding: @spacing-md 0;
-    border-bottom: 1px solid @color-border;
-
     &:last-child {
       border-bottom: none;
     }
   }
 
+  /* 左侧单色字块：退 / 商 / 内 */
   &__icon {
     display: inline-flex;
     align-items: center;
@@ -100,113 +165,175 @@
     width: 32px;
     height: 32px;
     flex-shrink: 0;
-    border-radius: @radius-sm;
-    background: @color-primary-light;
-    color: @color-primary;
-    font-size: @font-size-body-medium;
+    border-radius: @radius-xs;
+    font-size: @font-size-body;
+    font-weight: 500;
 
     &--refund {
-      background: fade(@color-danger, 10%);
+      background: fade(@color-danger, 12%);
       color: @color-danger;
     }
 
     &--institution {
-      background: fade(@color-warning, 18%);
-      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 22%);
+      color: darken(@color-warning, 20%);
     }
 
     &--content {
-      background: fade(@color-info, 10%);
+      background: fade(@color-info, 12%);
       color: @color-info;
     }
   }
 
-  &__title {
+  &__main {
     flex: 1;
+    min-width: 0;
     margin-left: @spacing-sm;
+  }
+
+  /* 强调正文 14/22 Medium */
+  &__title {
     .text-body();
+    font-weight: 500;
   }
 
-  &__count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 24px;
-    height: 24px;
-    padding: 0 @spacing-xs;
-    border-radius: @radius-full;
-    background: @color-primary-light;
-    color: @color-primary-dark;
-    font-size: @font-size-auxiliary;
-    font-weight: @font-weight-body-medium;
-  }
-}
-
-/* 近 7 日订单趋势 */
-.dashboard-trend {
-  &__chart {
-    display: flex;
-    align-items: flex-end;
-    gap: @spacing-sm;
-    height: 160px;
-    padding: @spacing-sm 0 @spacing-md;
-  }
-
-  &__bar-wrap {
-    flex: 1;
-    display: flex;
-    align-items: flex-end;
-    height: 100%;
-  }
-
-  &__bar {
-    width: 100%;
-    min-height: 4px;
-    border-radius: @radius-xs @radius-xs 0 0;
-    background: @color-primary-light;
-    transition: background-color 0.2s ease;
-  }
-
-  &__bar--active {
-    background: @color-primary;
-  }
-
-  &__stat {
-    display: flex;
-    align-items: baseline;
-    gap: @spacing-xs;
-    padding-top: @spacing-sm;
-    border-top: 1px solid @color-border;
-  }
-
-  &__stat-label {
-    .text-label();
-  }
-
-  &__stat-value {
-    .text-title-card();
-    color: @color-primary;
-  }
-
-  &__stat-rate {
-    display: inline-flex;
-    align-items: center;
+  /* 辅助说明 12/18 Regular */
+  &__desc {
     .text-auxiliary();
-    color: @color-primary;
-    font-weight: @font-weight-body-medium;
+    margin-top: 2px;
+  }
 
-    &-arrow {
-      margin-right: @spacing-2xs;
-      font-size: @font-size-auxiliary;
+  /* 右侧计数：6 笔 / 3 家 / 5 条 */
+  &__count {
+    flex-shrink: 0;
+    .text-body();
+    font-weight: 500;
+
+    &--refund {
+      color: @color-danger;
+    }
+
+    &--institution {
+      color: darken(@color-warning, 20%);
+    }
+
+    &--content {
+      color: @color-info;
     }
   }
 }
 
-/* 近期订单表格 */
-.dashboard-orders {
-  .card-surface();
+/* ===== 近 7 日订单趋势 ===== */
+.dashboard-trend-container {
+  display: flex;
+  flex-direction: column;
+  height: 208px;
+}
+.dashboard-trend {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  gap: @spacing-md;
 
-  .ant-table-wrapper {
-    .card-surface();
+  /* 卡片右上角汇总：累计 742 单 ↑ 11.8% */
+  &__summary {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    font-size: @font-size-body;
+    font-weight: 500;
+    color: @color-primary;
+  }
+
+  &__summary-arrow {
+    margin-left: 10px;
+    font-size: @font-size-auxiliary;
+  }
+
+  &__col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 0;
+  }
+
+  &__plot {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+    gap: @spacing-2xs;
+  }
+
+  /* 柱上数值 */
+  &__num {
+    .text-auxiliary();
+    color: @color-text-primary;
+  }
+
+  &__bar {
+    width: 60%;
+    max-width: 44px;
+    min-height: 4px;
+    border-radius: @radius-xs @radius-xs 0 0;
+    background: #eff1ee;
+    transition: background-color 0.2s ease;
+  }
+
+  /* 今日高亮柱 */
+  &__bar--active {
+    background: @color-primary-dark;
+  }
+
+  /* 柱下日期 */
+  &__day {
+    .text-auxiliary();
+    margin-top: @spacing-xs;
+  }
+}
+
+/* ===== 订单状态胶囊（圆点 + 文字） ===== */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px @spacing-sm;
+  border-radius: @radius-full;
+  font-size: @font-size-auxiliary;
+  line-height: @line-height-label;
+  font-weight: 500;
+
+  &__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* 待服务：提醒色 */
+  &--pending {
+    background: fade(@color-warning, 22%);
+    color: darken(@color-warning, 20%);
+  }
+
+  /* 已确认：信息色 */
+  &--confirmed {
+    background: fade(@color-info, 12%);
+    color: @color-info;
+  }
+
+  /* 退款审核：风险色 */
+  &--refunding {
+    background: fade(@color-danger, 12%);
+    color: @color-danger;
+  }
+
+  /* 已完成：品牌色 */
+  &--finished {
+    background: @color-primary-light;
+    color: @color-primary;
   }
 }
