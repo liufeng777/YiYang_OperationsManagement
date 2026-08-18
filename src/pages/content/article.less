@@ -1,0 +1,119 @@
+.article-list {
+  /* 筛选行复用公共 .filter-row，列表卡片复用 .list-card（src/styles/list-page.less） */
+  &__filter {
+    .card-surface();
+
+    > .ant-card-body {
+      padding: @spacing-md @spacing-md 0;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: @spacing-xl;
+      margin-top: @spacing-sm;
+
+      button {
+        padding: @spacing-sm 0;
+        color: @color-text-secondary;
+        background: transparent;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        .text-body();
+
+        &.is-active {
+          color: @color-primary;
+          border-bottom-color: @color-primary;
+          font-weight: @font-weight-body-medium;
+        }
+      }
+    }
+  }
+
+  .article-title {
+    display: flex;
+    align-items: center;
+    gap: @spacing-sm;
+
+    i {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      color: @color-primary;
+      font-style: normal;
+      background: @color-primary-light;
+      border-radius: @radius-sm;
+    }
+
+    strong {
+      .text-body-medium();
+    }
+  }
+
+  .recommend-pill {
+    display: inline-flex;
+    padding: @spacing-2xs @spacing-xs;
+    color: @color-text-secondary;
+    font-size: @font-size-auxiliary;
+    background: @color-bg-active;
+    border-radius: @radius-full;
+
+    &.is-yes {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+  }
+
+  .article-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &::before {
+      width: 6px;
+      height: 6px;
+      border-radius: @radius-full;
+      background: currentColor;
+      content: '';
+    }
+
+    &--published {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--draft {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+
+    &--offline {
+      color: @color-text-primary;
+      background: @color-bg-active;
+    }
+  }
+
+  .article-actions {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+
+    .ant-btn {
+      padding-inline: @spacing-2xs;
+    }
+  }
+
+  &__tip {
+    margin-top: @spacing-md;
+    padding: @spacing-md;
+    color: @color-info;
+    background: fade(@color-info, 8%);
+    border-radius: @radius-sm;
+    .text-auxiliary();
+  }
+}

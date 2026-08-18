@@ -1,0 +1,311 @@
+.order-detail {
+  &__summary {
+    .card-surface();
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: @spacing-md;
+    padding: @spacing-lg @spacing-xl;
+
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+      gap: @spacing-xs;
+
+      > span {
+        .text-label();
+      }
+
+      > strong {
+        .text-body-medium();
+      }
+
+      > em {
+        align-self: flex-start;
+        font-style: normal;
+      }
+    }
+  }
+
+  &__main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: @spacing-md;
+    margin-top: @spacing-md;
+    align-items: start;
+  }
+
+  &__left,
+  &__right {
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-md;
+  }
+
+  .detail-card {
+    .card-surface();
+    padding: @spacing-lg @spacing-xl;
+
+    h3 {
+      margin: 0 0 @spacing-md;
+      .text-title-card();
+    }
+
+    &__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: @spacing-md;
+
+      h3 {
+        margin: 0;
+      }
+
+      > span {
+        .text-auxiliary();
+      }
+    }
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: @spacing-lg @spacing-md;
+
+    &--meta {
+      margin-top: @spacing-lg;
+      padding-top: @spacing-md;
+      border-top: 1px solid @color-border;
+    }
+
+    &__item {
+      display: flex;
+      flex-direction: column;
+      gap: @spacing-2xs;
+
+      > span {
+        .text-label();
+      }
+
+      > strong {
+        .text-body-medium();
+      }
+    }
+  }
+
+  .work-steps {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: @spacing-sm;
+  }
+
+  .work-step {
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-2xs;
+    padding: @spacing-md;
+    background: @color-bg-page;
+    border-radius: @radius-sm;
+
+    i {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      color: @color-text-secondary;
+      font-style: normal;
+      font-size: @font-size-auxiliary;
+      background: @color-bg-card;
+      border-radius: @radius-full;
+    }
+
+    strong {
+      .text-body-medium();
+    }
+
+    > span {
+      .text-auxiliary();
+    }
+
+    &.is-done {
+      background: @color-primary-light;
+
+      i {
+        color: @color-bg-card;
+        background: @color-primary;
+      }
+    }
+
+    &.is-current {
+      background: fade(@color-warning, 18%);
+
+      i {
+        color: @color-bg-card;
+        background: darken(@color-warning, 12%);
+      }
+
+      > span {
+        color: @color-danger;
+      }
+    }
+  }
+
+  .action-tip {
+    margin-bottom: @spacing-md;
+    padding: @spacing-md;
+    background: fade(@color-warning, 14%);
+    border-radius: @radius-sm;
+
+    strong {
+      .text-body-medium();
+    }
+
+    p {
+      margin: @spacing-2xs 0 0;
+      .text-auxiliary();
+    }
+
+    &--plain {
+      background: @color-bg-page;
+
+      p {
+        margin: 0;
+      }
+    }
+  }
+
+  .action-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: @spacing-sm;
+    margin-top: @spacing-sm;
+  }
+
+  .countdown {
+    color: @color-primary;
+    font-size: @font-size-title-page;
+    font-weight: @font-weight-title-page;
+    line-height: @line-height-title-page;
+    letter-spacing: 2px;
+  }
+
+  .countdown-note {
+    margin: @spacing-xs 0 0;
+    .text-auxiliary();
+  }
+
+  .service-remark {
+    margin: 0;
+    .text-body();
+    color: @color-text-secondary;
+  }
+
+  &__logs {
+    margin-top: @spacing-md;
+
+    .ant-table-thead > tr > th {
+      .text-label();
+      background: @color-bg-active;
+    }
+  }
+
+  /* 复用列表页状态 pill 样式 */
+  .order-status,
+  .work-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &::before {
+      width: 6px;
+      height: 6px;
+      border-radius: @radius-full;
+      background: currentColor;
+      content: '';
+    }
+  }
+
+  .order-status {
+    &--paid,
+    &--fulfilling {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--finished {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--refunding {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--cancelled {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+  }
+
+  .work-status {
+    &--pending {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--assigned {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--serving,
+    &--done {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--cancelled {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+
+    &--none {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+  }
+}
+
+@media (max-width: 1200px) {
+  .order-detail {
+    &__summary {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    &__main {
+      grid-template-columns: 1fr;
+    }
+
+    .work-steps {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .detail-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .order-detail {
+    &__summary,
+    .work-steps,
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}

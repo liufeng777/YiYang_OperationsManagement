@@ -1,0 +1,112 @@
+.order-list {
+  /* 筛选区与列表卡片复用公共类 .filter-bar / .list-card（src/styles/list-page.less） */
+  &__filter {
+    margin-top: @spacing-md;
+  }
+
+  .order-service,
+  .order-user {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  .order-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &::before {
+      width: 6px;
+      height: 6px;
+      border-radius: @radius-full;
+      background: currentColor;
+      content: '';
+    }
+
+    &--paid,
+    &--fulfilling {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--finished {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--refunding {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--cancelled {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+  }
+
+  .work-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &::before {
+      width: 6px;
+      height: 6px;
+      border-radius: @radius-full;
+      background: currentColor;
+      content: '';
+    }
+
+    &--pending {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--assigned {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--serving,
+    &--done {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--cancelled {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+
+    &--none {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+  }
+
+  .order-actions {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+
+    .ant-btn {
+      padding-inline: @spacing-2xs;
+    }
+  }
+}

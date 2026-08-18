@@ -1,0 +1,149 @@
+/**
+ * ============================================================
+ * 指标卡片（公共样式）
+ * 复用页面：运营首页 / 机构管理 / 报名查询 / 订单中心 / 退款管理 / 财务对账 / 用户管理
+ * 依赖 variables.less / mixins.less（vite 已自动注入 reference）
+ *
+ * 标准用法：
+ * <div className="metric-cards">
+ *   <Card variant="borderless" className="metric-card">
+ *     <div className="metric-card__head">
+ *       <span className="metric-card__label">今日订单</span>
+ *       <i className="metric-card__icon metric-card__icon--primary" />
+ *     </div>
+ *     <strong className="metric-card__value">128</strong>
+ *     <em className="metric-card__note metric-card__note--primary">较昨日 +12%</em>
+ *   </Card>
+ * </div>
+ * ============================================================
+ */
+
+/* ===== 指标卡网格容器（运营首页 / 机构管理用 antd Row+Col，无需此容器） ===== */
+.metric-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: @spacing-md;
+}
+
+@media (max-width: 1200px) {
+  .metric-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .metric-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== 指标卡 ===== */
+.metric-card {
+  .card-surface();
+
+  /* 头部：标签 + 彩色图标 */
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  &__label {
+    .text-body-medium();
+    color: @color-text-secondary;
+  }
+
+  /* 彩色图标块（默认 36px 圆角矩形；--round 为 40px 圆形，用于机构管理） */
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    font-style: normal;
+    border-radius: @radius-sm;
+
+    &--primary {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--info {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--warning {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--danger {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+
+    &--round {
+      width: 40px;
+      height: 40px;
+      border-radius: @radius-full;
+    }
+  }
+
+  /* 指标数值 28/36 Bold */
+  &__value {
+    display: block;
+    margin-top: @spacing-sm;
+    .text-metric();
+  }
+
+  /* 数值与辅助信息同行（报名查询） */
+  &__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: @spacing-sm;
+
+    .metric-card__value {
+      margin-top: 0;
+    }
+  }
+
+  &__extra {
+    font-style: normal;
+    .text-auxiliary();
+  }
+
+  /* 底部标记：__note 小圆角（列表页）/ __badge 全圆角（运营首页） */
+  &__note {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    margin-top: 12px;
+    font-style: normal;
+    font-size: @font-size-auxiliary;
+    line-height: @line-height-auxiliary;
+    border-radius: @radius-full;
+
+    &--primary {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--info {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--warning {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--danger {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+  }
+}

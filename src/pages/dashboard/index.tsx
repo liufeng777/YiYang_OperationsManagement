@@ -216,14 +216,14 @@ export default function Dashboard() {
         {metricCards.map((card) => (
           <Col xs={24} sm={12} lg={6} key={card.key}>
             <Card className="metric-card" variant="borderless">
-              <div className="metric-card__top">
+              <div className="metric-card__head">
                 <span className="metric-card__label">{card.label}</span>
                 <span className={`metric-card__icon metric-card__icon--${card.tone}`}>
                   {card.icon}
                 </span>
               </div>
               <div className="metric-card__value">{card.value ?? '-'}</div>
-              <span className={`metric-card__badge metric-card__badge--${card.tone}`}>
+              <span className={`metric-card__note metric-card__note--${card.tone}`}>
                 {card.badge}
               </span>
             </Card>
@@ -304,17 +304,15 @@ export default function Dashboard() {
       </Row>
 
       {/* 近期订单 */}
-      <Row gutter={[16, 16]} className="dashboard-row">
-        <Col span={24}>
           <Card
             variant="borderless"
-            className="dashboard-card"
+            className="list-card"
           >
-            <div className='dashboard__header'>
-              <span className="dashboard__title">近期订单</span>
+            <div className="list-card__header">
+              <span className='list-card__header__title'>近期订单</span>
               <Button
                 type="link"
-                className="dashboard-card__link"
+                className="list-card__header__link"
                 onClick={() => navigate('/order')}
               >
                 进入订单中心 <RightOutlined />
@@ -328,8 +326,6 @@ export default function Dashboard() {
               size="small"
             />
           </Card>
-        </Col>
-      </Row>
     </PageContainer>
   )
 }

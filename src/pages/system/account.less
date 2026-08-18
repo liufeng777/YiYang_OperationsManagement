@@ -1,0 +1,130 @@
+.account-list {
+  /* 筛选区与列表卡片复用公共类 .filter-bar / .list-card（src/styles/list-page.less） */
+  &__filter {
+    margin-top: @spacing-md;
+  }
+
+  .account-name {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  .account-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    color: @color-danger;
+    font-size: @font-size-auxiliary;
+    background: fade(@color-danger, 12%);
+    border-radius: @radius-full;
+
+    &::before {
+      width: 6px;
+      height: 6px;
+      border-radius: @radius-full;
+      background: currentColor;
+      content: '';
+    }
+
+    &.is-on {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+  }
+
+  .account-actions {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+
+    .ant-btn {
+      padding-inline: @spacing-2xs;
+    }
+  }
+}
+
+.account-drawer {
+  &__tip {
+    margin-bottom: @spacing-lg;
+    padding: @spacing-md;
+    color: @color-info;
+    background: fade(@color-info, 8%);
+    border-radius: @radius-sm;
+
+    strong {
+      .text-body-medium();
+    }
+
+    p {
+      margin: @spacing-2xs 0 0;
+      .text-auxiliary();
+    }
+  }
+
+  &__field {
+    margin-bottom: @spacing-md;
+
+    label {
+      display: block;
+      margin-bottom: @spacing-xs;
+      .text-label();
+      color: @color-text-primary;
+
+      i {
+        color: @color-danger;
+        font-style: normal;
+      }
+    }
+
+    .ant-select {
+      width: 100%;
+    }
+  }
+
+  &__switch {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    label {
+      margin-bottom: 0;
+    }
+
+    span {
+      display: block;
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  &__summary {
+    padding: @spacing-md;
+    background: @color-bg-page;
+    border-radius: @radius-sm;
+
+    strong {
+      .text-body-medium();
+    }
+
+    p {
+      margin: @spacing-2xs 0 0;
+      .text-auxiliary();
+    }
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: @spacing-sm;
+  }
+}

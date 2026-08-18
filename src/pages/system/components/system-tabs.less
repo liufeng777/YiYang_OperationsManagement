@@ -1,0 +1,21 @@
+.system-tabs {
+  display: flex;
+  gap: @spacing-2xl;
+  margin-bottom: @spacing-md;
+
+  button {
+    padding: @spacing-xs @spacing-sm;
+    color: @color-text-secondary;
+    background: transparent;
+    border: 0;
+    border-radius: @radius-xs;
+    cursor: pointer;
+    .text-body();
+
+    &.is-active {
+      color: @color-info;
+      background: fade(@color-info, 10%);
+      font-weight: @font-weight-body-medium;
+    }
+  }
+}

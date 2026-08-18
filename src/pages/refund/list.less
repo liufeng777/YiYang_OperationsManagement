@@ -1,0 +1,94 @@
+.refund-list {
+  /* 筛选区与列表卡片复用公共类 .filter-bar / .list-card（src/styles/list-page.less） */
+  &__filter {
+    margin-top: @spacing-md;
+  }
+
+  .refund-no,
+  .refund-user {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  .refund-status,
+  .cancel-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &::before {
+      width: 6px;
+      height: 6px;
+      border-radius: @radius-full;
+      background: currentColor;
+      content: '';
+    }
+  }
+
+  .refund-status {
+    &--pending {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--cancelling,
+    &--refunding {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--refunded {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--rejected {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+
+    &--abnormal {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+  }
+
+  .cancel-status {
+    &--pending {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--cancelling {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--done {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--none {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+
+    &--failed {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+  }
+}

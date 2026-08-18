@@ -1,0 +1,53 @@
+.agreement-page {
+  &__banner {
+    margin-bottom: @spacing-md;
+    padding: @spacing-md;
+    color: @color-info;
+    background: fade(@color-info, 8%);
+    border-radius: @radius-sm;
+    .text-body();
+  }
+
+  /* 筛选区与列表卡片复用公共类 .filter-bar / .list-card（src/styles/list-page.less） */
+
+  .agreement-name {
+    .text-body-medium();
+  }
+
+  .agreement-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &::before {
+      width: 6px;
+      height: 6px;
+      border-radius: @radius-full;
+      background: currentColor;
+      content: '';
+    }
+
+    &--effective {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--draft {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+  }
+
+  .agreement-actions {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+
+    .ant-btn {
+      padding-inline: @spacing-2xs;
+    }
+  }
+}

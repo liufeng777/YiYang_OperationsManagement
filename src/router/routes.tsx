@@ -18,6 +18,7 @@ import {
   FlagOutlined,
   ProfileOutlined,
   UndoOutlined,
+  AccountBookOutlined,
   FileTextOutlined,
   SettingOutlined,
 } from '@ant-design/icons'
@@ -64,12 +65,17 @@ export const routes: RouteConfig[] = [
     children: [
       {
         path: '',
-        meta: { title: '机构列表' },
+        meta: { title: '机构管理' },
         component: lazy(() => import('@/pages/institution/list')),
       },
       {
+        path: 'patient-intro',
+        meta: { title: '患者端介绍' },
+        component: lazy(() => import('@/pages/institution/detail')),
+      },
+      {
         path: 'audit',
-        meta: { title: '机构审核' },
+        meta: { title: '机构审核', hideInMenu: true },
         component: lazy(() => import('@/pages/institution/audit')),
       },
       {
@@ -85,17 +91,22 @@ export const routes: RouteConfig[] = [
     children: [
       {
         path: '',
-        meta: { title: '项目列表' },
+        meta: { title: '集团服务池' },
         component: lazy(() => import('@/pages/service/list')),
       },
       {
+        path: 'institution',
+        meta: { title: '机构服务' },
+        component: lazy(() => import('@/pages/service/institution')),
+      },
+      {
         path: 'category',
-        meta: { title: '项目分类' },
+        meta: { title: '服务分类', hideInMenu: true },
         component: lazy(() => import('@/pages/service/category')),
       },
       {
         path: 'detail/:id',
-        meta: { title: '项目详情', hideInMenu: true },
+        meta: { title: '新建服务项目', hideInMenu: true },
         component: lazy(() => import('@/pages/service/detail')),
       },
     ],
@@ -106,18 +117,23 @@ export const routes: RouteConfig[] = [
     children: [
       {
         path: '',
-        meta: { title: '活动列表' },
+        meta: { title: '活动管理' },
         component: lazy(() => import('@/pages/activity/list')),
       },
       {
+        path: 'signups',
+        meta: { title: '报名查询' },
+        component: lazy(() => import('@/pages/activity/signups')),
+      },
+      {
         path: 'create',
-        meta: { title: '创建活动' },
+        meta: { title: '新建活动', hideInMenu: true },
         component: lazy(() => import('@/pages/activity/create')),
       },
       {
         path: 'detail/:id',
-        meta: { title: '活动详情', hideInMenu: true },
-        component: lazy(() => import('@/pages/activity/detail')),
+        meta: { title: '编辑活动', hideInMenu: true },
+        component: lazy(() => import('@/pages/activity/create')),
       },
     ],
   },
@@ -139,17 +155,28 @@ export const routes: RouteConfig[] = [
   },
   {
     path: '/refund',
-    meta: { title: '退款详情', icon: <UndoOutlined /> },
+    meta: { title: '退款管理', icon: <UndoOutlined /> },
     children: [
       {
         path: '',
-        meta: { title: '退款申请' },
+        meta: { title: '退款列表' },
         component: lazy(() => import('@/pages/refund/list')),
       },
       {
         path: 'detail/:id',
-        meta: { title: '退款处理', hideInMenu: true },
+        meta: { title: '退款审核详情', hideInMenu: true },
         component: lazy(() => import('@/pages/refund/detail')),
+      },
+    ],
+  },
+  {
+    path: '/finance',
+    meta: { title: '财务对账', icon: <AccountBookOutlined /> },
+    children: [
+      {
+        path: '',
+        meta: { title: '财务对账' },
+        component: lazy(() => import('@/pages/finance/list')),
       },
     ],
   },
@@ -159,13 +186,23 @@ export const routes: RouteConfig[] = [
     children: [
       {
         path: '',
-        meta: { title: 'Banner 配置' },
-        component: lazy(() => import('@/pages/content/banner')),
+        meta: { title: '首页配置' },
+        component: lazy(() => import('@/pages/content/home')),
       },
       {
-        path: 'copy',
-        meta: { title: '文案配置' },
-        component: lazy(() => import('@/pages/content/copy')),
+        path: 'article',
+        meta: { title: '科普内容' },
+        component: lazy(() => import('@/pages/content/article')),
+      },
+      {
+        path: 'staff',
+        meta: { title: '专业人员' },
+        component: lazy(() => import('@/pages/content/staff')),
+      },
+      {
+        path: 'article/edit/:id',
+        meta: { title: '新建科普内容', hideInMenu: true },
+        component: lazy(() => import('@/pages/content/article-edit')),
       },
     ],
   },
@@ -175,18 +212,43 @@ export const routes: RouteConfig[] = [
     children: [
       {
         path: '',
-        meta: { title: '账号管理' },
+        meta: { title: '用户管理' },
         component: lazy(() => import('@/pages/system/account')),
       },
       {
         path: 'role',
-        meta: { title: '角色权限' },
+        meta: { title: '角色管理' },
         component: lazy(() => import('@/pages/system/role')),
+      },
+      {
+        path: 'agreement',
+        meta: { title: '协议与授权' },
+        component: lazy(() => import('@/pages/system/agreement')),
+      },
+      {
+        path: 'help',
+        meta: { title: '帮助与电话' },
+        component: lazy(() => import('@/pages/system/help')),
+      },
+      {
+        path: 'message',
+        meta: { title: '消息模板' },
+        component: lazy(() => import('@/pages/system/message')),
+      },
+      {
+        path: 'announcement',
+        meta: { title: '系统公告' },
+        component: lazy(() => import('@/pages/system/announcement')),
       },
       {
         path: 'log',
         meta: { title: '操作日志' },
         component: lazy(() => import('@/pages/system/log')),
+      },
+      {
+        path: 'agreement/edit/:id',
+        meta: { title: '新建协议版本', hideInMenu: true },
+        component: lazy(() => import('@/pages/system/agreement-edit')),
       },
     ],
   },

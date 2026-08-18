@@ -1,0 +1,72 @@
+.finance-list {
+  /* 筛选区与列表卡片复用公共类 .filter-bar / .list-card（src/styles/list-page.less） */
+  &__filter {
+    margin-top: @spacing-md;
+  }
+
+  .reconcile-date,
+  .reconcile-counts {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  .channel-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    color: @color-info;
+    font-size: @font-size-auxiliary;
+    background: fade(@color-info, 12%);
+    border-radius: @radius-full;
+
+    &::before {
+      width: 6px;
+      height: 6px;
+      border-radius: @radius-full;
+      background: currentColor;
+      content: '';
+    }
+  }
+
+  .reconcile-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &::before {
+      width: 6px;
+      height: 6px;
+      border-radius: @radius-full;
+      background: currentColor;
+      content: '';
+    }
+
+    &--pending {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--confirmed {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--diff {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+  }
+}

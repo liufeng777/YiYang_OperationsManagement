@@ -1,0 +1,252 @@
+.article-edit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: @spacing-md;
+  align-items: start;
+
+  &__form,
+  &__side {
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-md;
+  }
+
+  .edit-card {
+    .card-surface();
+    padding: @spacing-lg @spacing-xl;
+
+    &__header {
+      display: flex;
+      align-items: baseline;
+      gap: @spacing-sm;
+      margin-bottom: @spacing-md;
+
+      h3 {
+        margin: 0;
+        .text-title-card();
+      }
+
+      span {
+        .text-auxiliary();
+      }
+    }
+  }
+
+  .edit-field {
+    margin-bottom: @spacing-md;
+
+    label {
+      display: block;
+      margin-bottom: @spacing-xs;
+      .text-label();
+      color: @color-text-primary;
+
+      i {
+        color: @color-danger;
+        font-style: normal;
+      }
+    }
+
+    .ant-select {
+      width: 100%;
+    }
+  }
+
+  .edit-field__row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: @spacing-md;
+
+    .edit-field {
+      margin-bottom: @spacing-md;
+    }
+  }
+
+  .edit-upload-btn {
+    width: 100%;
+  }
+
+  .editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-xs @spacing-sm;
+    background: @color-bg-page;
+    border-radius: @radius-sm @radius-sm 0 0;
+    border: 1px solid @color-border;
+    border-bottom: 0;
+  }
+
+  .editor-body {
+    padding: @spacing-lg;
+    border: 1px solid @color-border;
+    border-radius: 0 0 @radius-sm @radius-sm;
+
+    h4 {
+      margin: 0 0 @spacing-sm;
+      .text-title-card();
+    }
+
+    h5 {
+      margin: @spacing-md 0 @spacing-xs;
+      .text-body-medium();
+    }
+
+    p {
+      margin: 0 0 @spacing-sm;
+      .text-body();
+      color: @color-text-secondary;
+    }
+  }
+
+  .editor-image-upload {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: @spacing-xs;
+    width: 100%;
+    margin: @spacing-sm 0;
+    padding: @spacing-2xl 0;
+    color: @color-primary;
+    background: fade(@color-info, 8%);
+    border: 1px dashed @color-border;
+    border-radius: @radius-sm;
+    cursor: pointer;
+    .text-body();
+  }
+
+  .publish-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: @spacing-md;
+    .text-body();
+
+    .ant-select {
+      width: 140px;
+    }
+  }
+
+  .publish-note {
+    margin: 0 0 @spacing-md;
+    .text-auxiliary();
+  }
+
+  .publish-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* 患者端实时预览手机 */
+  .article-phone {
+    border: 1px solid @color-border;
+    border-radius: @radius-lg;
+    overflow: hidden;
+    background: @color-bg-card;
+
+    &__bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: @spacing-xs @spacing-md;
+      .text-auxiliary();
+    }
+
+    &__nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: @spacing-xs @spacing-md;
+      border-bottom: 1px solid @color-border;
+
+      strong {
+        .text-body-medium();
+      }
+
+      span {
+        .text-auxiliary();
+      }
+    }
+
+    &__body {
+      padding: @spacing-md;
+
+      h4 {
+        margin: 0 0 @spacing-xs;
+        .text-title-card();
+      }
+
+      h5 {
+        margin: @spacing-md 0 @spacing-xs;
+        .text-body-medium();
+      }
+
+      p {
+        margin: 0 0 @spacing-sm;
+        .text-auxiliary();
+        color: @color-text-secondary;
+      }
+    }
+
+    &__meta {
+      color: @color-text-secondary;
+    }
+
+    &__cover {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: @spacing-2xs;
+      height: 96px;
+      margin: @spacing-sm 0;
+      padding: 0 @spacing-md;
+      color: @color-primary-dark;
+      background: fade(@color-info, 10%);
+      border-radius: @radius-sm;
+
+      strong {
+        .text-title-card();
+      }
+
+      span {
+        .text-auxiliary();
+      }
+    }
+
+    &__tip {
+      display: flex;
+      flex-direction: column;
+      gap: @spacing-2xs;
+      margin-top: @spacing-md;
+      padding: @spacing-sm @spacing-md;
+      background: @color-bg-page;
+      border-radius: @radius-sm;
+
+      strong {
+        .text-body-medium();
+      }
+
+      span {
+        .text-auxiliary();
+      }
+    }
+  }
+}
+
+@media (max-width: 1200px) {
+  .article-edit {
+    grid-template-columns: 1fr;
+
+    .edit-field__row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .article-edit {
+    .edit-field__row {
+      grid-template-columns: 1fr;
+    }
+  }
+}

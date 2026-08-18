@@ -1,0 +1,153 @@
+/**
+ * ============================================================
+ * 列表页公共样式：筛选区 + 列表卡片
+ * 复用页面：机构管理 / 集团服务池 / 活动列表 / 报名查询 / 订单中心 / 退款管理 /
+ *          财务对账 / 科普内容 / 专业人员 / 用户管理 / 消息模板 / 系统公告 / 协议与授权
+ * 依赖 variables.less / mixins.less（vite 已自动注入 reference）
+ * ============================================================
+ */
+
+/* ===== 筛选条件布局（横向排布，间距 12px） ===== */
+.filter-row-layout() {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: @spacing-sm; /* 12px */
+
+  /* 搜索输入框占更宽 */
+  > .ant-input-affix-wrapper,
+  > .ant-input {
+    flex: 1 1 240px;
+    width: auto;
+    min-width: 200px;
+  }
+
+  > .ant-select,
+  > .ant-picker,
+  > .ant-input-number {
+    flex: 1 1 140px;
+    width: auto;
+    min-width: 140px;
+  }
+
+  > .ant-btn,
+  > .ant-radio-group {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+}
+
+/* 独立筛选卡片：搭配 <Card variant="borderless" className="filter-bar"> 使用 */
+.filter-bar {
+  .card-surface();
+
+  > .ant-card-body {
+    padding: @spacing-md;
+    .filter-row-layout();
+  }
+}
+
+/* 复合筛选卡内的筛选行（科普内容 / 专业人员，与状态行同卡） */
+.filter-row {
+  .filter-row-layout();
+}
+
+/* ===== 列表卡片：ant-card-body padding 20px 16px ===== */
+.list-card {
+  .card-surface();
+    margin-top: @spacing-md;
+
+  > .ant-card-body {
+    padding: @spacing-lg @spacing-md; /* 20px 16px */
+  }
+
+  .ant-table-thead > tr > th {
+    .text-label();
+    background: @color-bg-active;
+  }
+
+  /* 列表卡片头部：标题 16px / 字重 700 */
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: @spacing-sm;
+
+    &__title {
+      display: inline-block;
+      margin: 0 @spacing-sm 0 0;
+      font-size: @font-size-title-card; /* 16px */
+      line-height: @line-height-title-card;
+      font-weight: 700;
+      color: @color-text-primary;
+    }
+
+    &__tips {
+      .text-auxiliary();
+    }
+
+    &__link {
+      display: inline-flex;
+      align-items: center;
+      gap: @spacing-2xs;
+      height: auto;
+      padding: 0;
+      font-size: @font-size-auxiliary;
+      font-weight: @font-weight-body-medium;
+      .anticon {
+        font-size: @font-size-auxiliary;
+      }
+    }
+
+    > .list-card__status-filter {
+      flex-shrink: 0;
+    }
+  }
+}
+
+/* ===== 列表卡片状态筛选（胶囊单选组 Radio.Group，对齐设计稿：全部 / 草稿 3 / 待发布 3 …） ===== */
+.list-card__status-filter {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: @spacing-xs;
+
+  .ant-radio-button-wrapper {
+    height: 28px;
+    padding: 0 @spacing-md;
+    font-size: @font-size-auxiliary;
+    line-height: 26px; /* 28px 高度 - 上下边框 */
+    color: @color-text-secondary;
+    background: @color-bg-card;
+    border: 1px solid @color-border;
+    border-radius: @radius-full;
+
+    /* 去掉按钮组分段样式，改为独立胶囊 */
+    &::before {
+      display: none;
+    }
+
+    &:not(:first-child) {
+      margin-left: 0;
+    }
+
+    &:first-child,
+    &:last-child {
+      border-radius: @radius-full;
+    }
+
+    &:hover {
+      color: @color-primary;
+    }
+  }
+
+  .ant-radio-button-wrapper-checked {
+    color: @color-primary;
+    font-weight: @font-weight-body-medium;
+    background: @color-primary-light;
+    border-color: @color-primary;
+
+    &:hover {
+      color: @color-primary;
+    }
+  }
+}

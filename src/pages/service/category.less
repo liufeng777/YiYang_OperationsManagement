@@ -1,0 +1,56 @@
+.category-page {
+  .card-surface();
+  padding: @spacing-lg @spacing-xl;
+
+  &__extra {
+    display: flex;
+    gap: @spacing-sm;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: @spacing-md;
+
+    h3 {
+      margin: 0;
+      .text-title-module();
+    }
+
+    span {
+      .text-auxiliary();
+    }
+  }
+
+  .ant-table-thead > tr > th {
+    .text-label();
+    background: @color-bg-active;
+  }
+
+  .category-status {
+    display: inline-flex;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &--enabled {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--disabled {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+  }
+
+  .category-actions {
+    display: flex;
+    align-items: center;
+
+    .ant-btn {
+      padding-inline: @spacing-2xs;
+    }
+  }
+}

@@ -1,0 +1,74 @@
+.activity-signups {
+  /* 筛选区与列表卡片复用公共类 .filter-bar / .list-card（src/styles/list-page.less） */
+  &__filter {
+    margin-top: @spacing-md;
+  }
+
+  .signup-user {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  .signup-status {
+    display: inline-flex;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &--signed {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--cancelled {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+  }
+}
+
+.cancel-modal {
+  &__desc {
+    margin: 0;
+    .text-body();
+  }
+
+  &__user {
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-2xs;
+    margin-top: @spacing-md;
+    padding: @spacing-md;
+    background: @color-bg-page;
+    border-radius: @radius-sm;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      .text-auxiliary();
+    }
+  }
+
+  &__danger {
+    margin: @spacing-md 0 0;
+    color: @color-danger;
+    .text-auxiliary();
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: @spacing-sm;
+  }
+}

@@ -1,0 +1,138 @@
+.activity-list {
+  &__metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: @spacing-md;
+  }
+
+  .activity-metric {
+    .card-surface();
+    padding: @spacing-lg;
+
+    > span {
+      .text-body-medium();
+      color: @color-text-secondary;
+    }
+
+    > div {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-top: @spacing-sm;
+
+      strong {
+        .text-metric();
+      }
+
+      em {
+        font-style: normal;
+        .text-auxiliary();
+      }
+    }
+  }
+
+  /* 筛选区与列表卡片复用公共类 .filter-bar / .list-card（src/styles/list-page.less） */
+  &__filter {
+    margin-top: @spacing-md;
+  }
+
+  .activity-name {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  .activity-status {
+    display: inline-flex;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &--signup,
+    &--ongoing {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--full {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--draft {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+
+    &--pending {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--finished {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+  }
+
+  .publish-status {
+    display: inline-flex;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &--published {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--unpublished {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+
+    &--pending {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--offline {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+  }
+
+  .activity-actions {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+
+    .ant-btn {
+      padding-inline: @spacing-2xs;
+    }
+  }
+}
+
+@media (max-width: 1200px) {
+  .activity-list {
+    &__metrics {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .activity-list {
+    &__metrics {
+      grid-template-columns: 1fr;
+    }
+  }
+}

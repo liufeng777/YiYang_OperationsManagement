@@ -1,0 +1,215 @@
+.role-manage {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: @spacing-md;
+  align-items: start;
+
+  .role-list {
+    .card-surface();
+    padding: @spacing-lg;
+
+    &__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: @spacing-sm;
+
+      h3 {
+        margin: 0;
+        .text-title-card();
+      }
+    }
+
+    &__tip {
+      margin: 0 0 @spacing-md;
+      padding: @spacing-sm @spacing-md;
+      background: @color-bg-page;
+      border-radius: @radius-sm;
+      .text-auxiliary();
+    }
+
+    &__items {
+      display: flex;
+      flex-direction: column;
+      gap: @spacing-sm;
+    }
+  }
+
+  .role-item {
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-2xs;
+    padding: @spacing-md;
+    text-align: left;
+    background: @color-bg-card;
+    border: 1px solid @color-border;
+    border-radius: @radius-sm;
+    cursor: pointer;
+
+    &.is-active {
+      background: @color-primary-light;
+      border-color: @color-primary;
+    }
+
+    &__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      strong {
+        .text-body-medium();
+      }
+
+      > span {
+        .text-auxiliary();
+      }
+    }
+
+    > p {
+      margin: 0;
+      .text-auxiliary();
+    }
+
+    &__foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: @spacing-2xs;
+
+      em {
+        font-style: normal;
+        .text-auxiliary();
+      }
+
+      > span {
+        color: @color-primary;
+        .text-auxiliary();
+      }
+    }
+  }
+
+  .role-panel {
+    .card-surface();
+    padding: @spacing-lg @spacing-xl;
+
+    &__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: @spacing-md;
+
+      h3 {
+        margin: 0 0 @spacing-2xs;
+        .text-title-card();
+      }
+
+      span {
+        .text-auxiliary();
+      }
+    }
+
+    &__banner {
+      margin-bottom: @spacing-md;
+      padding: @spacing-md;
+      color: @color-info;
+      background: fade(@color-info, 8%);
+      border-radius: @radius-sm;
+      .text-body();
+    }
+
+    &__groups {
+      display: flex;
+      flex-direction: column;
+      gap: @spacing-sm;
+    }
+
+    &__footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: @spacing-md;
+      padding-top: @spacing-md;
+      border-top: 1px solid @color-border;
+
+      > span {
+        .text-auxiliary();
+      }
+
+      > div {
+        display: flex;
+        gap: @spacing-sm;
+      }
+    }
+  }
+
+  .perm-group {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: @spacing-md;
+    align-items: center;
+    padding: @spacing-md;
+    background: @color-bg-page;
+    border-radius: @radius-sm;
+
+    &__info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      strong {
+        .text-body-medium();
+      }
+
+      span {
+        .text-auxiliary();
+      }
+    }
+
+    &__items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: @spacing-sm;
+      justify-content: flex-end;
+    }
+  }
+
+  .perm-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-xs @spacing-md;
+    color: @color-text-secondary;
+    background: @color-bg-card;
+    border: 1px solid @color-border;
+    border-radius: @radius-xs;
+    cursor: pointer;
+    .text-body();
+
+    &__dot {
+      width: 6px;
+      height: 6px;
+      border: 1px solid @color-text-secondary;
+      border-radius: @radius-full;
+    }
+
+    &.is-checked {
+      color: @color-primary;
+      background: @color-primary-light;
+      border-color: @color-primary;
+    }
+  }
+}
+
+@media (max-width: 1200px) {
+  .role-manage {
+    grid-template-columns: 1fr;
+
+    .perm-group {
+      grid-template-columns: 1fr;
+
+      &__items {
+        justify-content: flex-start;
+      }
+    }
+  }
+}

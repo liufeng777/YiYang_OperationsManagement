@@ -1,0 +1,89 @@
+.institution-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  /* 指标卡复用公共 .metric-card，此处仅保留页面级差异：Card 自带内边距、标记间距 */
+  .metric-card {
+    padding: 0;
+
+    .metric-card__note {
+      margin-top: @spacing-sm;
+      padding: @spacing-2xs @spacing-xs;
+    }
+  }
+
+  /* 筛选区与列表卡片复用公共类 .filter-bar / .list-card（src/styles/list-page.less） */
+  .list-card {
+    margin-top: 0;
+
+    .ant-table-tbody > tr > td {
+      vertical-align: top;
+    }
+  }
+
+  .institution-cell {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+      font-weight: @font-weight-body-medium;
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  .institution-actions {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+
+    .ant-btn {
+      padding-inline: @spacing-2xs;
+      color: @color-primary;
+    }
+  }
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: @spacing-2xs @spacing-xs;
+  font-size: @font-size-auxiliary;
+  line-height: @line-height-auxiliary;
+  border-radius: @radius-full;
+  white-space: nowrap;
+
+  &__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: @radius-full;
+    background: currentColor;
+  }
+
+  &--sync-synced,
+  &--op-normal {
+    color: @color-primary;
+    background: @color-primary-light;
+  }
+
+  &--sync-updating {
+    color: @color-info;
+    background: fade(@color-info, 12%);
+  }
+
+  &--op-pending {
+    color: darken(@color-warning, 18%);
+    background: fade(@color-warning, 18%);
+  }
+
+  &--op-paused {
+    color: @color-danger;
+    background: fade(@color-danger, 12%);
+  }
+}
