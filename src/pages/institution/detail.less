@@ -1,11 +1,13 @@
 .institution-detail {
   .institution-summary {
     .card-surface();
-    display: grid;
-    grid-template-columns: minmax(220px, 1.2fr) minmax(280px, 1.6fr) minmax(160px, 0.8fr) auto;
-    gap: @spacing-xl;
-    align-items: center;
-    padding: @spacing-lg @spacing-xl;
+    .ant-card-body {
+      display: grid;
+      grid-template-columns: minmax(220px, 1.2fr) minmax(280px, 1.6fr) minmax(160px, 0.8fr) auto;
+      gap: @spacing-xl;
+      align-items: center;
+      padding: @spacing-md @spacing-lg ;
+    }
 
     &__main {
       h3 {
@@ -40,9 +42,12 @@
   }
 
   .detail-tabs-card {
-    .card-surface();
     margin-top: @spacing-md;
-    padding: 0 @spacing-xl;
+    .card-surface();
+    .ant-card-body {
+      padding: 0 @spacing-lg;
+    }
+    
 
     .ant-tabs {
       .ant-tabs-nav {
@@ -64,11 +69,13 @@
   }
 
   .detail-card {
-    .card-surface();
     margin-top: @spacing-md;
-    padding: @spacing-lg @spacing-xl;
-
+    .card-surface();
+    .ant-card-body {
+      padding: @spacing-md @spacing-lg;
+    }
     &__header {
+      height: 24px;
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
@@ -111,15 +118,12 @@
     }
 
     &__title {
+      height: 34px;
       display: flex;
       align-items: center;
       gap: @spacing-md;
       margin-bottom: @spacing-md;
       .text-body-medium();
-
-      &--single {
-        display: block;
-      }
     }
 
     &__grid {
@@ -193,8 +197,9 @@
 
   /* ===== 患者端介绍 ===== */
   .patient-intro {
+    margin-top: @spacing-md;
     display: grid;
-    grid-template-columns: minmax(0, 1.5fr) minmax(360px, 0.9fr);
+    grid-template-columns: minmax(0, 1.6fr) minmax(328px, 0.8fr);
     gap: @spacing-md;
 
     .detail-card {
@@ -244,6 +249,10 @@
     flex-direction: column;
     gap: @spacing-md;
 
+    .require-star {
+      color: @color-danger;
+    }
+
     label {
       display: flex;
       flex-direction: column;
@@ -251,7 +260,7 @@
 
       > span {
         .text-label();
-        color: @color-text-primary;
+        color: @color-text-secondary;
       }
     }
   }
@@ -261,7 +270,11 @@
       display: block;
       margin-bottom: @spacing-xs;
       .text-label();
-      color: @color-text-primary;
+    }
+
+    .intro-tags-list {
+      display: flex;
+      gap: 8px;
     }
 
     .ant-tag {
@@ -320,13 +333,15 @@
 
   .phone {
     width: 100%;
-    max-width: 360px;
+    width: 328px;
+    height: 620px;
     margin: 0 auto;
     overflow: hidden;
     background: @color-bg-card;
     border: 1px solid @color-border;
     border-radius: (@radius-xl + 8px);
     box-shadow: @shadow-card;
+    position: relative;
 
     &__status {
       display: flex;
@@ -463,7 +478,11 @@
     }
 
     &__cta {
+      position: absolute;
       padding: @spacing-md;
+      bottom: 0px;
+      left: 14px;
+      width: 300px;
     }
   }
 }

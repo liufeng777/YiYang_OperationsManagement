@@ -69,11 +69,6 @@ export const routes: RouteConfig[] = [
         component: lazy(() => import('@/pages/institution/list')),
       },
       {
-        path: 'patient-intro',
-        meta: { title: '患者端介绍' },
-        component: lazy(() => import('@/pages/institution/detail')),
-      },
-      {
         path: 'audit',
         meta: { title: '机构审核', hideInMenu: true },
         component: lazy(() => import('@/pages/institution/audit')),
