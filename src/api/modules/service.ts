@@ -7,6 +7,9 @@ export type ServiceMode = '上门' | '到店' | '陪同'
 /** 服务定义状态：on=已启用 draft=草稿 off=已停用 */
 export type ServiceStatus = 'on' | 'draft' | 'off'
 
+/** 计价单位 */
+export type PriceUnit = '次' | '小时' | '天';
+
 /** 服务项目 */
 export interface ServiceItem {
   id: string
@@ -17,7 +20,8 @@ export interface ServiceItem {
   categoryName: string
   mode: ServiceMode
   /** 集团定价（元/次） */
-  price: number
+  price: number;
+  unit: string;
   /** 已接入机构数 */
   institutionCount: number
   /** 累计订单数 */

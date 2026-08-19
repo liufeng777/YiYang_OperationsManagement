@@ -402,7 +402,7 @@ export default function ServicePoolList() {
             </div>
           </Card>
 
-          <Card variant="borderless" className="list-card">
+          <Card variant="borderless" className="list-card" style={{marginTop: 0}}>
             <div className="list-card__header">
               <div>
                 <span className="list-card__header__title">服务项目</span>

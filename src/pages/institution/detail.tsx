@@ -6,7 +6,7 @@
  */
 import { useMemo, useState } from 'react'
 import { Button, Card, Tabs, Tag } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import type { InstitutionDetail, InstitutionService } from '@/api/modules/institution'
@@ -162,7 +162,7 @@ export default function InstitutionDetailPage() {
       title={detail.name}
       description="管理机构基础资料、服务项目与患者端展示介绍"
       extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => {
+        <Button type="primary" icon={<ArrowLeftOutlined />} onClick={() => {
           navigate(`/institution`)
         }}>
           返回机构列表

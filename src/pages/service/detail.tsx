@@ -8,7 +8,7 @@ import { App, Button, Card, Input, Radio, Select, Switch } from 'antd'
 import { ArrowLeftOutlined, CheckOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import type { ServiceDetail, ServiceMode, ServiceStatus } from '@/api/modules/service'
+import type { ServiceDetail, ServiceMode, ServiceStatus, PriceUnit } from '@/api/modules/service'
 import './detail.less'
 
 const detailMocks: Record<string, ServiceDetail> = {
@@ -40,6 +40,12 @@ const modeOptions: Array<{ label: string; value: ServiceMode }> = [
   { label: '上门服务', value: '上门' },
   { label: '到店服务', value: '到店' },
   { label: '陪同服务', value: '陪同' },
+]
+
+const unitOptions: Array<{ label: string; value: PriceUnit }> = [
+  { label: '次', value: '次' },
+  { label: '小时', value: '小时' },
+  { label: '天', value: '天' },
 ]
 
 export default function ServiceEditorPage() {
@@ -91,7 +97,7 @@ export default function ServiceEditorPage() {
       title={pageTitle}
       description="集团统一定义一次，机构选择后继承基础信息与价格；编辑时复用本页面"
       extra={
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/service')}>
+        <Button type="primary" icon={<ArrowLeftOutlined />} onClick={() => navigate('/service')}>
           返回服务池
         </Button>
       }
@@ -104,47 +110,73 @@ export default function ServiceEditorPage() {
               <span>这些字段由集团统一维护，机构不可单独修改</span>
             </div>
             <div className="editor-grid">
-              <label className="editor-grid__full">
-                <span>服务名称 <i>*</i></span>
-                <Input placeholder="例如：上门助浴服务" value={name} onChange={(event) => setName(event.target.value)} />
-              </label>
-              <label>
-                <span>服务编码</span>
-                <Input value={detail?.code ?? '系统自动生成'} disabled />
-                <em>保存后生成唯一编码</em>
-              </label>
-              <label>
-                <span>服务分类 <i>*</i></span>
-                <Select placeholder="请选择服务分类" value={category} onChange={setCategory} options={categoryOptions} />
-              </label>
-              <label>
-                <span>服务方式 <i>*</i></span>
-                <Select value={mode} onChange={setMode} options={modeOptions} />
-              </label>
-              <label>
-                <span>集团定价 <i>*</i></span>
-                <Input value={price} onChange={(event) => setPrice(event.target.value)} />
-              </label>
-              <label>
-                <span>计价单位 <i>*</i></span>
-                <Select
-                  value={unit}
-                  onChange={setUnit}
-                  options={[
-                    { label: '次', value: '次' },
-                    { label: '小时', value: '小时' },
-                    { label: '天', value: '天' },
-                  ]}
-                />
-              </label>
-              <label>
-                <span>服务时长</span>
-                <Input value={duration} onChange={(event) => setDuration(event.target.value)} />
-              </label>
-              <label>
-                <span>适用人群</span>
-                <Input value={audience} onChange={(event) => setAudience(event.target.value)} />
-              </label>
+              <div className="editor-grid__2">
+                <label>
+                  <span>服务名称 <i>*</i></span>
+                  <Input placeholder="例如：上门助浴服务" value={name} onChange={(event) => setName(event.target.value)} />
+                </label>
+                <label>
+                  <span>服务编码</span>
+                  <Input value={detail?.code ?? '系统自动生成'} disabled />
+                  <em>保存后生成唯一编码</em>
+                </label>
+              </div>
+              <div className="editor-grid__4">
+                <label>
+                  <span>服务分类 <i>*</i></span>
+                  <Select placeholder="请选择服务分类" value={category} onChange={setCategory} options={categoryOptions} />
+                </label>
+                <label>
+                  <span>服务方式 <i>*</i></span>
+                  <Select value={mode} onChange={setMode} options={modeOptions} />
+                </label>
+                <label>
+                  <span>参考起售价 <i>*</i></span>
+                  <Input value={price} onChange={(event) => setPrice(event.target.value)} />
+                </label>
+                <label>
+                  <span>计价单位 <i>*</i></span>
+                  <Select
+                    value={unit}
+                    onChange={setUnit}
+                    options={unitOptions}
+                  />
+                </label>
+              </div>
+              <div className="editor-grid__3">
+                <label>
+                  <span>服务时长</span>
+                  <Input value={duration} onChange={(event) => setDuration(event.target.value)} />
+                </label>
+                <label>
+                  <span>适用人群</span>
+                  <Input value={audience} onChange={(event) => setAudience(event.target.value)} />
+                </label>
+                <label>
+                  <span>启用套餐</span>
+                  <Input placeholder='单次、5次、10次' />
+                </label>
+              </div>
+              <div className="editor-grid__3">
+                <label>
+                  <span>是否涉及耗材 <i>*</i></span>
+                  <Select value={'1'} onChange={setCategory} options={[{
+                    label: '是',
+                    value: '1'
+                  }, {
+                    label: '否',
+                    value: '2'
+                  }]} />
+                </label>
+                <label>
+                  <span>耗材规格（条件显示）</span>
+                  <Input placeholder='含耗材/不含耗材' />
+                </label>
+                <label>
+                  <span>标准耗材清单</span>
+                  <Input placeholder='清洁用品、护理垫' />
+                </label>
+              </div>
               <label className="editor-grid__full">
                 <span>列表摘要 <i>*</i></span>
                 <Input
@@ -165,7 +197,7 @@ export default function ServiceEditorPage() {
             <div className="editor-content">
               <div className="editor-upload editor-upload--cover">
                 <span>列表封面 <i>*</i></span>
-                <div>
+                <div className='editor-upload--cover--box'>
                   <PlusOutlined />
                   <p>上传封面</p>
                   <em>建议 1:1</em>
@@ -179,10 +211,10 @@ export default function ServiceEditorPage() {
                   <div className="is-add"><PlusOutlined />添加图片</div>
                 </div>
               </div>
-              <label className="editor-content__textarea">
+              <label className="editor-upload editor-content__textarea">
                 <span>服务内容</span>
                 <Input.TextArea
-                  rows={5}
+                  style={{height: 100}}
                   placeholder="填写服务包含项目、准备事项、服务流程和注意事项……"
                   value={content}
                   onChange={(event) => setContent(event.target.value)}
@@ -250,7 +282,7 @@ export default function ServiceEditorPage() {
               </div>
             </div>
             <div className="service-phone__footer">
-              <span>收藏</span>
+              <Button type="link">收藏</Button>
               <Button type="primary">立即预约</Button>
             </div>
           </div>

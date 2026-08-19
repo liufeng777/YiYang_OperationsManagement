@@ -1,6 +1,6 @@
 .service-editor {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 400px;
+  grid-template-columns: minmax(0, 1fr) 376px;
   gap: @spacing-md;
 
   &__form {
@@ -12,13 +12,16 @@
 
   .editor-card {
     .card-surface();
-    padding: @spacing-lg @spacing-xl;
+    .ant-card-body {
+      padding: @spacing-md @spacing-lg;
+    }
+    
 
     &__header {
       display: flex;
       align-items: baseline;
       gap: @spacing-sm;
-      margin-bottom: @spacing-lg;
+      margin-bottom: @spacing-md;
 
       h3 {
         margin: 0;
@@ -32,10 +35,20 @@
   }
 
   .editor-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: @spacing-md @spacing-lg;
-
+    &__2, &__3, &__4 {
+      display: grid;
+      gap: @spacing-lg;
+      margin-bottom: @spacing-md;
+    }
+    &__2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    &__3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    &__4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
     &__full {
       grid-column: 1 / -1;
     }
@@ -43,7 +56,7 @@
     label {
       display: flex;
       flex-direction: column;
-      gap: @spacing-xs;
+      gap: @spacing-2xs;
 
       > span {
         .text-label();
@@ -63,18 +76,17 @@
   }
 
   .editor-tip {
-    margin-top: @spacing-md;
-    padding: @spacing-sm @spacing-md;
-    color: @color-info;
+    margin-top: 8px;
+    padding: 2px 10px;
+    color: @color-primary-dark;
     font-size: @font-size-auxiliary;
     background: fade(@color-info, 10%);
     border-radius: @radius-sm;
   }
 
   .editor-content {
-    display: grid;
-    grid-template-columns: 220px minmax(0, 1fr) minmax(220px, 0.8fr);
-    gap: @spacing-lg;
+    display: flex;
+    gap: @spacing-md;
 
     label,
     .editor-upload > span {
@@ -88,11 +100,20 @@
         font-style: normal;
       }
     }
+  }
 
-    &__textarea {
-      display: flex;
-      flex-direction: column;
+  // 封面
+  .editor-upload--cover {
+    width: 100px;
+    .editor-upload--cover--box {
+      width: 100px;
+      height: 100px;
     }
+  }
+
+  // 详情图片
+  .editor-upload--detail {
+    flex: 1;
   }
 
   .editor-upload {
@@ -101,7 +122,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 112px;
+      min-height: 100px;
       color: @color-text-secondary;
       background: @color-bg-page;
       border: 1px dashed @color-border;
@@ -118,18 +139,21 @@
     }
 
     &__images {
-      display: grid;
+      display: grid !important;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: @spacing-sm;
-
+      background: transparent !important;
+      border: none !important;
       > div {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-height: 112px;
+        min-height: 100px;
         color: @color-text-secondary;
         border-radius: @radius-sm;
+        background: @color-bg-page;
+        border: 1px dashed @color-border;
         .text-auxiliary();
 
         em {
@@ -151,8 +175,9 @@
     }
 
     &__tip {
-      margin: @spacing-md 0 0;
+      margin: @spacing-xs 0 0;
       .text-auxiliary();
+      text-align: center;
     }
   }
 
@@ -172,10 +197,12 @@
 
   .editor-preview {
     .card-surface();
-    position: sticky;
-    top: @spacing-xl;
-    align-self: start;
-    padding: @spacing-lg @spacing-xl;
+    .ant-card-body {
+      position: sticky;
+      top: @spacing-xl;
+      align-self: start;
+      padding: @spacing-md @spacing-lg;
+    }
   }
 
   .service-phone {
@@ -183,6 +210,8 @@
     background: @color-bg-card;
     border: 1px solid @color-text-primary;
     border-radius: (@radius-xl + 12px);
+    width: 328px;
+    height: 620px;
 
     &__status {
       display: flex;
@@ -309,22 +338,22 @@
       grid-template-columns: 80px 1fr;
       gap: @spacing-sm;
       align-items: center;
-      padding: @spacing-md;
+      padding: 0 @spacing-md;
 
-      span {
-        text-align: center;
-        .text-auxiliary();
-      }
+      // span {
+      //   text-align: center;
+      //   .text-auxiliary();
+      // }
     }
   }
 
   &__footer {
     .card-surface();
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: @spacing-md;
-    padding: @spacing-md @spacing-xl;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: @spacing-md;
+      padding: @spacing-md @spacing-lg;
 
     > span {
       .text-auxiliary();

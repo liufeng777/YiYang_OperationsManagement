@@ -99,7 +99,7 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
       <Card variant="borderless" className="detail-card patient-preview">
         <div className="detail-card__header detail-card__header--compact">
           <h3>患者端实时预览</h3>
-          <Button type="link" style={{fontSize: 12}} icon={<ReloadOutlined />} onClick={() => message.success('预览已刷新')}>
+          <Button type="link" style={{fontSize: 12, height: 24}} icon={<ReloadOutlined />} onClick={() => message.success('预览已刷新')}>
             刷新预览
           </Button>
         </div>

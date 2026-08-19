@@ -7,26 +7,26 @@
 
   .pool-metric {
     .card-surface();
-    padding: @spacing-lg;
-
-    > span {
-      .text-body-medium();
-      color: @color-text-secondary;
-    }
-
-    > div {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      margin-top: @spacing-sm;
-
-      strong {
-        .text-metric();
+    .ant-card-body {
+      padding: @spacing-md;
+      > span {
+        .text-label();
       }
-
-      em {
-        font-style: normal;
-        .text-auxiliary();
+  
+      > div {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        // margin-top: @spacing-sm;
+  
+        strong {
+          .text-metric();
+        }
+  
+        em {
+          font-style: normal;
+          .text-auxiliary();
+        }
       }
     }
   }
@@ -45,8 +45,11 @@
 
   .pool-category {
     .card-surface();
-    align-self: start;
-    padding: @spacing-lg;
+    .ant-card-body {
+      align-self: start;
+      padding: @spacing-md;
+    }
+    
 
     &__header {
       display: flex;
@@ -69,7 +72,8 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: @spacing-sm @spacing-md;
+        height: 38px;
+        padding: 0 @spacing-sm;
         color: @color-text-secondary;
         background: transparent;
         border: 0;
