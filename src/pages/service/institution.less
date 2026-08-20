@@ -1,44 +1,14 @@
 .service-institution {
-  &__card {
-    .card-surface();
-    padding: @spacing-lg;
-
-    h3 {
-      margin: 0;
-      .text-title-card();
-    }
-
-    p {
-      margin: @spacing-2xs 0 @spacing-md;
-      .text-auxiliary();
-    }
-
-    .ant-btn {
-      padding-inline: 0;
-    }
+  .pool-status--1 {
+    color: @color-primary;
+    background: @color-primary-light;
   }
-
-  &__stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: @spacing-sm;
-    margin-bottom: @spacing-md;
-
-    div {
-      display: flex;
-      flex-direction: column;
-      padding: @spacing-sm;
-      background: @color-bg-page;
-      border-radius: @radius-sm;
-
-      span {
-        .text-auxiliary();
-      }
-
-      strong {
-        margin-top: 2px;
-        .text-body-medium();
-      }
-    }
+  .pool-status--2 {
+    color: @color-text-secondary;
+    background: @color-bg-active;
+  }
+  .pool-status--3 {
+    color: @color-danger;
+    background: fade(@color-danger, 12%);
   }
 }
