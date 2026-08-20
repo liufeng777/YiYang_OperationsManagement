@@ -3,8 +3,7 @@
  * 视觉对齐设计稿：左侧基础信息 + 图文正文编辑器，右侧发布设置 + 患者端实时预览
  * 当前为 mock 数据，后端就绪后替换为 contentApi.saveArticle
  */
-import { useState } from 'react'
-import { App, Button, Card, Input, Select, Switch } from 'antd'
+import { App, Button, Card, Form, Input, Select, Switch } from 'antd'
 import {
   BoldOutlined,
   ItalicOutlined,
@@ -25,11 +24,10 @@ export default function ArticleEdit() {
   const params = useParams<{ id: string }>()
   const isEdit = !!params.id && params.id !== 'new'
 
-  const [title, setTitle] = useState(isEdit ? '秋季心脑血管养护：长者要注意这5件事' : '')
-  const [summary, setSummary] = useState('')
-  const [recommended, setRecommended] = useState(true)
+  const [form] = Form.useForm()
+  const watchTitle = Form.useWatch('title', form)
 
-  const displayTitle = title || '秋季心脑血管养护：长者要注意这5件事'
+  const displayTitle = watchTitle || '秋季心脑血管养护：长者要注意这5件事'
 
   return (
     <PageContainer
@@ -39,7 +37,13 @@ export default function ArticleEdit() {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => {
+          onClick={async () => {
+            try {
+              await form.validateFields()
+            } catch {
+              message.warning('请先完善必填项：文章标题、内容分类、内容来源、作者、内容摘要')
+              return
+            }
             message.success(isEdit ? '内容已保存并发布（mock）' : '内容已发布（mock）')
             navigate('/content/article')
           }}
@@ -48,6 +52,18 @@ export default function ArticleEdit() {
         </Button>
       }
     >
+      <Form
+        form={form}
+        layout="vertical"
+        requiredMark={false}
+        initialValues={{
+          title: isEdit ? '秋季心脑血管养护：长者要注意这5件事' : '',
+          category: '健康科普',
+          source: '幸福颐养护理部',
+          recommended: true,
+          publishTime: 'now',
+        }}
+      >
       <div className="article-edit">
         <div className="article-edit__form">
           <Card variant="borderless" className="edit-card">
@@ -56,42 +72,49 @@ export default function ArticleEdit() {
               <span>用于患者端列表与详情展示</span>
             </div>
             <div className="edit-field">
-              <label>
-                文章标题 <i>*</i>
-              </label>
-              <Input
-                placeholder="请输入科普文章标题，建议不超过30字"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-              />
+              <Form.Item
+                name="title"
+                label={<span>文章标题 <i>*</i></span>}
+                rules={[{ required: true, message: '请输入文章标题' }]}
+              >
+                <Input placeholder="请输入科普文章标题，建议不超过30字" />
+              </Form.Item>
             </div>
             <div className="edit-field__row">
               <div className="edit-field">
-                <label>
-                  内容分类 <i>*</i>
-                </label>
-                <Select
-                  defaultValue="健康科普"
-                  options={[
-                    { label: '健康科普', value: '健康科普' },
-                    { label: '慢病管理', value: '慢病管理' },
-                    { label: '居家照护', value: '居家照护' },
-                    { label: '照护指南', value: '照护指南' },
-                    { label: '季节养生', value: '季节养生' },
-                  ]}
-                />
+                <Form.Item
+                  name="category"
+                  label={<span>内容分类 <i>*</i></span>}
+                  rules={[{ required: true, message: '请选择内容分类' }]}
+                >
+                  <Select
+                    options={[
+                      { label: '健康科普', value: '健康科普' },
+                      { label: '慢病管理', value: '慢病管理' },
+                      { label: '居家照护', value: '居家照护' },
+                      { label: '照护指南', value: '照护指南' },
+                      { label: '季节养生', value: '季节养生' },
+                    ]}
+                  />
+                </Form.Item>
               </div>
               <div className="edit-field">
-                <label>
-                  内容来源 <i>*</i>
-                </label>
-                <Input defaultValue="幸福颐养护理部" />
+                <Form.Item
+                  name="source"
+                  label={<span>内容来源 <i>*</i></span>}
+                  rules={[{ required: true, message: '请输入内容来源' }]}
+                >
+                  <Input />
+                </Form.Item>
               </div>
               <div className="edit-field">
-                <label>
-                  作者 <i>*</i>
-                </label>
-                <Input placeholder="请输入作者" />
+                <Form.Item
+                  name="author"
+                  label={<span>作者 <i>*</i></span>}
+                  rules={[{ required: true, message: '请输入作者' }]}
+                >
+                  <Input placeholder="请输入作者" />
+                </Form.Item>
               </div>
               <div className="edit-field">
                 <label>
@@ -103,15 +126,16 @@ export default function ArticleEdit() {
               </div>
             </div>
             <div className="edit-field">
-              <label>
-                内容摘要 <i>*</i>
-              </label>
-              <Input.TextArea
-                rows={2}
-                placeholder="请输入摘要，将展示在患者端分享卡片中"
-                value={summary}
-                onChange={(event) => setSummary(event.target.value)}
-              />
+              <Form.Item
+                name="summary"
+                label={<span>内容摘要 <i>*</i></span>}
+                rules={[{ required: true, message: '请输入内容摘要' }]}
+              >
+                <Input.TextArea
+                  rows={2}
+                  placeholder="请输入摘要，将展示在患者端分享卡片中"
+                />
+              </Form.Item>
             </div>
           </Card>
 
@@ -158,17 +182,20 @@ export default function ArticleEdit() {
             </div>
             <div className="publish-row">
               <span>推荐到患者端首页</span>
-              <Switch checked={recommended} onChange={setRecommended} />
+              <Form.Item name="recommended" valuePropName="checked" noStyle>
+                <Switch />
+              </Form.Item>
             </div>
             <div className="publish-row">
               <span>发布时间</span>
-              <Select
-                defaultValue="now"
-                options={[
-                  { label: '立即发布', value: 'now' },
-                  { label: '定时发布', value: 'scheduled' },
-                ]}
-              />
+              <Form.Item name="publishTime" noStyle>
+                <Select
+                  options={[
+                    { label: '立即发布', value: 'now' },
+                    { label: '定时发布', value: 'scheduled' },
+                  ]}
+                />
+              </Form.Item>
             </div>
             <p className="publish-note">保存草稿不会同步到患者端</p>
             <div className="publish-actions">
@@ -216,6 +243,7 @@ export default function ArticleEdit() {
           </Card>
         </div>
       </div>
+      </Form>
     </PageContainer>
   )
 }

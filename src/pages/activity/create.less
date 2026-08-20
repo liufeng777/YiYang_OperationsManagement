@@ -35,6 +35,33 @@
       }
     }
 
+    /* Form.Item 复刻原 label 排布 */
+    .ant-form-item {
+      margin-bottom: 0;
+
+      .ant-form-item-label {
+        padding-bottom: @spacing-xs;
+
+        > label {
+          height: auto;
+          margin-bottom: 0;
+          .text-label();
+          color: @color-text-primary;
+
+          i {
+            color: @color-danger;
+            font-style: normal;
+          }
+        }
+      }
+
+      .ant-form-item-explain-error {
+        margin-top: 2px;
+        font-size: @font-size-auxiliary;
+        line-height: @line-height-auxiliary;
+      }
+    }
+
     .ant-select {
       width: 100%;
     }

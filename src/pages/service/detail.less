@@ -53,24 +53,33 @@
       grid-column: 1 / -1;
     }
 
-    label {
-      display: flex;
-      flex-direction: column;
-      gap: @spacing-2xs;
+    /* Form.Item 复刻原 label 排布：上方标签 + 控件 + 错误提示 */
+    .ant-form-item {
+      margin-bottom: 0;
 
-      > span {
-        .text-label();
-        color: @color-text-primary;
+      .ant-form-item-label {
+        padding-bottom: @spacing-2xs;
 
-        i {
-          color: @color-danger;
-          font-style: normal;
+        > label {
+          height: auto;
+          .text-label();
+          color: @color-text-primary;
+
+          i {
+            color: @color-danger;
+            font-style: normal;
+          }
         }
       }
 
-      > em {
-        font-style: normal;
+      .ant-form-item-extra {
         .text-auxiliary();
+      }
+
+      .ant-form-item-explain-error {
+        margin-top: 2px;
+        font-size: @font-size-auxiliary;
+        line-height: @line-height-auxiliary;
       }
     }
   }
@@ -88,10 +97,16 @@
     display: flex;
     gap: @spacing-md;
 
-    label,
-    .editor-upload > span {
+    .ant-form-item {
+      margin-bottom: 0;
+    }
+
+    .editor-upload > span,
+    .ant-form-item-label > label {
       display: block;
+      height: auto;
       margin-bottom: @spacing-xs;
+      padding-bottom: 0;
       .text-label();
       color: @color-text-primary;
 
@@ -99,6 +114,10 @@
         color: @color-danger;
         font-style: normal;
       }
+    }
+
+    .ant-form-item-label {
+      padding-bottom: 0;
     }
   }
 

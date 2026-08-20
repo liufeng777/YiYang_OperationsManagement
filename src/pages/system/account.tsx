@@ -4,7 +4,7 @@
  * 当前为 mock 数据，后端就绪后替换为 systemApi.getAccountList / saveAccount
  */
 import { useMemo, useState } from 'react'
-import { App, Button, Card, Drawer, Input, Radio, Select, Switch, Table } from 'antd'
+import { App, Button, Card, Drawer, Form, Input, Radio, Select, Switch, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
@@ -125,11 +125,17 @@ export default function AccountList() {
     login: 'all',
   })
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [formName, setFormName] = useState('')
-  const [formPhone, setFormPhone] = useState('')
-  const [formUsername, setFormUsername] = useState('')
-  const [formRole, setFormRole] = useState('运营人员')
-  const [formEnabled, setFormEnabled] = useState(true)
+
+  interface AccountFormValues {
+    name: string
+    phone: string
+    username: string
+    role: string
+    enabled: boolean
+  }
+
+  const [form] = Form.useForm<AccountFormValues>()
+  const formRole = Form.useWatch('role', form) ?? '运营人员'
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
@@ -173,27 +179,29 @@ export default function AccountList() {
     setDrawerOpen(true)
   }
 
-  const handleCreate = () => {
-    if (!formName.trim() || !formPhone.trim() || !formUsername.trim()) {
-      message.warning('请完整填写姓名、手机号与登录账号')
-      return
+  const handleCreate = async () => {
+    try {
+      const values = await form.validateFields()
+      setData((prev) => [
+        ...prev,
+        {
+          id: `new-${Date.now()}`,
+          username: values.username.trim(),
+          name: values.name.trim(),
+          roleName: values.role,
+          phone: values.phone.trim(),
+          loginType: '账号密码',
+          enabled: values.enabled,
+          lastLoginTime: '—',
+          creator: '陈运营',
+        },
+      ])
+      message.success(`用户 ${values.name.trim()} 已创建（mock）`)
+      form.resetFields()
+      setDrawerOpen(false)
+    } catch {
+      // 校验失败由 Form.Item 就地提示
     }
-    setData((prev) => [
-      ...prev,
-      {
-        id: `new-${Date.now()}`,
-        username: formUsername.trim(),
-        name: formName.trim(),
-        roleName: formRole,
-        phone: formPhone.trim(),
-        loginType: '账号密码',
-        enabled: formEnabled,
-        lastLoginTime: '—',
-        creator: '陈运营',
-      },
-    ])
-    message.success(`用户 ${formName.trim()} 已创建（mock）`)
-    setDrawerOpen(false)
   }
 
   const handleToggle = (record: AccountItem) => {
@@ -368,53 +376,61 @@ export default function AccountList() {
             <strong>权限由所属角色统一决定</strong>
             <p>一期每个用户只分配一个角色，不在用户侧单独配置权限。</p>
           </div>
-          <div className="account-drawer__field">
-            <label>
-              姓名 <i>*</i>
-            </label>
-            <Input
-              placeholder="请输入用户姓名"
-              value={formName}
-              onChange={(event) => setFormName(event.target.value)}
-            />
-          </div>
-          <div className="account-drawer__field">
-            <label>
-              手机号 <i>*</i>
-            </label>
-            <Input
-              placeholder="请输入手机号"
-              value={formPhone}
-              onChange={(event) => setFormPhone(event.target.value)}
-            />
-          </div>
-          <div className="account-drawer__field">
-            <label>
-              登录账号 <i>*</i>
-            </label>
-            <Input
-              placeholder="请输入登录账号"
-              value={formUsername}
-              onChange={(event) => setFormUsername(event.target.value)}
-            />
-          </div>
-          <div className="account-drawer__field">
-            <label>
-              所属角色 <i>*</i>
-            </label>
-            <Select
-              value={formRole}
-              onChange={setFormRole}
-              options={Object.keys(roleSummary).map((name) => ({ label: name, value: name }))}
-            />
-          </div>
-          <div className="account-drawer__field account-drawer__switch">
-            <div>
-              <label>账号状态</label>
-              <span>启用后允许用户登录运营平台</span>
+          <Form
+            form={form}
+            layout="vertical"
+            requiredMark={false}
+            initialValues={{ role: '运营人员', enabled: true }}
+          >
+            <div className="account-drawer__field">
+              <Form.Item
+                name="name"
+                label={<span>姓名 <i>*</i></span>}
+                rules={[{ required: true, message: '请输入用户姓名' }]}
+              >
+                <Input placeholder="请输入用户姓名" />
+              </Form.Item>
             </div>
-            <Switch checked={formEnabled} onChange={setFormEnabled} />
-          </div>
+            <div className="account-drawer__field">
+              <Form.Item
+                name="phone"
+                label={<span>手机号 <i>*</i></span>}
+                rules={[
+                  { required: true, message: '请输入手机号' },
+                  { pattern: /^1\d{10}$/, message: '请输入 11 位手机号' },
+                ]}
+              >
+                <Input placeholder="请输入手机号" />
+              </Form.Item>
+            </div>
+            <div className="account-drawer__field">
+              <Form.Item
+                name="username"
+                label={<span>登录账号 <i>*</i></span>}
+                rules={[{ required: true, message: '请输入登录账号' }]}
+              >
+                <Input placeholder="请输入登录账号" />
+              </Form.Item>
+            </div>
+            <div className="account-drawer__field">
+              <Form.Item
+                name="role"
+                label={<span>所属角色 <i>*</i></span>}
+                rules={[{ required: true, message: '请选择所属角色' }]}
+              >
+                <Select options={Object.keys(roleSummary).map((name) => ({ label: name, value: name }))} />
+              </Form.Item>
+            </div>
+            <div className="account-drawer__field account-drawer__switch">
+              <div>
+                <label>账号状态</label>
+                <span>启用后允许用户登录运营平台</span>
+              </div>
+              <Form.Item name="enabled" valuePropName="checked" noStyle>
+                <Switch />
+              </Form.Item>
+            </div>
+          </Form>
           <div className="account-drawer__summary">
             <strong>{formRole} · 权限摘要</strong>
             <p>{roleSummary[formRole]}</p>

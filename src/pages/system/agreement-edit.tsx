@@ -3,8 +3,7 @@
  * 视觉对齐设计稿：协议基本信息 + 协议正文编辑器，右侧发布设置 + 患者端实时预览
  * 当前为 mock 数据，后端就绪后替换为 systemApi.saveAgreement
  */
-import { useState } from 'react'
-import { App, Button, Card, Input, Select, Switch } from 'antd'
+import { App, Button, Card, Form, Input, Select, Switch } from 'antd'
 import {
   BoldOutlined,
   ItalicOutlined,
@@ -25,10 +24,9 @@ export default function AgreementEdit() {
   const params = useParams<{ id: string }>()
   const isNew = !params.id || params.id === 'new'
 
-  const [name, setName] = useState('幸福颐养隐私政策')
-  const [version] = useState('V1.4')
-  const [changeNote, setChangeNote] = useState('补充健康数据使用范围及授权撤回说明')
-  const [requireReConsent, setRequireReConsent] = useState(true)
+  const [form] = Form.useForm()
+  const name = Form.useWatch('name', form) ?? ''
+  const version = 'V1.4'
 
   return (
     <PageContainer
@@ -38,7 +36,13 @@ export default function AgreementEdit() {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => {
+          onClick={async () => {
+            try {
+              await form.validateFields()
+            } catch {
+              message.warning('请先完善必填项：协议类型、协议名称')
+              return
+            }
             message.success('协议版本已保存并发布，将按生效时间切换（mock）')
             navigate('/system/agreement')
           }}
@@ -47,6 +51,18 @@ export default function AgreementEdit() {
         </Button>
       }
     >
+      <Form
+        form={form}
+        layout="vertical"
+        requiredMark={false}
+        initialValues={{
+          type: '隐私政策',
+          name: '幸福颐养隐私政策',
+          changeNote: '补充健康数据使用范围及授权撤回说明',
+          effectiveTime: '2026-08-15 00:00',
+          requireReConsent: true,
+        }}
+      >
       <div className="agreement-edit">
         <div className="agreement-edit__form">
           <Card variant="borderless" className="edit-card">
@@ -56,24 +72,29 @@ export default function AgreementEdit() {
             </div>
             <div className="edit-field__row">
               <div className="edit-field">
-                <label>
-                  协议类型 <i>*</i>
-                </label>
-                <Select
-                  defaultValue="隐私政策"
-                  options={[
-                    { label: '隐私政策', value: '隐私政策' },
-                    { label: '用户服务协议', value: '用户服务协议' },
-                    { label: '健康数据授权', value: '健康数据授权' },
-                    { label: '家庭信息授权', value: '家庭信息授权' },
-                  ]}
-                />
+                <Form.Item
+                  name="type"
+                  label={<span>协议类型 <i>*</i></span>}
+                  rules={[{ required: true, message: '请选择协议类型' }]}
+                >
+                  <Select
+                    options={[
+                      { label: '隐私政策', value: '隐私政策' },
+                      { label: '用户服务协议', value: '用户服务协议' },
+                      { label: '健康数据授权', value: '健康数据授权' },
+                      { label: '家庭信息授权', value: '家庭信息授权' },
+                    ]}
+                  />
+                </Form.Item>
               </div>
               <div className="edit-field">
-                <label>
-                  协议名称 <i>*</i>
-                </label>
-                <Input value={name} onChange={(event) => setName(event.target.value)} />
+                <Form.Item
+                  name="name"
+                  label={<span>协议名称 <i>*</i></span>}
+                  rules={[{ required: true, message: '请输入协议名称' }]}
+                >
+                  <Input />
+                </Form.Item>
               </div>
               <div className="edit-field">
                 <label>
@@ -83,12 +104,11 @@ export default function AgreementEdit() {
               </div>
             </div>
             <div className="edit-field">
-              <label>版本变更说明</label>
-              <Input
-                placeholder="简要说明本次版本变更内容，将记录在版本历史中"
-                value={changeNote}
-                onChange={(event) => setChangeNote(event.target.value)}
-              />
+              <Form.Item name="changeNote" label="版本变更说明">
+                <Input
+                  placeholder="简要说明本次版本变更内容，将记录在版本历史中"
+                />
+              </Form.Item>
             </div>
           </Card>
 
@@ -138,11 +158,15 @@ export default function AgreementEdit() {
             </div>
             <div className="publish-row">
               <span>生效时间</span>
-              <Input style={{ width: 180 }} defaultValue="2026-08-15 00:00" />
+              <Form.Item name="effectiveTime" noStyle>
+                <Input style={{ width: 180 }} />
+              </Form.Item>
             </div>
             <div className="publish-row">
               <span>生效后要求用户重新同意</span>
-              <Switch checked={requireReConsent} onChange={setRequireReConsent} />
+              <Form.Item name="requireReConsent" valuePropName="checked" noStyle>
+                <Switch />
+              </Form.Item>
             </div>
             <p className="publish-note">仅重大范围变化时开启，避免频繁打断患者使用。</p>
             <div className="publish-actions">
@@ -192,6 +216,7 @@ export default function AgreementEdit() {
           </Card>
         </div>
       </div>
+      </Form>
     </PageContainer>
   )
 }

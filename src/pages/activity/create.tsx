@@ -11,6 +11,7 @@ import {
   Card,
   Checkbox,
   Drawer,
+  Form,
   Input,
   InputNumber,
   Modal,
@@ -50,13 +51,9 @@ export default function ActivityCreate() {
   const params = useParams<{ id: string }>()
   const isEdit = !!params.id && params.id !== 'new'
 
-  const [name, setName] = useState(isEdit ? '秋日康养游园会' : '')
-  const [summary, setSummary] = useState(
-    isEdit ? '健康相伴 · 乐享秋日好时光，五大康养活动亮点等你来体验' : '',
-  )
-  const [notice, setNotice] = useState(
-    isEdit ? '活动免费，报名成功后如需取消请提前 24 小时操作；名额有限，先到先得。' : '',
-  )
+  const [form] = Form.useForm()
+  const name = Form.useWatch('name', form) ?? ''
+  const summary = Form.useWatch('summary', form) ?? ''
   const [institutions, setInstitutions] = useState<ActivityInstitutionConfig[]>(initialInstitutions)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -185,42 +182,56 @@ export default function ActivityCreate() {
         </Button>
       }
     >
+      <Form
+        form={form}
+        layout="vertical"
+        requiredMark={false}
+        initialValues={{
+          name: isEdit ? '秋日康养游园会' : '',
+          type: '社区活动',
+          summary: isEdit ? '健康相伴 · 乐享秋日好时光，五大康养活动亮点等你来体验' : '',
+          signupTime: '2026-08-15 至 09-18',
+          audience: '60 岁以上长者',
+          feeType: 'free',
+          notice: isEdit ? '活动免费，报名成功后如需取消请提前 24 小时操作；名额有限，先到先得。' : '',
+        }}
+      >
       <div className="activity-create">
         <div className="activity-create__form">
           <Card variant="borderless" className="create-card">
             <h3>活动基础信息</h3>
             <div className="create-field">
-              <label>
-                活动名称 <i>*</i>
-              </label>
-              <Input
-                placeholder="请输入活动名称"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
+              <Form.Item
+                name="name"
+                label={<span>活动名称 <i>*</i></span>}
+                rules={[{ required: true, message: '请输入活动名称' }]}
+              >
+                <Input placeholder="请输入活动名称" />
+              </Form.Item>
             </div>
             <div className="create-field">
-              <label>
-                活动类型 <i>*</i>
-              </label>
-              <Select
-                defaultValue="社区活动"
-                options={[
-                  { label: '社区活动', value: '社区活动' },
-                  { label: '康养旅游', value: '康养旅游' },
-                  { label: '健康课堂', value: '健康课堂' },
-                  { label: '健康活动', value: '健康活动' },
-                ]}
-              />
+              <Form.Item
+                name="type"
+                label={<span>活动类型 <i>*</i></span>}
+                rules={[{ required: true, message: '请选择活动类型' }]}
+              >
+                <Select
+                  options={[
+                    { label: '社区活动', value: '社区活动' },
+                    { label: '康养旅游', value: '康养旅游' },
+                    { label: '健康课堂', value: '健康课堂' },
+                    { label: '健康活动', value: '健康活动' },
+                  ]}
+                />
+              </Form.Item>
             </div>
             <div className="create-field">
-              <label>活动摘要</label>
-              <Input.TextArea
-                rows={3}
-                placeholder="一句话介绍活动亮点，将展示在患者端列表"
-                value={summary}
-                onChange={(event) => setSummary(event.target.value)}
-              />
+              <Form.Item name="summary" label="活动摘要">
+                <Input.TextArea
+                  rows={3}
+                  placeholder="一句话介绍活动亮点，将展示在患者端列表"
+                />
+              </Form.Item>
             </div>
             <div className="create-field">
               <label>活动封面</label>
@@ -234,26 +245,32 @@ export default function ActivityCreate() {
           <Card variant="borderless" className="create-card">
             <h3>报名与参与设置</h3>
             <div className="create-field">
-              <label>
-                报名时间 <i>*</i>
-              </label>
-              <Input defaultValue="2026-08-15 至 09-18" />
+              <Form.Item
+                name="signupTime"
+                label={<span>报名时间 <i>*</i></span>}
+                rules={[{ required: true, message: '请输入报名时间' }]}
+              >
+                <Input />
+              </Form.Item>
             </div>
             <div className="create-field">
-              <label>适用人群</label>
-              <Input defaultValue="60 岁以上长者" />
+              <Form.Item name="audience" label="适用人群">
+                <Input />
+              </Form.Item>
             </div>
             <div className="create-field">
-              <label>
-                收费方式 <i>*</i>
-              </label>
-              <Select
-                defaultValue="free"
-                options={[
-                  { label: '免费', value: 'free' },
-                  { label: '付费', value: 'paid' },
-                ]}
-              />
+              <Form.Item
+                name="feeType"
+                label={<span>收费方式 <i>*</i></span>}
+                rules={[{ required: true, message: '请选择收费方式' }]}
+              >
+                <Select
+                  options={[
+                    { label: '免费', value: 'free' },
+                    { label: '付费', value: 'paid' },
+                  ]}
+                />
+              </Form.Item>
             </div>
             <div className="create-config">
               <div className="create-config__bar">
@@ -295,20 +312,25 @@ export default function ActivityCreate() {
 
           <Card variant="borderless" className="create-card create-card--footer">
             <div className="create-field">
-              <label>报名须知与退款规则</label>
-              <Input.TextArea
-                rows={3}
-                placeholder="将展示在患者端报名确认页"
-                value={notice}
-                onChange={(event) => setNotice(event.target.value)}
-              />
+              <Form.Item name="notice" label="报名须知与退款规则">
+                <Input.TextArea
+                  rows={3}
+                  placeholder="将展示在患者端报名确认页"
+                />
+              </Form.Item>
             </div>
             <div className="create-footer">
               <Button onClick={() => message.success('草稿已保存')}>保存草稿</Button>
               <Button onClick={() => setPreviewOpen(true)}>手机预览</Button>
               <Button
                 type="primary"
-                onClick={() => {
+                onClick={async () => {
+                  try {
+                    await form.validateFields()
+                  } catch {
+                    message.warning('请先完善必填项：活动名称、活动类型、报名时间、收费方式')
+                    return
+                  }
                   message.success(isEdit ? '活动已更新并发布' : '活动已发布')
                   navigate('/activity')
                 }}
@@ -326,6 +348,7 @@ export default function ActivityCreate() {
           </Card>
         </div>
       </div>
+      </Form>
 
       <Drawer
         open={drawerOpen}
