@@ -7,11 +7,13 @@ import { Menu } from 'antd'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { buildMenuItems, findOpenKeys } from '@/router/menu'
 import { useAppStore } from '@/store/modules/app'
+import { useNavigationStore } from '@/store/modules/navigation'
 
 export default function SiderMenu() {
   const navigate = useNavigate()
   const location = useLocation()
   const collapsed = useAppStore((state) => state.collapsed)
+  const lastVisited = useNavigationStore((state) => state.lastVisited)
 
   const items = useMemo(() => buildMenuItems(), [])
   const selectedKeys = useMemo(() => {
@@ -28,6 +30,18 @@ export default function SiderMenu() {
   }, [items, location.pathname])
   const openKeys = useMemo(() => findOpenKeys(location.pathname), [location.pathname])
 
+  const handleClick = (key: string) => {
+    // 从其他分区点击一级导航（或其默认页）时，恢复该分区上次浏览的页面；
+    // 分区内部的点击视为显式导航，直接跳转目标
+    const inSection = location.pathname === key || location.pathname.startsWith(`${key}/`)
+    const remembered = lastVisited[key]
+    if (!inSection && remembered && remembered !== key) {
+      navigate(remembered)
+      return
+    }
+    navigate(key)
+  }
+
   return (
     <Menu
       mode="inline"
@@ -35,7 +49,7 @@ export default function SiderMenu() {
       items={items}
       selectedKeys={selectedKeys}
       defaultOpenKeys={openKeys}
-      onClick={({ key }) => navigate(key)}
+      onClick={({ key }) => handleClick(key)}
       style={{ borderInlineEnd: 'none' }}
     />
   )

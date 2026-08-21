@@ -370,6 +370,7 @@ export default function ServicePoolList() {
 
         <div className="service-pool__main">
           <Card variant="borderless" className="pool-category">
+            <div style={{flex: 1}}>
             <div className="pool-category__header">
               <h3>服务分类</h3>
               <Button size="small" icon={<PlusOutlined />} onClick={() => message.info('新增分类开发中')}>
@@ -388,6 +389,7 @@ export default function ServicePoolList() {
                   <em>{item.count}</em>
                 </button>
               ))}
+            </div>
             </div>
             <div className="pool-category__tip">
               <h4>集团服务池定义什么？</h4>

@@ -4,9 +4,9 @@
  * 当前为 mock 数据，后端就绪后替换为 activityApi.getActivityList
  */
 import { useMemo, useState } from 'react'
-import { App, Button, Card, Input, Radio, Select, Table } from 'antd'
+import { App, Button, Card, Input, Radio, Select, Table, Col, Row } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { BarChartOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import type { ActivityItem, ActivityStatus, PublishStatus } from '@/api/modules/activity'
@@ -155,10 +155,10 @@ export default function ActivityList() {
   }, [applied, data, tab])
 
   const metrics = [
-    { key: 'all', label: '全部活动', value: 46, note: '本月新增 8 个' },
-    { key: 'signup', label: '报名中', value: 12, note: '今日新增报名 36 人' },
-    { key: 'ongoing', label: '进行中', value: 5, note: '3 个活动今日开始' },
-    { key: 'pending', label: '待发布', value: 3, note: '1 个待完善承接机构' },
+    { key: 'all', label: '全部活动', value: 46, badge: '本月新增 8 个', tone: 'primary' },
+    { key: 'signup', label: '报名中', value: 12, badge: '今日新增报名 36 人', tone: 'info' },
+    { key: 'ongoing', label: '进行中', value: 5, badge: '3 个活动今日开始', tone: 'warning' },
+    { key: 'pending', label: '待发布', value: 3, badge: '1 个待完善承接机构',tone: 'danger' },
   ]
 
   const applyFilters = () => {
@@ -290,17 +290,25 @@ export default function ActivityList() {
       }
     >
       <div className="activity-list">
-        <div className="activity-list__metrics">
+        <Row gutter={[16, 16]}>
           {metrics.map((metric) => (
-            <Card variant="borderless" className="activity-metric" key={metric.key}>
-              <span>{metric.label}</span>
-              <div>
-                <strong>{metric.value}</strong>
-                <em>{metric.note}</em>
-              </div>
-            </Card>
+            <Col xs={24} sm={12} lg={6} key={metric.key}>
+              <Card variant="borderless" className="metric-card">
+                <div className="metric-card__head">
+                  <span className="metric-card__label">{metric.label}</span>
+                  <i className={`metric-card__icon metric-card__icon--${metric.tone} metric-card__icon--round`}>
+                    <BarChartOutlined />
+                  </i>
+                </div>
+                <div className="metric-card__value">{metric.value}</div>
+                <span className={`metric-card__note metric-card__note--${metric.tone}`}>
+                  {metric.badge}
+                </span>
+              </Card>
+            </Col>
           ))}
-        </div>
+        </Row>
+
 
         <Card variant="borderless" className="filter-bar activity-list__filter">
           <Input

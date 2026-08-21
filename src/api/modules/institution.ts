@@ -49,7 +49,7 @@ export interface InstitutionService {
   configSource: '机构默认' | '单项调整'
   /** 线上履约范围 */
   range: string
-  status: '可预约' | '已下架'
+  status: '可预约' | '待上架' | '已下架'
 }
 
 /** 集团服务池项目 */
@@ -59,7 +59,8 @@ export interface ServicePoolItem {
   name: string
   category: string
   mode: '上门' | '到店'
-  price: number
+  price: number,
+  status: '可预约' | '待上架' | '已下架'
 }
 
 /** 患者端介绍 */

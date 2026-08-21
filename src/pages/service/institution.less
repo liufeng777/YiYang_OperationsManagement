@@ -1,14 +1,187 @@
-.service-institution {
+/**
+ * 机构服务页样式（主从布局：左侧机构面板 + 右侧机构服务表）
+ * 与集团服务池（service-pool 指标卡 + 分类侧栏）视觉区分：
+ * 无指标卡、无分类侧栏，左栏为可选中的机构卡片列表
+ * 服务条目 / 方式胶囊 / 下架弹窗样式复用 list.less（根节点带 .service-pool）
+ */
+
+.inst-service {
+  &__filter {
+    margin-top: @spacing-md;
+  }
+
+  &__main {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: @spacing-md;
+    margin-top: @spacing-md;
+    align-items: start;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: @spacing-xs;
+  }
+
+  &__detail {
+    margin-top: 0;
+  }
+
+  /* ===== 左侧机构面板 ===== */
+  .inst-panel {
+    .card-surface();
+
+    > .ant-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: @spacing-sm;
+      padding: @spacing-md;
+    }
+
+    &__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      h3 {
+        margin: 0;
+        .text-title-card();
+      }
+
+      span {
+        .text-auxiliary();
+      }
+    }
+
+    &__list {
+      display: flex;
+      flex-direction: column;
+      gap: @spacing-xs;
+      max-height: 520px;
+      overflow-y: auto;
+
+      > button {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: @spacing-2xs;
+        padding: @spacing-sm;
+        text-align: left;
+        background: @color-bg-card;
+        border: 1px solid @color-border;
+        border-radius: @radius-md;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+
+        &:hover {
+          border-color: @color-primary;
+        }
+
+        &.is-active {
+          background: @color-primary-light;
+          border-color: @color-primary;
+
+          .inst-panel__name strong {
+            color: @color-primary;
+          }
+        }
+      }
+    }
+
+    &__name {
+      display: flex;
+      align-items: center;
+      gap: @spacing-xs;
+      color: @color-primary;
+
+      strong {
+        .text-body-medium();
+        color: @color-text-primary;
+      }
+    }
+
+    &__addr {
+      .text-auxiliary();
+    }
+
+    &__stats {
+      display: flex;
+      gap: @spacing-sm;
+      margin-top: @spacing-2xs;
+
+      span {
+        display: inline-flex;
+        align-items: center;
+        gap: @spacing-2xs;
+        .text-auxiliary();
+      }
+
+      .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: @radius-full;
+        background: @color-border;
+
+        &--on {
+          background: @color-primary;
+        }
+      }
+    }
+
+    &__orders {
+      .text-auxiliary();
+      color: @color-text-secondary;
+    }
+
+    &__empty {
+      margin: @spacing-md 0;
+      text-align: center;
+      .text-auxiliary();
+    }
+
+    &__tip {
+      padding: @spacing-md;
+      background: fade(@color-info, 8%);
+      border-radius: @radius-sm;
+
+      h4 {
+        margin: 0 0 @spacing-xs;
+        .text-body-medium();
+      }
+
+      p {
+        margin: 0;
+        .text-auxiliary();
+      }
+    }
+  }
+
+  /* ===== 预约状态胶囊（1 可预约 / 2 待上架 / 3 已下架） ===== */
   .pool-status--1 {
     color: @color-primary;
     background: @color-primary-light;
   }
+
   .pool-status--2 {
     color: @color-text-secondary;
     background: @color-bg-active;
   }
+
   .pool-status--3 {
     color: @color-danger;
     background: fade(@color-danger, 12%);
+  }
+}
+
+@media (max-width: 1200px) {
+  .inst-service__main {
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .inst-service__main {
+    grid-template-columns: 1fr;
   }
 }

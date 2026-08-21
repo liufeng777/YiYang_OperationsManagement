@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { useNavigationStore } from './navigation'
 
 /** 用户信息 */
 export interface UserInfo {
@@ -42,7 +43,11 @@ export const useUserStore = create<UserState>()(
           },
         })
       },
-      logout: () => set({ token: '', userInfo: null }),
+      logout: () => {
+        set({ token: '', userInfo: null })
+        // 登出时清空各一级导航的浏览位置记忆
+        useNavigationStore.getState().clearLastVisited()
+      },
     }),
     {
       name: 'yiyang_user',

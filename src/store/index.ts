@@ -5,3 +5,4 @@
 export { useUserStore } from './modules/user'
 export type { UserInfo } from './modules/user'
 export { useAppStore } from './modules/app'
+export { useNavigationStore } from './modules/navigation'

@@ -95,7 +95,7 @@ export default function ServicesTab({
         price: item.price,
         configSource: '机构默认',
         range: '按机构默认配置',
-        status: '可预约',
+        status: '待上架',
       }))
     onServicesChange((prev) => [...prev, ...adding])
     onDrawerOpenChange(false)
@@ -143,20 +143,29 @@ export default function ServicesTab({
       {
         title: '操作',
         key: 'action',
-        width: 150,
+        width: 160,
         render: (_, record) => (
           <div className="service-actions">
             <Button type="link" size="small" onClick={() => message.info('编辑配置开发中')}>
               编辑配置
             </Button>
-            {record.status === '已下架' && (
-              <Button type="link" size="small" danger onClick={() => setDeleting(record)}>
-                删除
+            {record.status === '可预约' ? (
+              <Button type="link" size="small">
+                下架
               </Button>
+            ) : (
+              <>
+                <Button type="link" size="small">
+                  上架
+                </Button>
+                {record.status === '已下架' && <Button type="link" size="small" danger onClick={() => setDeleting(record)}>
+                  删除
+                </Button>}
+              </>
             )}
           </div>
         ),
-      },
+      }
     ],
     [message],
   )
@@ -197,7 +206,7 @@ export default function ServicesTab({
         key: 'selected',
         width: 100,
         render: (_, record) => (selectedServiceIds.includes(record.id) ? '已选择' : '未选择'),
-      },
+      }
     ],
     [selectedServiceIds],
   )
@@ -277,9 +286,6 @@ export default function ServicesTab({
             <h3>机构已添加服务</h3>
             <p>
               共 {services.length} 项 · 上架 {services.filter((item) => item.status === '可预约').length} 项 · 已下架 {services.filter((item) => item.status === '已下架').length} 项 ·
-              <Button type="link" size="small" className="inline-link" onClick={() => navigate('/service')}>
-                上下架请前往服务项目管理
-              </Button>
             </p>
           </div>
           <Button type="primary" onClick={() => onDrawerOpenChange(true)}>

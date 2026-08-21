@@ -7,28 +7,30 @@
 
   .activity-metric {
     .card-surface();
-    padding: @spacing-lg;
-
-    > span {
-      .text-body-medium();
-      color: @color-text-secondary;
-    }
-
-    > div {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      margin-top: @spacing-sm;
-
-      strong {
-        .text-metric();
+    .ant-card-body {
+      padding: @spacing-lg;
+      > span {
+        .text-body-medium();
+        color: @color-text-secondary;
       }
 
-      em {
-        font-style: normal;
-        .text-auxiliary();
+      > div {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-top: @spacing-sm;
+
+        strong {
+          .text-metric();
+        }
+
+        em {
+          font-style: normal;
+          .text-auxiliary();
+        }
       }
     }
+    
   }
 
   /* 筛选区与列表卡片复用公共类 .filter-bar / .list-card（src/styles/list-page.less） */

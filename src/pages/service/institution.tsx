@@ -1,19 +1,55 @@
 /**
  * 服务项目 - 机构服务
- * 按机构维度查看服务接入情况，并跳转机构详情维护单项配置
+ * 以机构为主体的主从视图：左侧选择机构，右侧维护该机构已接入服务的预约状态
+ * 与集团服务池（服务定义视角）区分：本页不维护服务定义与分类，仅做跨机构状态运营
+ * 当前为 mock 数据，后端就绪后替换为 serviceApi 的机构服务接口
  */
-import { useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { Key } from 'react'
-import { Button, Card, Input, Modal, message, Select, Table } from 'antd'
+import { App, Button, Card, Input, Modal, Select, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { ArrowRightOutlined, BankOutlined, SearchOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import PageContainer from '@/components/PageContainer';
-import type { ServiceItem, ServiceMode, ServiceStatus } from '@/api/modules/service'
-import './institution.less';
+import PageContainer from '@/components/PageContainer'
+import type { ServiceMode } from '@/api/modules/service'
 import './list.less'
+import './institution.less'
 
-const statusText: Record<number, string> = {
+/** 预约状态：1 可预约 / 2 待上架 / 3 已下架 */
+type BookingStatus = 1 | 2 | 3
+
+interface InstitutionService {
+  id: string
+  code: string
+  name: string
+  categoryName: string
+  mode: ServiceMode
+  price: number
+  dailyCapacity: string
+  orderCount: number
+  status: BookingStatus
+}
+
+interface InstitutionEntry {
+  id: string
+  name: string
+  address: string
+  services: InstitutionService[]
+}
+
+interface ServiceFilters {
+  keyword: string
+  mode: ServiceMode | 'all'
+  status: BookingStatus | 0
+}
+
+interface OfflineTarget {
+  ids: string[]
+  title: string
+  code?: string
+}
+
+const statusText: Record<BookingStatus, string> = {
   1: '可预约',
   2: '待上架',
   3: '已下架',
@@ -25,161 +61,105 @@ const modeClass: Record<ServiceMode, string> = {
   陪同: 'accompany',
 }
 
-const institutionOptions = [
-  { label: '全部机构', value: 'all' },
-  { label: '幸福里健康驿站', value: '幸福里健康驿站' },
-  { label: '康乐护理院', value: '康乐护理院' },
-  { label: '怡康护理院', value: '怡康护理院' },
-  { label: '长青健康驿站', value: '长青健康驿站' },
-  { label: '和悦护理院', value: '和悦护理院' },
-  { label: '新赏护理院', value: '新赏护理院' },
-]
-
-const categories = [
-  { name: '全部服务', count: 128 },
-  { name: '生活照护', count: 38 },
-  { name: '康复护理', count: 30 },
-  { name: '健康管理', count: 24 },
-  { name: '居家安全', count: 16 },
-  { name: '陪诊出行', count: 20 },
-]
-
-interface ServiceFilters {
-  keyword: string
-  institution: string | 'all'
-  mode: ServiceMode | 'all'
-  status: number | 0
-}
-
-interface OfflineTarget {
-  ids: string[]
-  title: string
-  code?: string
-}
-
-const mockServices: any[] = [
+const mockInstitutions: InstitutionEntry[] = [
   {
-    id: '1',
-    code: 'FW0001',
-    name: '上门助浴服务',
-    institution: '幸福里健康驿站',
-    address: '拱墅区·申花街道',
-    categoryId: 'c1',
-    categoryName: '生活照护',
-    mode: '上门',
-    price: 168,
-    dailyCapacity: '8单/日',
-    orderCount: 326,
-    status: 1,
-    description: '专业护理人员上门提供安全、舒适的助浴服务',
+    id: 'i1',
+    name: '幸福里健康驿站',
+    address: '拱墅区 · 申花街道',
+    services: [
+      { id: 's1', code: 'FW0001', name: '上门助浴服务', categoryName: '生活照护', mode: '上门', price: 168, dailyCapacity: '8 单/日', orderCount: 126, status: 1 },
+      { id: 's2', code: 'FW0004', name: '慢病健康随访', categoryName: '健康管理', mode: '上门', price: 69, dailyCapacity: '12 单/日', orderCount: 54, status: 1 },
+      { id: 's3', code: 'FW0007', name: '康复评定', categoryName: '康复护理', mode: '到店', price: 120, dailyCapacity: '6 单/日', orderCount: 18, status: 2 },
+    ],
   },
   {
-    id: '2',
-    code: 'FW0002',
-    name: '居家护理服务',
-    institution: '康乐护理院',
-    address: '西湖区·古荡街道',
-    categoryId: 'c1',
-    categoryName: '生活照护',
-    mode: '上门',
-    price: 198,
-    dailyCapacity: '6单/日',
-    orderCount: 156,
-    status: 1,
+    id: 'i2',
+    name: '康乐护理院',
+    address: '西湖区 · 古荡街道',
+    services: [
+      { id: 's4', code: 'FW0002', name: '居家护理服务', categoryName: '生活照护', mode: '上门', price: 198, dailyCapacity: '10 单/日', orderCount: 98, status: 1 },
+      { id: 's5', code: 'FW0008', name: '压疮护理', categoryName: '康复护理', mode: '上门', price: 150, dailyCapacity: '4 单/日', orderCount: 22, status: 1 },
+    ],
   },
   {
-    id: '3',
-    code: 'FW0003',
-    name: '术后康复训练',
-    institution: '怡康护理院',
-    address: '上城区·笕桥街道',
-    categoryId: 'c2',
-    categoryName: '康复护理',
-    mode: '到店',
-    price: 128,
-    dailyCapacity: '12单/日',
-    orderCount: 98,
-    status: 1,
+    id: 'i3',
+    name: '怡康护理院',
+    address: '上城区 · 笕桥街道',
+    services: [
+      { id: 's6', code: 'FW0003', name: '术后康复训练', categoryName: '康复护理', mode: '到店', price: 128, dailyCapacity: '6 单/日', orderCount: 76, status: 1 },
+      { id: 's7', code: 'FW0009', name: '中医理疗', categoryName: '健康管理', mode: '到店', price: 88, dailyCapacity: '10 单/日', orderCount: 41, status: 3 },
+    ],
   },
   {
-    id: '4',
-    code: 'FW0004',
-    name: '慢病健康随访',
-    institution: '长青健康驿站',
-    address: '滨江区·长河街道',
-    categoryId: 'c3',
-    categoryName: '健康管理',
-    mode: '上门',
-    price: 69,
-    dailyCapacity: '5单/日',
-    orderCount: 288,
-    status: 1,
+    id: 'i4',
+    name: '长青健康驿站',
+    address: '滨江区 · 长河街道',
+    services: [
+      { id: 's8', code: 'FW0005', name: '居家安全评估', categoryName: '居家安全', mode: '上门', price: 99, dailyCapacity: '5 单/日', orderCount: 21, status: 2 },
+      { id: 's9', code: 'FW0004', name: '慢病健康随访', categoryName: '健康管理', mode: '上门', price: 69, dailyCapacity: '8 单/日', orderCount: 63, status: 1 },
+    ],
   },
   {
-    id: '5',
-    code: 'FW0005',
-    name: '居家安全评估',
-    institution: '和悦护理院',
-    address: '萧山区·北干街道',
-    categoryId: 'c4',
-    categoryName: '居家安全',
-    mode: '上门',
-    price: 99,
-    dailyCapacity: '7单/日',
-    orderCount: 36,
-    status: 2,
+    id: 'i5',
+    name: '和悦护理院',
+    address: '萧山区 · 北干街道',
+    services: [
+      { id: 's10', code: 'FW0006', name: '全程陪诊服务', categoryName: '陪诊出行', mode: '陪同', price: 268, dailyCapacity: '8 单/日', orderCount: 42, status: 3 },
+    ],
   },
   {
-    id: '6',
-    code: 'FW0006',
-    name: '全程陪诊服务',
-    institution: '新赏护理院',
-    address: '萧山区·新街街道',
-    categoryId: 'c5',
-    categoryName: '陪诊出行',
-    mode: '陪同',
-    price: 268,
-    dailyCapacity: '8单/日',
-    orderCount: 64,
-    status: 3,
+    id: 'i6',
+    name: '新赏护理院',
+    address: '萧山区 · 新街街道',
+    services: [
+      { id: 's11', code: 'FW0001', name: '上门助浴服务', categoryName: '生活照护', mode: '上门', price: 168, dailyCapacity: '6 单/日', orderCount: 35, status: 1 },
+      { id: 's12', code: 'FW0010', name: '就医陪同（半天）', categoryName: '陪诊出行', mode: '陪同', price: 158, dailyCapacity: '4 单/日', orderCount: 12, status: 2 },
+    ],
   },
 ]
+
+const countByStatus = (services: InstitutionService[], status: BookingStatus) =>
+  services.filter((item) => item.status === status).length
 
 export default function ServiceInstitutionPage() {
+  const { message } = App.useApp()
   const navigate = useNavigate()
-  const [data, setData] = useState(mockServices)
+  const [data, setData] = useState(mockInstitutions)
+  const [instKeyword, setInstKeyword] = useState('')
+  const [selectedId, setSelectedId] = useState(mockInstitutions[0].id)
   const [keyword, setKeyword] = useState('')
-  const [institution, setInstitution] = useState('all')
   const [mode, setMode] = useState<ServiceMode | 'all'>('all')
-  const [status, setStatus] = useState<ServiceStatus | 'all'>('all')
-  const [category, setCategory] = useState('')
-  const [applied, setApplied] = useState<ServiceFilters>({
-    keyword: '',
-    institution: 'all',
-    mode: 'all',
-    status: 0,
-  })
+  const [status, setStatus] = useState<BookingStatus | 0>(0)
+  const [applied, setApplied] = useState<ServiceFilters>({ keyword: '', mode: 'all', status: 0 })
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
   const [offlineTarget, setOfflineTarget] = useState<OfflineTarget | null>(null)
   const [offlineReason, setOfflineReason] = useState('')
 
-  const filteredData = useMemo(() => {
-    return data.filter((item) => {
+  const visibleInstitutions = useMemo(
+    () => data.filter((item) => !instKeyword.trim() || item.name.includes(instKeyword.trim())),
+    [data, instKeyword],
+  )
+
+  const current = useMemo(
+    () => data.find((item) => item.id === selectedId) ?? data[0],
+    [data, selectedId],
+  )
+
+  const filteredServices = useMemo(() => {
+    return current.services.filter((item) => {
       const keywordHit =
         !applied.keyword ||
         item.name.includes(applied.keyword) ||
         item.code.toLowerCase().includes(applied.keyword.toLowerCase())
-      const categoryHit = applied.institution === 'all' || item.institution === applied.institution
       const modeHit = applied.mode === 'all' || item.mode === applied.mode
       const statusHit = applied.status === 0 || item.status === applied.status
-      return keywordHit && categoryHit && modeHit && statusHit
+      return keywordHit && modeHit && statusHit
     })
-  }, [applied, data])
+  }, [applied, current])
 
   const applyFilters = (next?: Partial<ServiceFilters>) => {
     setApplied({
       keyword: (next?.keyword ?? keyword).trim(),
-      institution: next?.institution || 'all',
       mode: next?.mode ?? mode,
       status: next?.status ?? status,
     })
@@ -187,34 +167,65 @@ export default function ServiceInstitutionPage() {
 
   const handleReset = () => {
     setKeyword('')
-    setInstitution('all')
     setMode('all')
-    setStatus('all')
-    setApplied({ keyword: '', institution: 'all', mode: 'all', status: 0 })
+    setStatus(0)
+    setApplied({ keyword: '', mode: 'all', status: 0 })
   }
 
-  const handleCategoryClick = (name: string) => {
-    setCategory(name)
+  const handleSelectInstitution = (id: string) => {
+    setSelectedId(id)
+    setSelectedRowKeys([])
   }
 
-  const openOfflineModal = (record: ServiceItem) => {
+  /** 更新当前机构内指定服务的状态 */
+  const patchServiceStatus = (ids: string[], nextStatus: BookingStatus) => {
+    setData((prev) =>
+      prev.map((inst) =>
+        inst.id === current.id
+          ? {
+              ...inst,
+              services: inst.services.map((svc) =>
+                ids.includes(svc.id) ? { ...svc, status: nextStatus } : svc,
+              ),
+            }
+          : inst,
+      ),
+    )
+  }
+
+  const handleEnable = (record: InstitutionService) => {
+    patchServiceStatus([record.id], 1)
+    message.success(`「${record.name}」已上架，用户端恢复预约`)
+  }
+
+  const handleBatchEnable = () => {
+    const ids = current.services
+      .filter((item) => selectedRowKeys.includes(item.id) && item.status !== 1)
+      .map((item) => item.id)
+    if (!ids.length) {
+      message.warning('请勾选待上架或已下架的服务')
+      return
+    }
+    patchServiceStatus(ids, 1)
+    setSelectedRowKeys([])
+    message.success(`已批量上架 ${ids.length} 项服务`)
+  }
+
+  const openOfflineModal = (record: InstitutionService) => {
     setOfflineReason('')
-    setOfflineTarget({ ids: [record.id], title: `集团服务池 · ${record.name}`, code: record.code })
+    setOfflineTarget({ ids: [record.id], title: record.name, code: record.code })
   }
 
   const openBatchOfflineModal = () => {
-    const ids = data.filter((item) => selectedRowKeys.includes(item.id) && item.status === 'on').map((item) => item.id)
+    const ids = current.services
+      .filter((item) => selectedRowKeys.includes(item.id) && item.status === 1)
+      .map((item) => item.id)
     if (!ids.length) {
-      message.warning('请选择可停用的已启用服务')
+      message.warning('请勾选可预约状态的服务')
       return
     }
     setOfflineReason('')
-    setOfflineTarget({ ids, title: `批量停用 ${ids.length} 项服务` })
-  }
-
-  const handleEnable = (record: ServiceItem) => {
-    setData((prev) => prev.map((item) => (item.id === record.id ? { ...item, status: 'on' } : item)))
-    message.success(`${record.name} 已启用`)
+    setOfflineTarget({ ids, title: `批量下架 ${ids.length} 项服务` })
   }
 
   const handleConfirmOffline = () => {
@@ -223,13 +234,13 @@ export default function ServiceInstitutionPage() {
       message.warning('请填写下架原因，至少 5 个字')
       return
     }
-    setData((prev) => prev.map((item) => (offlineTarget.ids.includes(item.id) ? { ...item, status: 'off' } : item)))
-    message.success(`已停用 ${offlineTarget.ids.length} 项服务`)
+    patchServiceStatus(offlineTarget.ids, 3)
+    message.success(`已下架 ${offlineTarget.ids.length} 项服务`)
     setOfflineTarget(null)
     setSelectedRowKeys([])
   }
 
-  const columns = useMemo<ColumnsType<any>>(
+  const columns = useMemo<ColumnsType<InstitutionService>>(
     () => [
       {
         title: '服务项目',
@@ -245,22 +256,10 @@ export default function ServiceInstitutionPage() {
         ),
       },
       {
-        title: '服务机构',
-        key: 'institution',
-        render: (_, record) => (
-          <div className="pool-service">
-            <div>
-              <strong>{record.institution}</strong>
-              <span>{record.address}</span>
-            </div>
-          </div>
-        ),
-      },
-      {
         title: '服务方式',
         dataIndex: 'mode',
         key: 'mode',
-        width: 110,
+        width: 100,
         render: (value: ServiceMode) => <span className={`mode-pill mode-pill--${modeClass[value]}`}>{value}</span>,
       },
       {
@@ -272,28 +271,34 @@ export default function ServiceInstitutionPage() {
       },
       {
         title: '日容量',
+        dataIndex: 'dailyCapacity',
         key: 'dailyCapacity',
-        width: 120,
+        width: 110,
       },
       {
         title: '近30日订单',
+        dataIndex: 'orderCount',
         key: 'orderCount',
-        width: 120,
+        width: 110,
       },
       {
         title: '预约状态',
         dataIndex: 'status',
         key: 'status',
         width: 100,
-        render: (value: ServiceStatus) => <span className={`pool-status pool-status--${value}`}>{statusText[value]}</span>,
+        render: (value: BookingStatus) => <span className={`pool-status pool-status--${value}`}>{statusText[value]}</span>,
       },
       {
         title: '操作',
         key: 'action',
-        width: 120,
+        width: 130,
         render: (_, record) => (
           <div className="pool-actions">
-            <Button type="link" size="small" onClick={() => navigate(`/service/detail/${record.id}`)}>
+            <Button
+              type="link"
+              size="small"
+              onClick={() => navigate(`/institution/detail/${current.id}?tab=services`)}
+            >
               查看
             </Button>
             {record.status === 1 ? (
@@ -309,21 +314,22 @@ export default function ServiceInstitutionPage() {
         ),
       },
     ],
-    [message, navigate],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [current.id, navigate],
   )
 
   return (
     <PageContainer
-      title="集团服务池"
-      description="统一定义服务基础信息与集团定价，机构从服务池选择项目后再配置线上履约规则"
+      title="机构服务"
+      description="以机构为主体管理已接入的服务项目；选择左侧机构后查看其服务，并进行上架 / 下架运营"
       extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/service/detail/new')}>
-          批量上架
+        <Button type="primary" onClick={() => navigate('/service')}>
+          进入集团服务池
         </Button>
       }
     >
-      <div className="service-pool service-institution">
-        <Card variant="borderless" className="filter-bar service-pool__filter">
+      <div className="service-pool inst-service">
+        <Card variant="borderless" className="filter-bar inst-service__filter">
           <Input
             allowClear
             prefix={<SearchOutlined />}
@@ -331,14 +337,6 @@ export default function ServiceInstitutionPage() {
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             onPressEnter={() => applyFilters()}
-          />
-          <Select
-            value={institution}
-            onChange={(value) => {
-              setInstitution(value)
-              applyFilters({ institution: value })
-            }}
-            options={institutionOptions}
           />
           <Select
             value={mode}
@@ -360,7 +358,8 @@ export default function ServiceInstitutionPage() {
               applyFilters({ status: value })
             }}
             options={[
-              { label: '全部上架 / 预约状态', value: 1 },
+              { label: '全部预约状态', value: 0 },
+              { label: '可预约', value: 1 },
               { label: '待上架', value: 2 },
               { label: '已下架', value: 3 },
             ]}
@@ -369,48 +368,81 @@ export default function ServiceInstitutionPage() {
           <Button onClick={handleReset}>重置</Button>
         </Card>
 
-        <div className="service-pool__main">
-          <Card variant="borderless" className="pool-category">
-            <div className="pool-category__header">
-              <h3>服务分类</h3>
-              <Button size="small" icon={<PlusOutlined />} onClick={() => message.info('新增分类开发中')}>
-                新增分类
-              </Button>
+        <div className="inst-service__main">
+          <Card variant="borderless" className="inst-panel">
+            <div className="inst-panel__header">
+              <h3>机构列表</h3>
+              <span>{data.length} 家</span>
             </div>
-            <div className="pool-category__list">
-              {categories.map((item) => (
-                <button
-                  type="button"
-                  key={item.name}
-                  className={category === item.name ? 'is-active' : ''}
-                  onClick={() => handleCategoryClick(item.name)}
-                >
-                  <span>{item.name}</span>
-                  <em>{item.count}</em>
-                </button>
-              ))}
+            <Input
+              allowClear
+              prefix={<SearchOutlined />}
+              placeholder="搜索机构名称"
+              value={instKeyword}
+              onChange={(event) => setInstKeyword(event.target.value)}
+            />
+            <div className="inst-panel__list">
+              {visibleInstitutions.map((inst) => {
+                const orderTotal = inst.services.reduce((sum, svc) => sum + svc.orderCount, 0)
+                return (
+                  <button
+                    type="button"
+                    key={inst.id}
+                    className={inst.id === current.id ? 'is-active' : ''}
+                    onClick={() => handleSelectInstitution(inst.id)}
+                  >
+                    <div className="inst-panel__name">
+                      <BankOutlined />
+                      <strong>{inst.name}</strong>
+                    </div>
+                    <span className="inst-panel__addr">{inst.address}</span>
+                    <div className="inst-panel__stats">
+                      <span><i className="dot dot--on" />可预约 {countByStatus(inst.services, 1)}</span>
+                      <span>待上架 {countByStatus(inst.services, 2)}</span>
+                      <span>已下架 {countByStatus(inst.services, 3)}</span>
+                    </div>
+                    <span className="inst-panel__orders">近30日订单 {orderTotal}</span>
+                  </button>
+                )
+              })}
+              {!visibleInstitutions.length && (
+                <p className="inst-panel__empty">未找到匹配机构</p>
+              )}
             </div>
-            <div className="pool-category__tip">
-              <h4>分类维护说明</h4>
-              <p>服务项目由集团统一维护；机构添加服务与默认配置在机构管理中完成，本页仅负责跨机构上架/下架。</p>
+            <div className="inst-panel__tip">
+              <h4>页面职责说明</h4>
+              <p>服务定义由集团服务池统一维护；机构添加服务在「机构管理」中完成，本页仅负责跨机构的上架 / 下架运营。</p>
             </div>
           </Card>
 
-          <Card variant="borderless" className="list-card" style={{marginTop: 0}}>
+          <Card variant="borderless" className="list-card inst-service__detail">
             <div className="list-card__header">
               <div>
-                <span className="list-card__header__title">服务项目</span>
-                <span className="list-card__header__tips">共 128 项 · 机构添加时继承集团基础信息与价格</span>
+                <span className="list-card__header__title">{current.name}</span>
+                <span className="list-card__header__tips">
+                  {current.address} · 已接入 {current.services.length} 项服务
+                </span>
               </div>
-              <Button onClick={openBatchOfflineModal}>批量停用</Button>
+              <div className="inst-service__actions">
+                <Button
+                  type="link"
+                  className="list-card__header__link"
+                  onClick={() => navigate(`/institution/detail/${current.id}?tab=services`)}
+                >
+                  进入机构详情
+                  <ArrowRightOutlined />
+                </Button>
+                <Button onClick={handleBatchEnable}>批量上架</Button>
+                <Button onClick={openBatchOfflineModal}>批量下架</Button>
+              </div>
             </div>
-            <Table<ServiceItem>
+            <Table<InstitutionService>
               size="small"
               rowKey="id"
               columns={columns}
-              dataSource={filteredData}
+              dataSource={filteredServices}
               rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
-              pagination={{ total: 128, pageSize: 6, current: 1, showSizeChanger: false }}
+              pagination={false}
             />
           </Card>
         </div>
@@ -436,7 +468,7 @@ export default function ServiceInstitutionPage() {
               <p>已产生的预约订单不受影响，仍按原履约流程处理。</p>
             </div>
             <div className="offline-modal__service">
-              <span>{offlineTarget.title}</span>
+              <span>{current.name} · {offlineTarget.title}</span>
               <span>{offlineTarget.code ?? `${offlineTarget.ids.length} 项`}</span>
             </div>
             <div className="offline-modal__reason">

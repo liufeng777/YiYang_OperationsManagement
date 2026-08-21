@@ -44,11 +44,15 @@
   }
 
   .pool-category {
-    position: relative;
     .card-surface();
     .ant-card-body {
+      height: 100%;
       align-self: start;
       padding: @spacing-md;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: @spacing-sm;
     }
     
 
@@ -65,6 +69,8 @@
     }
 
     &__list {
+      max-height: 520px;
+      overflow: auto;
       display: flex;
       flex-direction: column;
       gap: @spacing-2xs;
@@ -114,11 +120,8 @@
     }
 
     &__tip {
-      position: absolute;
-      bottom: 16px;
-      left: 16px;
-      width: calc(100% - 32px);
-      padding: @spacing-md;
+      height: 208px;
+      padding: @spacing-sm;
       background: fade(@color-info, 8%);
       border-radius: @radius-sm;
 
