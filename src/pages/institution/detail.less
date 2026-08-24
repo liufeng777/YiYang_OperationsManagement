@@ -293,6 +293,12 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: @spacing-md;
 
+    /* Upload 包装层不参与布局 */
+    .ant-upload-wrapper,
+    .ant-upload-select {
+      display: contents;
+    }
+
     &__item {
       display: flex;
       flex-direction: column;
@@ -304,6 +310,7 @@
       background: fade(@color-info, 8%);
       border: 1px dashed @color-border;
       border-radius: @radius-sm;
+      cursor: pointer;
 
       &--cover {
         background: fade(@color-info, 12%);
@@ -315,6 +322,22 @@
 
       &--muted {
         background: @color-bg-active;
+        cursor: default;
+      }
+
+      /* 已上传图片：铺满图块 */
+      &.has-image {
+        position: relative;
+        overflow: hidden;
+        border-style: solid;
+
+        img {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
       }
     }
 

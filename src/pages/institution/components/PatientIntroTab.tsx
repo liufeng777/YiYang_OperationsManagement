@@ -5,7 +5,7 @@
  * 注：父级通过 key={detail.id} 重挂载本组件以切换机构时重置表单
  */
 import { useState } from 'react'
-import { App, Button, Card, Input, Switch, Tag } from 'antd'
+import { App, Button, Card, Input, Switch, Tag, Upload } from 'antd'
 import { PhoneOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import type { InstitutionDetail } from '@/api/modules/institution'
 
@@ -20,6 +20,21 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
   const [introDesc, setIntroDesc] = useState(detail.intro.description)
   const [introTags, setIntroTags] = useState<string[]>(detail.intro.tags)
   const [introVisible, setIntroVisible] = useState(detail.intro.visible)
+  const [introCover, setIntroCover] = useState<string | null>(null)
+  const [envPhotos, setEnvPhotos] = useState<string[]>([])
+
+  /** 本地图片选择：拦截真实上传，生成预览地址（接后端后替换为上传接口） */
+  const pickCover = (file: File) => {
+    setIntroCover(URL.createObjectURL(file))
+    message.success('机构封面已上传（本地预览）')
+    return false
+  }
+
+  const pickEnvPhoto = (file: File) => {
+    setEnvPhotos((prev) => (prev.length >= 8 ? prev : [...prev, URL.createObjectURL(file)]))
+    message.success('环境照片已添加（本地预览）')
+    return false
+  }
 
   return (
     <div className="patient-intro">
@@ -74,20 +89,32 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
               </div>
             </div>
             <div className="intro-photos">
-              <div className="intro-photos__item intro-photos__item--cover">
-                <PlusOutlined />
-                <span>上传机构封面</span>
-              </div>
-              <div className="intro-photos__item">
-                <PlusOutlined />
-                <span>添加环境照片</span>
-              </div>
-              <div className="intro-photos__item intro-photos__item--warm">
-                <PlusOutlined />
-                <span>添加环境照片</span>
-              </div>
+              <Upload accept="image/*" showUploadList={false} beforeUpload={pickCover}>
+                <div className={`intro-photos__item intro-photos__item--cover${introCover ? ' has-image' : ''}`}>
+                  {introCover ? (
+                    <img src={introCover} alt="机构封面" />
+                  ) : (
+                    <>
+                      <PlusOutlined />
+                      <span>上传机构封面</span>
+                    </>
+                  )}
+                </div>
+              </Upload>
+              {envPhotos.map((url, index) => (
+                <div className="intro-photos__item has-image" key={url}>
+                  <img src={url} alt={`环境照片 ${index + 1}`} />
+                </div>
+              ))}
+              {envPhotos.length < 8 && (
+                <Upload accept="image/*" showUploadList={false} multiple beforeUpload={pickEnvPhoto}>
+                  <div className="intro-photos__item">
+                    <PlusOutlined />
+                    <span>添加环境照片</span>
+                  </div>
+                </Upload>
+              )}
               <div className="intro-photos__item intro-photos__item--muted">
-                <PlusOutlined />
                 <span>最多9张</span>
               </div>
             </div>

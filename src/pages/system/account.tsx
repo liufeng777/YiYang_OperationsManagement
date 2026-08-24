@@ -171,11 +171,7 @@ export default function AccountList() {
   }
 
   const openDrawer = () => {
-    setFormName('')
-    setFormPhone('')
-    setFormUsername('')
-    setFormRole('运营人员')
-    setFormEnabled(true)
+    form.resetFields()
     setDrawerOpen(true)
   }
 

@@ -1,0 +1,136 @@
+/**
+ * 可拖拽排序图片网格样式
+ * 操作按钮悬浮在缩略图底部，半透明深色背景；拖起半透明、落点品牌色描边
+ */
+
+.image-sort-grid {
+  display: grid;
+  gap: @spacing-sm;
+
+  /* Upload 包装层不参与布局，让内部按钮直接成为网格/弹性子项 */
+  .ant-upload-wrapper,
+  .ant-upload-select {
+    display: contents;
+  }
+
+  &--fluid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* 固定小图块：用于与封面框保持同尺寸的场景 */
+  &--fixed {
+    grid-template-columns: repeat(auto-fill, 132px);
+  }
+
+  &__tile {
+    position: relative;
+    border: 1px solid @color-border;
+    border-radius: @radius-sm;
+    overflow: hidden;
+    cursor: grab;
+    transition: border-color 0.2s, opacity 0.2s, box-shadow 0.2s;
+
+    &.is-dragging {
+      opacity: 0.4;
+    }
+
+    &.is-over {
+      border-color: @color-primary;
+      box-shadow: inset 0 0 0 1px @color-primary;
+    }
+  }
+
+  &__thumb {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: @spacing-2xs;
+    height: 110px;
+
+    img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    span {
+      .text-body-medium();
+    }
+
+    em {
+      font-style: normal;
+      .text-auxiliary();
+    }
+
+    &--green {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--blue {
+      color: @color-info;
+      background: fade(@color-info, 10%);
+    }
+
+    &--warm {
+      color: darken(@color-warning, 24%);
+      background: fade(@color-warning, 18%);
+    }
+  }
+
+  /* 悬浮操作条：图片底部，半透明深色背景 */
+  &__actions {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs 0;
+    background: rgba(0, 0, 0, 0.45);
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      padding: 0 @spacing-xs;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: @font-size-auxiliary;
+      line-height: @line-height-auxiliary;
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+
+      &:hover {
+        color: #fff;
+      }
+    }
+  }
+
+  &__add {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: @spacing-2xs;
+    min-height: 110px;
+    width: 110px;
+    color: @color-text-secondary;
+    background: @color-bg-page;
+    border: 1px dashed @color-border;
+    border-radius: @radius-sm;
+    cursor: pointer;
+    .text-auxiliary();
+
+    &:hover {
+      color: @color-primary;
+      border-color: @color-primary;
+    }
+  }
+}

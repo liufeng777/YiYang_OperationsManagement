@@ -1,0 +1,110 @@
+/**
+ * 编辑机构服务配置 Drawer 样式
+ * 对齐设计稿：服务摘要条 + 配置方式 + 线上服务范围 + 预约与履约规则 + 底部提示
+ */
+
+.edit-config {
+  &__title {
+    h3 {
+      margin: 0;
+      .text-title-module();
+    }
+
+    p {
+      margin: @spacing-2xs 0 0;
+      .text-auxiliary();
+    }
+  }
+
+  /* 服务摘要条：集团维护字段只读展示 */
+  &__service {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: @spacing-md;
+    background: fade(@color-info, 8%);
+    border-radius: @radius-sm;
+
+    strong {
+      .text-body-medium();
+      color: @color-text-primary;
+    }
+
+    p {
+      margin: @spacing-2xs 0 0;
+      .text-auxiliary();
+    }
+
+    > span {
+      .text-auxiliary();
+      color: @color-text-secondary;
+    }
+  }
+
+  &__section {
+    margin-top: @spacing-lg;
+
+    .ant-form-item {
+      margin-bottom: 0;
+    }
+  }
+
+  &__section-title {
+    display: flex;
+    align-items: baseline;
+    gap: @spacing-sm;
+    margin-bottom: @spacing-sm;
+    .text-body-medium();
+    color: @color-text-primary;
+
+    > span {
+      .text-auxiliary();
+    }
+  }
+
+  &__range-type {
+    margin-bottom: @spacing-sm !important;
+  }
+
+  &__hint {
+    margin: @spacing-xs 0 0;
+    .text-auxiliary();
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: @spacing-sm;
+
+    &--four {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  &__alert {
+    margin-top: @spacing-lg;
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    > span {
+      .text-body-medium();
+      color: @color-text-primary;
+    }
+
+    > div {
+      display: flex;
+      gap: @spacing-sm;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .edit-config__grid,
+  .edit-config__grid--four {
+    grid-template-columns: 1fr;
+  }
+}

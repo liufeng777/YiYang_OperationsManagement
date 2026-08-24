@@ -4,11 +4,13 @@
  * 表单使用 antd Form 管理（便于字段校验），排布样式仍由 detail.less 的 editor-grid 提供
  * 当前为 mock 数据，后端就绪后替换为 serviceApi.getServiceDetail / saveService
  */
-import { useEffect, useMemo } from 'react'
-import { App, Button, Card, Form, Input, Radio, Select, Switch } from 'antd'
+import { useEffect, useMemo, useState } from 'react'
+import { App, Button, Card, Form, Input, Radio, Select, Switch, Upload } from 'antd'
 import { ArrowLeftOutlined, CheckOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
+import ImageSortGrid from '@/components/ImageSortGrid'
+import type { SortableImage } from '@/components/ImageSortGrid'
 import type { ServiceDetail, ServiceMode, PriceUnit } from '@/api/modules/service'
 import './detail.less'
 
@@ -21,6 +23,7 @@ const detailMocks: Record<string, ServiceDetail> = {
     categoryName: '生活照护',
     mode: '上门',
     price: 168,
+    unit: '次',
     institutionCount: 12,
     orderCount: 326,
     status: 'on',
@@ -52,6 +55,11 @@ const unitOptions: Array<{ label: string; value: PriceUnit }> = [
 const consumableOptions = [
   { label: '是', value: '1' },
   { label: '否', value: '2' },
+]
+
+const initialServiceImages: SortableImage[] = [
+  { id: 'img-1', title: '服务流程图', size: '750 × 800px', tone: 'blue' },
+  { id: 'img-2', title: '服务场景图', size: '750 × 800px', tone: 'warm' },
 ]
 
 /** 表单值结构：与服务详情字段一一对应，便于后续接接口与校验 */
@@ -93,6 +101,15 @@ export default function ServiceEditorPage() {
   const detail = useMemo(() => detailMocks[serviceId], [serviceId])
 
   const [form] = Form.useForm<ServiceFormValues>()
+  const [serviceImages, setServiceImages] = useState<SortableImage[]>(initialServiceImages)
+  const [coverUrl, setCoverUrl] = useState<string>()
+
+  /** 封面上传：拦截真实请求，本地预览（接后端后替换为上传接口） */
+  const handleCoverUpload = (file: File) => {
+    setCoverUrl(URL.createObjectURL(file))
+    message.success('封面已更新')
+    return false
+  }
 
   // 患者端预览实时联动字段
   const previewName = Form.useWatch('name', form)
@@ -160,7 +177,9 @@ export default function ServiceEditorPage() {
                   >
                     <Input placeholder="例如：上门助浴服务" />
                   </Form.Item>
-                  <Form.Item label="服务编码" extra="保存后生成唯一编码">
+                  <Form.Item
+                    label={<span>服务编码 <span style={{color: '#66736f'}}>(保存后生成唯一编码)</span></span>}
+                  >
                     <Input value={detail?.code ?? '系统自动生成'} disabled />
                   </Form.Item>
                 </div>
@@ -243,19 +262,30 @@ export default function ServiceEditorPage() {
               <div className="editor-content">
                 <div className="editor-upload editor-upload--cover">
                   <span>列表封面 <i>*</i></span>
-                  <div className="editor-upload--cover--box">
-                    <PlusOutlined />
-                    <p>上传封面</p>
-                    <em>建议 1:1</em>
-                  </div>
+                  <Upload accept="image/*" showUploadList={false} beforeUpload={handleCoverUpload}>
+                    <button
+                      type="button"
+                      className={`editor-upload__cover-box${coverUrl ? ' has-image' : ''}`}
+                    >
+                      {coverUrl ? (
+                        <img src={coverUrl} alt="列表封面" />
+                      ) : (
+                        <>
+                          <PlusOutlined />
+                          <p>上传封面</p>
+                          <em>建议 1:1</em>
+                        </>
+                      )}
+                    </button>
+                  </Upload>
                 </div>
                 <div className="editor-upload editor-upload--detail">
                   <span>详情图片 <i>*</i></span>
-                  <div className="editor-upload__images">
-                    <div className="is-blue">服务流程图<em>⇅ 拖动排序</em></div>
-                    <div className="is-blue">服务场景图<em>⇅ 拖动排序</em></div>
-                    <div className="is-add"><PlusOutlined />添加图片</div>
-                  </div>
+                  <ImageSortGrid
+                    variant="fixed"
+                    images={serviceImages}
+                    onChange={setServiceImages}
+                  />
                 </div>
                 <Form.Item
                   className="editor-content__textarea"
@@ -263,7 +293,7 @@ export default function ServiceEditorPage() {
                   label="服务内容"
                 >
                   <Input.TextArea
-                    style={{ height: 100 }}
+                    style={{ height: 110 }}
                     placeholder="填写服务包含项目、准备事项、服务流程和注意事项……"
                   />
                 </Form.Item>

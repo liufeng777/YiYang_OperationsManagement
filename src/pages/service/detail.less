@@ -38,7 +38,6 @@
     &__2, &__3, &__4 {
       display: grid;
       gap: @spacing-lg;
-      margin-bottom: @spacing-md;
     }
     &__2 {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -95,6 +94,7 @@
 
   .editor-content {
     display: flex;
+    align-items: flex-start;
     gap: @spacing-md;
 
     .ant-form-item {
@@ -121,75 +121,84 @@
     }
   }
 
-  // 封面
+  // 封面与详情图块同宽（132px 固定图块，同 ImageSortGrid fixed 变体）；详情图区占满剩余宽度
   .editor-upload--cover {
-    width: 100px;
-    .editor-upload--cover--box {
-      width: 100px;
-      height: 100px;
+    flex-shrink: 0;
+
+    .ant-upload-wrapper,
+    .ant-upload-select {
+      display: contents;
     }
-  }
 
-  // 详情图片
-  .editor-upload--detail {
-    flex: 1;
-  }
-
-  .editor-upload {
-    > div {
+    .editor-upload__cover-box {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100px;
+      width: 132px;
+      height: 110px;
+      padding: 0;
       color: @color-text-secondary;
       background: @color-bg-page;
       border: 1px dashed @color-border;
       border-radius: @radius-sm;
+      cursor: pointer;
 
       p {
         margin: @spacing-xs 0 0;
+        .text-auxiliary();
       }
 
       em {
         font-style: normal;
         .text-auxiliary();
       }
+
+      &:hover {
+        color: @color-primary;
+        border-color: @color-primary;
+      }
+
+      /* 上传后图片铺满封面框 */
+      &.has-image {
+        position: relative;
+        overflow: hidden;
+        border-style: solid;
+
+        img {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
     }
+  }
 
-    &__images {
-      display: grid !important;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: @spacing-sm;
-      background: transparent !important;
-      border: none !important;
-      > div {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        min-height: 100px;
-        color: @color-text-secondary;
-        border-radius: @radius-sm;
-        background: @color-bg-page;
-        border: 1px dashed @color-border;
-        .text-auxiliary();
+  // 详情图片（共享组件 ImageSortGrid fixed：132×110 图块，与列表封面同尺寸）
+  // 水平排布并占满剩余空间，图块填满一行后自动换行（grid auto-fill）
+  .editor-upload--detail {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 
-        em {
-          display: block;
-          margin-top: @spacing-xs;
-          font-style: normal;
-        }
+  // 服务内容：固定宽度（原 320 的一半），高度与图块一致
+  .editor-content__textarea {
+    flex-shrink: 0;
+    width: 160px;
+  }
 
-        &.is-blue {
-          background: fade(@color-info, 10%);
-        }
+  .editor-upload {
+    > span {
+      display: block;
+      margin-bottom: @spacing-xs;
+      .text-label();
+      color: @color-text-primary;
 
-        &.is-add {
-          color: @color-text-secondary;
-          background: @color-bg-page;
-          border: 1px dashed @color-border;
-        }
+      i {
+        color: @color-danger;
+        font-style: normal;
       }
     }
 
@@ -401,9 +410,16 @@
 
 @media (max-width: 720px) {
   .service-editor {
-    .editor-grid,
-    .editor-upload__images {
+    .editor-grid {
       grid-template-columns: 1fr;
+    }
+
+    .editor-content {
+      flex-direction: column;
+
+      .editor-content__textarea {
+        width: 100%;
+      }
     }
 
     &__footer {

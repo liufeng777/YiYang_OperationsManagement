@@ -4,7 +4,7 @@
  * 当前为 mock 数据，后端就绪后替换为 contentApi.getHomeConfig / publishHomeConfig
  */
 import { useState } from 'react'
-import { App, Button, Card, Tabs } from 'antd'
+import { App, Button, Card, Tabs, Upload } from 'antd'
 import { HolderOutlined, PlusOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
 import './home.less'
@@ -14,6 +14,8 @@ interface BannerRow {
   tag: string
   title: string
   linkTarget: string
+  /** 本地预览地址（URL.createObjectURL） */
+  url?: string
 }
 
 interface RecommendRow {
@@ -46,10 +48,29 @@ export default function ContentHome() {
   const [banners, setBanners] = useState(initialBanners)
   const [recommends, setRecommends] = useState(initialRecommends)
   const [recommendTab, setRecommendTab] = useState('service')
+  const [bannerDragId, setBannerDragId] = useState<string | null>(null)
+  const [bannerDragOverId, setBannerDragOverId] = useState<string | null>(null)
 
   const handleRemoveRecommend = (id: string) => {
     setRecommends((prev) => prev.filter((item) => item.id !== id))
     message.success('已移除推荐内容（自动保存）')
+  }
+
+  /** 轮播图拖拽排序（与详情图一致的原生 DnD 交互） */
+  const handleBannerDrop = (targetId: string) => {
+    if (bannerDragId && bannerDragId !== targetId) {
+      setBanners((prev) => {
+        const from = prev.findIndex((item) => item.id === bannerDragId)
+        const to = prev.findIndex((item) => item.id === targetId)
+        if (from < 0 || to < 0) return prev
+        const next = [...prev]
+        const [moved] = next.splice(from, 1)
+        next.splice(to, 0, moved)
+        return next
+      })
+    }
+    setBannerDragId(null)
+    setBannerDragOverId(null)
   }
 
   return (
@@ -72,20 +93,64 @@ export default function ContentHome() {
             <div className="home-card__header">
               <div>
                 <h3>首页轮播图</h3>
-                <span>建议 750 × 360px，最多展示 5 张</span>
+                <span className='home-card__header__label'>建议 750 × 360px，最多展示 5 张</span>
               </div>
-              <Button
-                icon={<PlusOutlined />}
-                onClick={() => message.info('添加轮播图开发中')}
+              <Upload
+                accept="image/*"
+                showUploadList={false}
+                beforeUpload={(file) => {
+                  setBanners((prev) => [
+                    ...prev,
+                    {
+                      id: `b-${Date.now()}`,
+                      tag: '轮播图',
+                      title: file.name.replace(/\.[^.]+$/, ''),
+                      linkTarget: '待配置跳转',
+                      url: URL.createObjectURL(file),
+                    },
+                  ])
+                  message.success('轮播图已添加（本地预览）')
+                  return false
+                }}
               >
-                添加轮播图
-              </Button>
+                <Button icon={<PlusOutlined />} className='common-btn'>
+                  添加轮播图
+                </Button>
+              </Upload>
             </div>
             <div className="banner-list">
               {banners.map((banner) => (
-                <div className="banner-row" key={banner.id}>
+                <div
+                  className={[
+                    'banner-row',
+                    bannerDragId === banner.id ? 'is-dragging' : '',
+                    bannerDragOverId === banner.id && bannerDragId !== banner.id ? 'is-over' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  key={banner.id}
+                  draggable
+                  onDragStart={() => setBannerDragId(banner.id)}
+                  onDragOver={(event) => {
+                    event.preventDefault()
+                    setBannerDragOverId(banner.id)
+                  }}
+                  onDragLeave={() =>
+                    setBannerDragOverId((prev) => (prev === banner.id ? null : prev))
+                  }
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    handleBannerDrop(banner.id)
+                  }}
+                  onDragEnd={() => {
+                    setBannerDragId(null)
+                    setBannerDragOverId(null)
+                  }}
+                >
                   <HolderOutlined className="banner-row__drag" />
-                  <i className="banner-row__thumb">{banner.tag}</i>
+                  <i className={`banner-row__thumb${banner.url ? ' has-image' : ''}`}>
+                    {banner.url ? <img src={banner.url} alt={banner.title} /> : banner.tag}
+                  </i>
                   <div className="banner-row__info">
                     <strong>{banner.title}</strong>
                     <span>跳转至：{banner.linkTarget}</span>
@@ -115,7 +180,7 @@ export default function ContentHome() {
             <div className="home-card__header">
               <div>
                 <h3>首页快捷入口</h3>
-                <span>入口固定，仅支持调整显示与排序</span>
+                <span className='home-card__header__label'>入口固定，仅支持调整显示与排序</span>
               </div>
               <span className="home-card__tip">拖动调整顺序</span>
             </div>
@@ -135,9 +200,9 @@ export default function ContentHome() {
             <div className="home-card__header">
               <div>
                 <h3>首页推荐内容</h3>
-                <span>从已上架服务和已发布活动中选择</span>
+                <span className='home-card__header__label'>从已上架服务和已发布活动中选择</span>
               </div>
-              <Button icon={<PlusOutlined />} onClick={() => message.info('选择内容开发中')}>
+              <Button className='common-btn' icon={<PlusOutlined />} onClick={() => message.info('选择内容开发中')}>
                 选择内容
               </Button>
             </div>
@@ -174,7 +239,7 @@ export default function ContentHome() {
           </Card>
         </div>
 
-        <div className="content-home__preview">
+        <Card className="content-home__preview">
           <div className="home-preview__header">
             <h3>患者端首页实时预览</h3>
             <span>未发布修改</span>
@@ -231,7 +296,7 @@ export default function ContentHome() {
               </div>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
     </PageContainer>
   )

@@ -26,19 +26,20 @@ import {
   InfoCircleFilled,
   SearchOutlined,
 } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
 import type {
   InstitutionDetail,
   InstitutionService,
   ServicePoolItem,
 } from '@/api/modules/institution'
+import EditServiceConfigDrawer from './EditServiceConfigDrawer'
+import type { EditServiceConfigValues } from './EditServiceConfigDrawer'
 
 const servicePoolMocks: ServicePoolItem[] = [
-  { id: 'p1', code: 'FW0001', name: '上门助浴服务', category: '生活照护', mode: '上门', price: 168 },
-  { id: 'p2', code: 'FW0004', name: '慢病健康随访', category: '健康管理', mode: '上门', price: 69 },
-  { id: 'p3', code: 'FW0002', name: '居家护理服务', category: '生活照护', mode: '上门', price: 198 },
-  { id: 'p4', code: 'FW0003', name: '术后康复训练', category: '康复护理', mode: '到店', price: 128 },
-  { id: 'p5', code: 'FW0008', name: '老年能力评估', category: '健康管理', mode: '到店', price: 199 },
+  { id: 'p1', code: 'FW0001', name: '上门助浴服务', category: '生活照护', mode: '上门', price: 168, status: '可预约' },
+  { id: 'p2', code: 'FW0004', name: '慢病健康随访', category: '健康管理', mode: '上门', price: 69, status: '可预约' },
+  { id: 'p3', code: 'FW0002', name: '居家护理服务', category: '生活照护', mode: '上门', price: 198, status: '可预约' },
+  { id: 'p4', code: 'FW0003', name: '术后康复训练', category: '康复护理', mode: '到店', price: 128, status: '可预约' },
+  { id: 'p5', code: 'FW0008', name: '老年能力评估', category: '健康管理', mode: '到店', price: 199, status: '待上架' },
 ]
 
 const serviceCategories = ['全部', '生活照护', '康复护理', '健康管理', '陪诊出行']
@@ -58,10 +59,10 @@ export default function ServicesTab({
   drawerOpen,
   onDrawerOpenChange,
 }: ServicesTabProps) {
-  const navigate = useNavigate()
   const { message } = App.useApp()
 
   const [deleting, setDeleting] = useState<InstitutionService | null>(null)
+  const [editing, setEditing] = useState<InstitutionService | null>(null)
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(['p1', 'p2'])
   const [poolKeyword, setPoolKeyword] = useState('')
   const [poolCategory, setPoolCategory] = useState('全部')
@@ -109,6 +110,28 @@ export default function ServicesTab({
     setDeleting(null)
   }
 
+  /** 保存单项服务配置：更新配置来源与线上履约范围展示 */
+  const handleSaveConfig = (serviceId: string, values: EditServiceConfigValues) => {
+    onServicesChange((prev) =>
+      prev.map((item) =>
+        item.id === serviceId
+          ? {
+              ...item,
+              configSource: values.configMode === 'custom' ? '单项调整' : '机构默认',
+              range:
+                values.configMode === 'custom' && values.rangeType === 'street' && values.streets
+                  ? `按街道：${values.streets}`
+                  : values.configMode === 'custom' && values.rangeType === 'fence'
+                    ? `电子围栏：${values.fence ?? ''}`
+                    : '按机构默认配置',
+            }
+          : item,
+      ),
+    )
+    message.success('服务配置已保存')
+    setEditing(null)
+  }
+
   const serviceColumns = useMemo<ColumnsType<InstitutionService>>(
     () => [
       {
@@ -146,7 +169,7 @@ export default function ServicesTab({
         width: 160,
         render: (_, record) => (
           <div className="service-actions">
-            <Button type="link" size="small" onClick={() => message.info('编辑配置开发中')}>
+            <Button type="link" size="small" onClick={() => setEditing(record)}>
               编辑配置
             </Button>
             {record.status === '可预约' ? (
@@ -167,7 +190,7 @@ export default function ServicesTab({
         ),
       }
     ],
-    [message],
+    [],
   )
 
   const poolColumns = useMemo<ColumnsType<ServicePoolItem>>(
@@ -367,6 +390,13 @@ export default function ServicesTab({
           pagination={false}
         />
       </Drawer>
+
+      <EditServiceConfigDrawer
+        open={!!editing}
+        service={editing}
+        onClose={() => setEditing(null)}
+        onSave={handleSaveConfig}
+      />
 
       <Modal
         open={!!deleting}

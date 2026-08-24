@@ -22,7 +22,26 @@ export default function HeaderBar() {
   const userInfo = useUserStore((state) => state.userInfo)
   const logout = useUserStore((state) => state.logout)
 
-  const breadcrumbItems = useMemo(() => findBreadcrumb(location.pathname), [location.pathname])
+  const breadcrumbItems = useMemo(
+    () =>
+      findBreadcrumb(location.pathname).map((item, index, list) => ({
+        // 末级为当前页不可点击；其余层级点击直接跳转对应页面
+        title:
+          index === list.length - 1 ? (
+            item.title
+          ) : (
+            <a
+              onClick={(event) => {
+                event.preventDefault()
+                navigate(item.path)
+              }}
+            >
+              {item.title}
+            </a>
+          ),
+      })),
+    [location.pathname, navigate],
+  )
 
   /** 今日日期：2026 年 8 月 14 日 星期五 */
   const todayText = useMemo(() => {

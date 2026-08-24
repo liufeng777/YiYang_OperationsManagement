@@ -12,54 +12,114 @@
 
   .create-card {
     .card-surface();
-    padding: @spacing-lg @spacing-xl;
+    .ant-card-body {
+      padding: @spacing-md @spacing-lg;
+    }
+    
 
     h3 {
       margin: 0 0 @spacing-md;
       .text-title-card();
-    }
-  }
 
-  .create-field {
-    margin-bottom: @spacing-md;
-
-    label {
-      display: block;
-      margin-bottom: @spacing-xs;
-      .text-label();
-      color: @color-text-primary;
-
-      i {
-        color: @color-danger;
-        font-style: normal;
+      /* 标题旁的辅助说明（对齐设计稿：标题 + 灰色小字） */
+      span {
+        margin-left: @spacing-sm;
+        .text-auxiliary();
+        font-weight: @font-weight-body;
       }
     }
 
-    /* Form.Item 复刻原 label 排布 */
-    .ant-form-item {
-      margin-bottom: 0;
+    .create-upload {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: @spacing-xs;
+      color: @color-text-secondary;
+      background: @color-bg-page;
+      border: 1px dashed @color-border;
+      border-radius: @radius-sm;
+      cursor: pointer;
+      .text-auxiliary();
 
-      .ant-form-item-label {
-        padding-bottom: @spacing-xs;
+      .anticon {
+        color: @color-text-secondary;
+      }
 
-        > label {
-          height: auto;
-          margin-bottom: 0;
-          .text-label();
-          color: @color-text-primary;
+      /* 详情图上传：整行虚线条 */
+      &--strip {
+        width: 100%;
+        height: 64px;
 
-          i {
-            color: @color-danger;
-            font-style: normal;
+        em {
+          font-style: normal;
+          .text-auxiliary();
+        }
+      }
+    }
+
+    // 活动基础信息表单
+    &__basicInfo {
+      display: flex;
+      gap: 16px;
+      &__left {
+        flex: 1;
+      }
+      &__right {
+        width: 261px;
+          /* 封面上传 */
+        .create-cover {
+          .create-upload {
+            width: 100%;
+            height: 195px;
           }
         }
       }
+    }
+  }
 
-      .ant-form-item-explain-error {
-        margin-top: 2px;
-        font-size: @font-size-auxiliary;
-        line-height: @line-height-auxiliary;
+  .basic-card {
+    .ant-card-body {
+      padding-bottom: 0;
+    }
+  }
+
+  /* Upload 包装层不参与布局；封面上传后图片铺满虚线框 */
+  .create-card {
+    .ant-upload-wrapper,
+    .ant-upload-select {
+      display: contents;
+    }
+
+    .create-upload.has-image {
+      position: relative;
+      overflow: hidden;
+      border-style: solid;
+
+      img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
       }
+    }
+  }
+
+  /* 表单字段网格：基础信息两列 / 报名设置三列 */
+  .create-grid {
+    display: grid;
+    gap: @spacing-sm @spacing-md;
+
+    &--two {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    &--three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .ant-form-item {
+      margin-bottom: 0;
     }
 
     .ant-select {
@@ -67,102 +127,77 @@
     }
   }
 
-  .create-upload {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: @spacing-2xs;
-    width: 200px;
-    height: 150px;
-    color: @color-text-secondary;
-    background: @color-bg-page;
-    border: 1px dashed @color-border;
-    border-radius: @radius-sm;
-    cursor: pointer;
-    .text-auxiliary();
-
-    .anticon {
-      font-size: @font-size-title-module;
-      color: @color-text-secondary;
-    }
-
-    &--large {
-      width: 100%;
-      height: auto;
-      padding: @spacing-xl 0;
-
-      em {
-        font-style: normal;
-        .text-auxiliary();
-      }
-    }
+  .ant-form-item-label > label {
+    height: auto;
+    .text-label();
+    color: @color-text-primary;
   }
 
+  .ant-form-item-explain-error {
+    margin-top: 2px;
+    font-size: @font-size-auxiliary;
+    line-height: @line-height-auxiliary;
+  }
+
+
+
+  /* 已配置机构汇总条 */
   .create-config {
     display: flex;
     align-items: center;
     gap: @spacing-md;
+    background: @color-primary-light;
+    border-radius: @radius-sm;
+    padding: @spacing-sm @spacing-md;
+    border: 1px solid @color-primary-dark;
 
     &__bar {
-      flex: 1;
-      padding: @spacing-sm @spacing-md;
-      color: @color-primary-dark;
-      background: @color-primary-light;
-      border-radius: @radius-sm;
-      .text-body-medium();
-    }
-  }
-
-  .create-images {
-    display: flex;
-    flex-direction: column;
-    gap: @spacing-sm;
-    margin-top: @spacing-md;
-  }
-
-  .create-image {
-    border: 1px solid @color-border;
-    border-radius: @radius-sm;
-    overflow: hidden;
-
-    &__thumb {
       display: flex;
+      flex: 1;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: @spacing-2xs;
-      height: 96px;
-      color: @color-primary;
-      background: @color-primary-light;
+      gap: 2px;
+      
+      
 
-      span {
+      strong {
+        color: @color-primary-dark;
         .text-body-medium();
       }
 
-      em {
-        font-style: normal;
+      span {
         .text-auxiliary();
       }
     }
+  }
 
-    &__actions {
-      display: flex;
-      align-items: center;
-      padding: @spacing-2xs @spacing-xs;
-      background: @color-bg-card;
+  /* 详情图网格（共享组件 ImageSortGrid）：与上传条间距 */
+  .image-sort-grid {
+    margin-top: @spacing-md;
+  }
+
+  /* 底部操作条：左侧须知状态 + 右侧按钮 */
+  .create-submit {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: @spacing-xl;
+
+    &__info {
+      h3 {
+        margin: 0;
+        .text-title-card();
+      }
+
+      p {
+        margin: @spacing-2xs 0 0;
+        .text-auxiliary();
+      }
     }
   }
 
-  .create-card--footer {
-    display: flex;
-    align-items: flex-end;
-    gap: @spacing-xl;
-
-    .create-field {
-      flex: 1;
-      margin-bottom: 0;
-    }
+  .create-notice {
+    margin-top: @spacing-md;
+    margin-bottom: 0;
   }
 
   .create-footer {
@@ -175,15 +210,25 @@
     .card-surface();
     position: sticky;
     top: @spacing-md;
-    padding: @spacing-lg;
+    .ant-card-body{
+      padding: @spacing-md @spacing-lg;
+    }
+    
 
     h3 {
       margin: 0 0 @spacing-md;
       .text-title-card();
+
+      span {
+        margin-left: @spacing-sm;
+        .text-auxiliary();
+        font-weight: @font-weight-body;
+      }
     }
   }
 }
 
+/* ===== 患者端手机预览 ===== */
 .phone-preview {
   display: flex;
   justify-content: center;
@@ -191,8 +236,8 @@
   &__screen {
     display: flex;
     flex-direction: column;
-    width: 280px;
-    min-height: 480px;
+    width: 320px;
+    height: 620px;
     background: @color-bg-page;
     border: 1px solid @color-border;
     border-radius: @radius-lg;
@@ -200,8 +245,10 @@
   }
 
   &__header {
-    padding: @spacing-sm;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-sm @spacing-md;
     background: @color-bg-card;
     .text-body-medium();
   }
@@ -210,7 +257,7 @@
     display: flex;
     flex-direction: column;
     gap: @spacing-2xs;
-    padding: @spacing-xl @spacing-md;
+    padding: @spacing-2xl @spacing-md;
     color: @color-bg-card;
     background: @color-primary;
 
@@ -229,6 +276,7 @@
     display: flex;
     gap: @spacing-xs;
     padding: @spacing-sm @spacing-md 0;
+    background-color: #fff;
 
     em {
       padding: 2px @spacing-xs;
@@ -240,19 +288,70 @@
     }
   }
 
-  &__desc {
-    margin: 0;
-    padding: @spacing-sm @spacing-md;
-    .text-auxiliary();
+  &__info {
+    padding: @spacing-xs @spacing-md @spacing-sm;
+    background-color: #fff;
+
+    p {
+      margin: 2px 0 0;
+    }
+    &__title {
+      font-size: 12px;
+      font-weight: 500;
+    }
+    &__label {
+      font-size: 12px;
+      color: @color-text-secondary;
+    }
+    &__highlight {
+      font-size: 12px;
+      font-weight: 500;
+      color: @color-primary-dark;
+    }
   }
 
-  &__block {
+  /* 详情长图块 */
+  &__image {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: @spacing-md;
+
+    em {
+      font-style: normal;
+      font-size: 10px;
+      letter-spacing: 1px;
+    }
+
+    strong {
+      font-size: 16px;
+    }
+
+    span {
+      font-size: 12px;
+    }
+
+    &--cream {
+      color: @color-text-primary;
+      background: fade(@color-warning, 18%);
+      span, em {
+        color: @color-text-secondary;
+      }
+    }
+
+    &--green {
+      color: #fff;
+      background: @color-primary;
+    }
+  }
+
+  &__success {
     display: flex;
     align-items: center;
-    justify-content: center;
-    height: 72px;
+    gap: @spacing-2xs;
     margin: 0 @spacing-md @spacing-sm;
-    color: @color-primary;
+    padding: @spacing-sm @spacing-md;
+    color: @color-primary-dark;
     background: @color-primary-light;
     border-radius: @radius-sm;
     .text-body-medium();
@@ -276,19 +375,22 @@
       }
 
       strong {
-        color: @color-primary;
-        .text-body-medium();
+        color: @color-primary-dark;
       }
     }
 
     button {
-      padding: @spacing-xs @spacing-lg;
+      padding: @spacing-xs @spacing-2xl;
       color: @color-bg-card;
       background: @color-primary;
       border: 0;
       border-radius: @radius-full;
       cursor: pointer;
-      .text-body-medium();
+
+      &:disabled {
+        cursor: not-allowed;
+        background: @color-border;
+      }
     }
   }
 }
@@ -344,32 +446,152 @@
   }
 }
 
+/* ===== 患者端活动预览弹窗 ===== */
 .preview-modal {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: @spacing-xl;
+  gap: @spacing-2xl;
 
-  &__panel {
-    h4 {
-      margin: 0 0 @spacing-sm;
-      .text-body-medium();
+  &__title {
+    h3 {
+      margin: 0;
+      .text-title-module();
     }
 
-    .ant-radio-group,
-    .ant-checkbox-group {
-      display: flex;
-      flex-direction: column;
-      gap: @spacing-xs;
-      margin-bottom: @spacing-lg;
+    p {
+      margin: @spacing-2xs 0 0;
+      .text-auxiliary();
     }
   }
 
+  &__left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: @spacing-sm;
+
+    .phone-preview__screen {
+      width: 320px;
+    }
+  }
+
+  &__caption {
+    margin: 0;
+    .text-auxiliary();
+  }
+
+  &__panel {
+    display: flex;
+    flex-direction: column;
+
+    h4 {
+      margin: 0 0 @spacing-2xs;
+      .text-body-medium();
+    }
+
+    .preview-status {
+      margin-bottom: @spacing-lg;
+    }
+
+    .preview-scope {
+      margin-bottom: @spacing-lg;
+    }
+
+    .ant-btn-block {
+      margin-top: auto;
+    }
+  }
+
+  &__aux {
+    margin: 0 0 @spacing-sm;
+    .text-auxiliary();
+  }
+
   &__tip {
+    margin-bottom: @spacing-lg;
     padding: @spacing-md;
-    color: @color-info;
     background: fade(@color-info, 8%);
     border-radius: @radius-sm;
-    .text-auxiliary();
+
+    strong {
+      display: block;
+      margin-bottom: @spacing-2xs;
+      .text-body-medium();
+      color: @color-info;
+    }
+
+    p {
+      margin: 0;
+      .text-auxiliary();
+    }
+  }
+}
+
+/* 预览状态：卡片式单选 */
+.preview-status {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-xs;
+
+  .ant-radio-wrapper {
+    display: flex;
+    align-items: flex-start;
+    margin-inline-end: 0;
+    padding: @spacing-sm @spacing-md;
+    border: 1px solid @color-border;
+    border-radius: @radius-sm;
+    transition: border-color 0.2s, background 0.2s;
+
+    .ant-radio {
+      margin-top: 2px;
+    }
+
+    .preview-status__item,
+    > span:last-child {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    strong {
+      .text-body-medium();
+      color: @color-text-primary;
+    }
+
+    span {
+      .text-auxiliary();
+    }
+
+    &:hover {
+      border-color: @color-primary;
+    }
+
+    &.ant-radio-wrapper-checked {
+      background: @color-primary-light;
+      border-color: @color-primary;
+      box-shadow: inset 0 0 0 1px @color-primary;
+    }
+  }
+}
+
+/* 预览范围：勾选清单 */
+.preview-scope {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-xs;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: @spacing-xs;
+    .text-body();
+
+    .anticon {
+      color: @color-primary;
+    }
   }
 }
 
@@ -381,7 +603,7 @@
       display: none;
     }
 
-    .create-card--footer {
+    .create-submit {
       flex-direction: column;
       align-items: stretch;
     }
@@ -393,6 +615,14 @@
 }
 
 @media (max-width: 720px) {
+  .activity-create {
+    .create-grid--two,
+    .create-grid--three,
+    .create-images {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .preview-modal {
     grid-template-columns: 1fr;
   }

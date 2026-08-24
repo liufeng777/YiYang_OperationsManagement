@@ -1,13 +1,13 @@
 /**
- * 活动管理 - 报名查询
- * 视觉对齐设计稿：活动摘要统计 + 筛选 + 报名记录 Tabs + 取消报名确认弹窗
+ * 活动管理 - 活动详情（原报名查询页）
+ * 从活动列表「查看」进入：活动摘要统计 + 报名记录筛选 / Tabs + 取消报名确认弹窗
  * 当前为 mock 数据，后端就绪后替换为 activityApi.getActivitySignups
  */
 import { useMemo, useState } from 'react'
-import { App, Button, Card, Input, Modal, Radio, Select, Table } from 'antd'
+import { App, Button, Card, Col, Input, Modal, Radio, Row, Select, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { SearchOutlined } from '@ant-design/icons'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { BarChartOutlined, SearchOutlined } from '@ant-design/icons'
+import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import type { ActivitySignup } from '@/api/modules/activity'
 import './signups.less'
@@ -103,8 +103,8 @@ interface SignupFilters {
 export default function ActivitySignups() {
   const navigate = useNavigate()
   const { message } = App.useApp()
-  const [searchParams] = useSearchParams()
-  const activityId = searchParams.get('id') ?? '1'
+  const params = useParams<{ id: string }>()
+  const activityId = params.id ?? '1'
   const activity = activityMeta[activityId] ?? activityMeta['1']
 
   const [data, setData] = useState(initialSignups)
@@ -137,10 +137,10 @@ export default function ActivitySignups() {
   }, [applied, data, tab])
 
   const metrics = [
-    { key: 'total', label: '报名人数', value: 36, note: '含已取消' },
-    { key: 'institution', label: '参与机构', value: 4, note: '用户报名时可选择' },
-    { key: 'signed', label: '已报名', value: 34, note: '名单实时同步机构' },
-    { key: 'cancelled', label: '已取消', value: 2, note: '不涉及退款' },
+    { key: 'total', label: '报名人数', value: 36, badge: '含已取消', tone: 'primary' },
+    { key: 'institution', label: '参与机构', value: 4, badge: '用户报名时可选择', tone: 'info' },
+    { key: 'signed', label: '已报名', value: 34, badge: '名单实时同步机构', tone: 'warning' },
+    { key: 'cancelled', label: '已取消', value: 2, badge: '不涉及退款', tone: 'danger'},
   ]
 
   const applyFilters = () => {
@@ -251,17 +251,24 @@ export default function ActivitySignups() {
       }
     >
       <div className="activity-signups">
-        <div className="metric-cards">
+        <Row gutter={[16, 16]}>
           {metrics.map((metric) => (
-            <Card variant="borderless" className="metric-card" key={metric.key}>
-              <span className="metric-card__label">{metric.label}</span>
-              <div className="metric-card__row">
-                <strong className="metric-card__value">{metric.value}</strong>
-                <em className="metric-card__extra">{metric.note}</em>
-              </div>
-            </Card>
+            <Col xs={24} sm={12} lg={6} key={metric.key}>
+              <Card variant="borderless" className="metric-card">
+                <div className="metric-card__head">
+                  <span className="metric-card__label">{metric.label}</span>
+                  <i className={`metric-card__icon metric-card__icon--${metric.tone} metric-card__icon--round`}>
+                    <BarChartOutlined />
+                  </i>
+                </div>
+                <div className="metric-card__value">{metric.value}</div>
+                <span className={`metric-card__note metric-card__note--${metric.tone}`}>
+                  {metric.badge}
+                </span>
+              </Card>
+            </Col>
           ))}
-        </div>
+        </Row>
 
         <Card variant="borderless" className="filter-bar activity-signups__filter">
           <Input

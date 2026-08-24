@@ -253,9 +253,9 @@ export default function ActivityList() {
               <Button
                 type="link"
                 size="small"
-                onClick={() => navigate(`/activity/signups?id=${record.id}`)}
+                onClick={() => navigate(`/activity/signups/${record.id}`)}
               >
-                查看
+                报名查询
               </Button>
             )}
             {(record.status === 'signup' || record.status === 'ongoing' || record.status === 'draft') && (

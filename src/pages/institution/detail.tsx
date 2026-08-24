@@ -6,7 +6,7 @@
  */
 import { useMemo, useState } from 'react'
 import { Button, Card, Tabs, Tag } from 'antd'
-import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import type { InstitutionDetail, InstitutionService } from '@/api/modules/institution'

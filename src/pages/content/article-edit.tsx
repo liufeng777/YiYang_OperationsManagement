@@ -3,7 +3,8 @@
  * 视觉对齐设计稿：左侧基础信息 + 图文正文编辑器，右侧发布设置 + 患者端实时预览
  * 当前为 mock 数据，后端就绪后替换为 contentApi.saveArticle
  */
-import { App, Button, Card, Form, Input, Select, Switch } from 'antd'
+import { useState } from 'react'
+import { App, Button, Card, Form, Input, Select, Switch, Upload } from 'antd'
 import {
   BoldOutlined,
   ItalicOutlined,
@@ -26,6 +27,15 @@ export default function ArticleEdit() {
 
   const [form] = Form.useForm()
   const watchTitle = Form.useWatch('title', form)
+  const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  const [bodyImageUrl, setBodyImageUrl] = useState<string | null>(null)
+
+  /** 本地图片选择：拦截真实上传，生成预览地址（接后端后替换为上传接口） */
+  const pickImage = (setter: (url: string) => void) => (file: File) => {
+    setter(URL.createObjectURL(file))
+    message.success('图片已上传（本地预览）')
+    return false
+  }
 
   const displayTitle = watchTitle || '秋季心脑血管养护：长者要注意这5件事'
 
@@ -120,9 +130,14 @@ export default function ArticleEdit() {
                 <label>
                   列表封面 <i>*</i>
                 </label>
-                <Button className="edit-upload-btn" onClick={() => message.info('封面上传开发中')}>
-                  上传封面
-                </Button>
+                <Upload accept="image/*" showUploadList={false} beforeUpload={pickImage(setCoverUrl)}>
+                  <Button className="edit-upload-btn">
+                    {coverUrl ? '重新上传封面' : '上传封面'}
+                  </Button>
+                </Upload>
+                {coverUrl && (
+                  <img className="edit-upload-preview" src={coverUrl} alt="列表封面" />
+                )}
               </div>
             </div>
             <div className="edit-field">
@@ -161,13 +176,14 @@ export default function ArticleEdit() {
                 进入秋季后，昼夜温差增大，心脑血管疾病容易出现波动。长者及家属可以从日常监测、饮食和活动三个方面做好预防。
               </p>
               <h5>一、坚持记录血压变化</h5>
-              <button
-                type="button"
-                className="editor-image-upload"
-                onClick={() => message.info('正文图片上传开发中')}
-              >
-                <PlusOutlined /> 点击上传护理示意图片
-              </button>
+              <Upload accept="image/*" showUploadList={false} beforeUpload={pickImage(setBodyImageUrl)}>
+                <button type="button" className="editor-image-upload">
+                  <PlusOutlined /> 点击上传护理示意图片
+                </button>
+              </Upload>
+              {bodyImageUrl && (
+                <img className="editor-image-preview" src={bodyImageUrl} alt="护理示意图片" />
+              )}
               <p>
                 建议每天固定时间测量并记录，如出现持续异常或伴随胸闷、头晕等症状，应及时联系医护人员。
               </p>

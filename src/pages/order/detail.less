@@ -1,10 +1,13 @@
 .order-detail {
   &__summary {
     .card-surface();
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: @spacing-md;
-    padding: @spacing-lg @spacing-xl;
+    .ant-card-body {
+      padding: @spacing-md @spacing-lg;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: @spacing-md;
+    }
+    
 
     .summary-item {
       display: flex;
@@ -43,10 +46,12 @@
 
   .detail-card {
     .card-surface();
-    padding: @spacing-lg @spacing-xl;
-
+    .ant-card-body {
+      padding: @spacing-md @spacing-lg;
+    }
+    
     h3 {
-      margin: 0 0 @spacing-md;
+      margin: 0 0 @spacing-sm;
       .text-title-card();
     }
 
@@ -151,8 +156,8 @@
   }
 
   .action-tip {
-    margin-bottom: @spacing-md;
-    padding: @spacing-md;
+    margin-bottom: 10px;
+    padding: 8px;
     background: fade(@color-warning, 14%);
     border-radius: @radius-sm;
 
@@ -161,7 +166,7 @@
     }
 
     p {
-      margin: @spacing-2xs 0 0;
+      margin: 2px 0 0;
       .text-auxiliary();
     }
 
@@ -178,25 +183,25 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: @spacing-sm;
-    margin-top: @spacing-sm;
+    margin-top: 10px;
   }
 
   .countdown {
     color: @color-primary;
-    font-size: @font-size-title-page;
+    font-size: 24px;
     font-weight: @font-weight-title-page;
     line-height: @line-height-title-page;
     letter-spacing: 2px;
   }
 
   .countdown-note {
-    margin: @spacing-xs 0 0;
+    margin: 0;
     .text-auxiliary();
   }
 
   .service-remark {
     margin: 0;
-    .text-body();
+    font-size: 12px;
     color: @color-text-secondary;
   }
 
