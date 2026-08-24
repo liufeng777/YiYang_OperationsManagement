@@ -72,7 +72,8 @@ export default function ActivityCreate() {
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewStatus, setPreviewStatus] = useState('normal')
   const [drawerKeyword, setDrawerKeyword] = useState('')
-  const [noticeOpen, setNoticeOpen] = useState(false)
+  // 报名须知编辑入口暂时隐藏（切换按钮被注释），保留状态便于恢复
+  const [noticeOpen] = useState(false)
   const [images, setImages] = useState<SortableImage[]>(initialDetailImages)
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
 

@@ -1,5 +1,18 @@
+/**
+ * 系统与权限管理（运营后台端-API设计 §2）
+ * - §2.1 管理员账号 system:admin
+ * - §2.2 角色管理 system:role
+ * - §2.3 权限管理（按模块扁平化） system:permission
+ * - §2.4 操作日志 system:operation-log
+ * 说明：文件上半部分为页面展示用类型（当前页面使用本地 mock 数据），
+ *       下半部分 DTO 与接口函数严格对齐 API 文档契约（snake_case / UTC 秒）。
+ */
 import { http } from '@/utils/request'
-import type { PageParams, PageResult } from '@/types/api'
+import type { ApiPageParams, ApiPageResult, CommonStatus } from '@/types/api'
+
+/* ------------------------------------------------------------------ */
+/* 页面展示类型（mock，接后端后逐步切换到下方 DTO）                       */
+/* ------------------------------------------------------------------ */
 
 /** 平台用户 */
 export interface AccountItem {
@@ -89,74 +102,205 @@ export interface AgreementItem {
   updater: string
 }
 
-/** 账号分页列表 */
-export function getAccountList(params: PageParams & { keyword?: string }) {
-  return http.get<PageResult<AccountItem>>('/system/account/list', { ...params })
+/* ------------------------------------------------------------------ */
+/* §2.1 管理员账号管理（权限 system:admin）                              */
+/* ------------------------------------------------------------------ */
+
+/** 管理员列表项 */
+export interface AdminItem {
+  id: number
+  username: string
+  nickname: string
+  /** 脱敏手机号 */
+  phone: string | null
+  email: string | null
+  status: CommonStatus
+  last_login_at: number | null
+  last_login_ip: string | null
+  roles: Array<{ id: number; role_name: string; role_code: string }>
+  created_at: number
 }
 
-/** 新增 / 编辑用户 */
-export function saveAccount(data: Partial<AccountItem>) {
-  return data.id
-    ? http.put<null>('/system/account/update', data)
-    : http.post<null>('/system/account/create', data)
+/** 新增 / 编辑管理员入参 */
+export interface AdminSaveBody {
+  username: string
+  /** 仅新增时必填 */
+  password?: string
+  nickname: string
+  phone?: string
+  email?: string
+  avatar_url?: string
+  status?: CommonStatus
+  role_ids?: number[]
 }
 
-/** 启用 / 停用用户 */
-export function toggleAccount(id: string, enabled: boolean) {
-  return http.post<null>(`/system/account/${id}/toggle`, { enabled })
+/** 管理员列表 GET /api/admin/admins */
+export function getAdminList(params?: ApiPageParams) {
+  return http.get<ApiPageResult<AdminItem>>('/admin/admins', { ...params })
 }
 
-/** 角色列表 */
-export function getRoleList() {
-  return http.get<RoleItem[]>('/system/role/list')
+/** 管理员详情 GET /api/admin/admins/:id */
+export function getAdminDetail(id: number) {
+  return http.get<AdminItem>(`/admin/admins/${id}`)
 }
 
-/** 保存角色权限 */
-export function saveRole(data: Partial<RoleItem>) {
-  return http.post<null>('/system/role/save', data)
+/** 新增管理员 POST /api/admin/admins */
+export function createAdmin(data: AdminSaveBody) {
+  return http.post<null>('/admin/admins', data)
 }
 
-/** 消息模板列表 */
-export function getMessageTemplateList(params: PageParams) {
-  return http.get<PageResult<MessageTemplateItem>>('/system/message/list', { ...params })
+/** 编辑管理员 PUT /api/admin/admins/:id */
+export function updateAdmin(id: number, data: Partial<AdminSaveBody>) {
+  return http.put<null>(`/admin/admins/${id}`, data)
 }
 
-/** 保存消息模板文案与渠道 */
-export function saveMessageTemplate(data: Partial<MessageTemplateItem>) {
-  return http.post<null>('/system/message/save', data)
+/** 重置密码 POST /api/admin/admins/:id/reset-password（重置为初始密码） */
+export function resetAdminPassword(id: number) {
+  return http.post<null>(`/admin/admins/${id}/reset-password`)
 }
 
-/** 系统公告分页列表 */
-export function getAnnouncementList(params: PageParams) {
-  return http.get<PageResult<AnnouncementItem>>('/system/announcement/list', { ...params })
+/** 启用/禁用 POST /api/admin/admins/:id/status */
+export function updateAdminStatus(id: number, status: CommonStatus) {
+  return http.post<null>(`/admin/admins/${id}/status`, { status })
 }
 
-/** 保存系统公告 */
-export function saveAnnouncement(data: Partial<AnnouncementItem>) {
-  return http.post<null>('/system/announcement/save', data)
+/** 分配角色 POST /api/admin/admins/:id/roles */
+export function assignAdminRoles(id: number, roleIds: number[]) {
+  return http.post<null>(`/admin/admins/${id}/roles`, { role_ids: roleIds })
 }
 
-/** 帮助与电话配置 */
-export function saveHelpConfig(data: Record<string, string>) {
-  return http.post<null>('/system/help/save', data)
+/** 删除管理员 DELETE /api/admin/admins/:id */
+export function deleteAdmin(id: number) {
+  return http.delete<null>(`/admin/admins/${id}`)
 }
 
-/** 常见问题列表 */
-export function getFaqList(params: PageParams) {
-  return http.get<PageResult<FaqItem>>('/system/faq/list', { ...params })
+/* ------------------------------------------------------------------ */
+/* §2.2 角色管理（权限 system:role）                                     */
+/* ------------------------------------------------------------------ */
+
+/** 权限项（扁平化，module + action） */
+export interface PermissionItem {
+  id: number
+  /** 功能模块，如 order / member / staff / institution */
+  module: string
+  /** view 只读 / edit 可读增改 / manage 全部 */
+  action: 'view' | 'edit' | 'manage'
+  /** 权限码，如 order:view */
+  code: string
+  name: string
 }
 
-/** 协议版本列表 */
-export function getAgreementList(params: PageParams) {
-  return http.get<PageResult<AgreementItem>>('/system/agreement/list', { ...params })
+/** 角色详情（含已分配权限） */
+export interface RoleDetail {
+  id: number
+  role_name: string
+  role_code: string
+  description: string
+  status: CommonStatus
+  permissions: PermissionItem[]
 }
 
-/** 保存协议版本（新建草稿 / 发布） */
-export function saveAgreement(data: Partial<AgreementItem>) {
-  return http.post<null>('/system/agreement/save', data)
+/** 角色新增 / 编辑入参 */
+export interface RoleSaveBody {
+  role_name: string
+  /** 唯一，新增必填 */
+  role_code?: string
+  description?: string
+  status?: CommonStatus
+  permission_ids?: number[]
 }
 
-/** 操作日志分页列表 */
-export function getLogList(params: PageParams) {
-  return http.get<PageResult<LogItem>>('/system/log/list', { ...params })
+/** 角色列表 GET /api/admin/roles（?all=1 返回全部） */
+export function getRoles(params?: ApiPageParams & { all?: 0 | 1 }) {
+  return http.get<ApiPageResult<RoleDetail>>('/admin/roles', { ...params })
+}
+
+/** 角色详情 GET /api/admin/roles/:id */
+export function getRoleDetail(id: number) {
+  return http.get<RoleDetail>(`/admin/roles/${id}`)
+}
+
+/** 新增角色 POST /api/admin/roles */
+export function createRole(data: RoleSaveBody) {
+  return http.post<null>('/admin/roles', data)
+}
+
+/** 编辑角色 PUT /api/admin/roles/:id */
+export function updateRole(id: number, data: Partial<RoleSaveBody>) {
+  return http.put<null>(`/admin/roles/${id}`, data)
+}
+
+/** 分配权限 POST /api/admin/roles/:id/permissions */
+export function assignRolePermissions(id: number, permissionIds: number[]) {
+  return http.post<null>(`/admin/roles/${id}/permissions`, { permission_ids: permissionIds })
+}
+
+/** 启用/禁用角色 POST /api/admin/roles/:id/status */
+export function updateRoleStatus(id: number, status: CommonStatus) {
+  return http.post<null>(`/admin/roles/${id}/status`, { status })
+}
+
+/** 删除角色 DELETE /api/admin/roles/:id */
+export function deleteRole(id: number) {
+  return http.delete<null>(`/admin/roles/${id}`)
+}
+
+/* ------------------------------------------------------------------ */
+/* §2.3 权限管理（按模块扁平化，权限 system:permission）                   */
+/* ------------------------------------------------------------------ */
+
+/** 权限列表（按模块分组）出参 */
+export interface PermissionGroups {
+  modules: string[]
+  list: PermissionItem[]
+}
+
+/** 权限列表 GET /api/admin/permissions（扁平列表，按 module 分组） */
+export function getPermissions() {
+  return http.get<PermissionGroups>('/admin/permissions')
+}
+
+/** 权限模块列表 GET /api/admin/permissions/modules */
+export function getPermissionModules() {
+  return http.get<string[]>('/admin/permissions/modules')
+}
+
+/* ------------------------------------------------------------------ */
+/* §2.4 操作日志（权限 system:operation-log）                            */
+/* ------------------------------------------------------------------ */
+
+/** 操作日志列表项 */
+export interface OperationLogItem {
+  id: number
+  admin_id: number
+  admin_name: string
+  action: string
+  resource: string
+  resource_id: number
+  ip_address: string
+  request_method: string
+  request_url: string
+  request_params: Record<string, unknown> | null
+  response_status: number
+  duration_ms: number
+  created_at: number
+}
+
+/** 操作日志列表 GET /api/admin/operation-logs */
+export function getOperationLogs(
+  params?: ApiPageParams & {
+    admin_id?: number
+    action?: string
+    resource?: string
+    resource_id?: number
+    start_time?: number
+    end_time?: number
+  },
+) {
+  return http.get<ApiPageResult<OperationLogItem>>('/admin/operation-logs', { ...params })
+}
+
+/** 操作日志详情 GET /api/admin/operation-logs/:id */
+export function getOperationLogDetail(id: number) {
+  return http.get<OperationLogItem>(`/admin/operation-logs/${id}`)
 }

@@ -1,5 +1,12 @@
-import { http } from '@/utils/request'
-import type { PageParams, PageResult } from '@/types/api'
+/**
+ * 内容配置 - 页面展示类型（当前页面使用本地 mock 数据）
+ *
+ * 说明：本模块仅保留患者端首页配置 / 科普内容 / 专业人员展示页面的展示类型。
+ * 文档对齐的内容管理接口请使用 `@/api/modules/cms`（§10 cms_content / banners）。
+ * ⚠️ 以下页面交互在 API 文档中暂无对应接口（详见 WORKLOG 缺口清单）：
+ * - 患者端首页配置的整体获取 / 发布（轮播之外的快捷入口、推荐位）
+ * - 专业人员展示设置（visible / recommended / 患者端简介）
+ */
 
 /** 首页轮播图 */
 export interface BannerItem {
@@ -70,50 +77,4 @@ export interface StaffItem {
   recommendSort?: number
   /** 患者端展示简介 */
   intro?: string
-}
-
-/** 获取首页配置 */
-export function getHomeConfig() {
-  return http.get<{
-    banners: BannerItem[]
-    entries: HomeEntryItem[]
-    recommends: HomeRecommendItem[]
-  }>('/content/home/config')
-}
-
-/** 发布首页配置 */
-export function publishHomeConfig(data: Record<string, unknown>) {
-  return http.post<null>('/content/home/publish', data)
-}
-
-/** 科普内容分页列表 */
-export function getArticleList(params: PageParams & { keyword?: string; status?: string }) {
-  return http.get<PageResult<ArticleItem>>('/content/article/list', { ...params })
-}
-
-/** 保存科普内容 */
-export function saveArticle(data: Partial<ArticleItem>) {
-  return data.id
-    ? http.put<null>('/content/article/update', data)
-    : http.post<null>('/content/article/create', data)
-}
-
-/** 科普内容发布 / 下架 */
-export function toggleArticle(ids: string[], publish: boolean) {
-  return http.post<null>('/content/article/toggle', { ids, publish })
-}
-
-/** 专业人员列表 */
-export function getStaffList(params: PageParams & { keyword?: string }) {
-  return http.get<PageResult<StaffItem>>('/content/staff/list', { ...params })
-}
-
-/** 同步工作台人员资料 */
-export function syncStaff() {
-  return http.post<null>('/content/staff/sync')
-}
-
-/** 保存人员展示设置 */
-export function saveStaffDisplay(data: Partial<StaffItem>) {
-  return http.post<null>('/content/staff/display', data)
 }

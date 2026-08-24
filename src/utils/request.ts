@@ -24,6 +24,8 @@ service.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    // 客户端类型标识（共通 §3.1）
+    config.headers['X-Client-Type'] = 'web-admin'
     return config
   },
   (error: AxiosError) => Promise.reject(error),
