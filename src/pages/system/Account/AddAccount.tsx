@@ -17,7 +17,7 @@ const roleDict: Record<
   { role_name: string; role_code: string; summary: string }
 > = {
   1: {
-    role_name: '超级管理员',
+    role_name: '平台管理员',
     role_code: 'super',
     summary: '拥有全部平台功能权限，包含用户、角色与系统设置。',
   },

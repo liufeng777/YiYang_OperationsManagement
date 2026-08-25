@@ -6,10 +6,7 @@
 
   .role-list {
     .card-surface();
-    .ant-card-body {
-      padding: @spacing-md;
-    }
-    
+    padding: @spacing-lg;
 
     &__header {
       display: flex;
@@ -25,7 +22,7 @@
 
     &__tip {
       margin: 0 0 @spacing-md;
-      padding: @spacing-sm;
+      padding: @spacing-sm @spacing-md;
       background: @color-bg-page;
       border-radius: @radius-sm;
       .text-auxiliary();
@@ -70,8 +67,6 @@
 
     > p {
       margin: 0;
-      width: 100%;
-      .ellipsis();
       .text-auxiliary();
     }
 
@@ -90,30 +85,18 @@
         color: @color-primary;
         .text-auxiliary();
       }
-
-      &__actions {
-        display: inline-flex;
-        gap: @spacing-2xs;
-
-        .ant-btn {
-          padding-inline: @spacing-2xs;
-        }
-      }
     }
   }
 
   .role-panel {
     .card-surface();
-    .ant-card-body {
-      padding: @spacing-md;
-    }
-    
+    padding: @spacing-lg @spacing-xl;
 
     &__header {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      margin-bottom: @spacing-sm;
+      margin-bottom: @spacing-md;
 
       h3 {
         margin: 0 0 @spacing-2xs;
@@ -127,7 +110,7 @@
 
     &__banner {
       margin-bottom: @spacing-md;
-      padding: @spacing-sm;
+      padding: @spacing-md;
       color: @color-info;
       background: fade(@color-info, 8%);
       border-radius: @radius-sm;
@@ -229,11 +212,4 @@
       }
     }
   }
-}
-
-/* 角色编辑 Drawer 底部按钮区 */
-.role-editor__footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: @spacing-sm;
 }
