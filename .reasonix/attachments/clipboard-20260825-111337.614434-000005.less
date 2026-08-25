@@ -39,8 +39,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    width: 80%;
-    margin-left: 10%;
+    padding-left: 24px;
     .logo-text {
       display: flex;
       flex-direction: column;
@@ -55,16 +54,9 @@
     }
   }
 
-  &__logo__collapsed {
-    height: 70px;
-    width: 100%;
-    text-align: center;
-    line-height: 70px;
-  }
-
   &__user {
-    width: 90%;
-    margin: 20px 5%;
+    width: 208px;
+    margin: 20px auto;
     height: 64px;
     display: flex;
     align-items: center;
@@ -83,21 +75,6 @@
         font-size: 12px;
         color: @color-text-secondary;
       }
-    }
-  }
-
-  /* 折叠态：logo 与用户卡片仅保留图标并水平居中 */
-  &.ant-layout-sider-collapsed {
-    .basic-layout__logo {
-      justify-content: center;
-      padding-left: 0;
-      gap: 0;
-    }
-    .basic-layout__user {
-      width: 100%;
-      margin: 20px auto;
-      justify-content: center;
-      padding: 0;
     }
   }
 

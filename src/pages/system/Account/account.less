@@ -71,53 +71,6 @@
     }
   }
 
-  &__field {
-    margin-bottom: @spacing-md;
-
-    label {
-      display: block;
-      margin-bottom: @spacing-xs;
-      .text-label();
-      color: @color-text-primary;
-
-      i {
-        color: @color-danger;
-        font-style: normal;
-      }
-    }
-
-    /* Form.Item 复刻原 label 排布 */
-    .ant-form-item {
-      margin-bottom: 0;
-
-      .ant-form-item-label {
-        padding-bottom: @spacing-xs;
-
-        > label {
-          height: auto;
-          margin-bottom: 0;
-          .text-label();
-          color: @color-text-primary;
-
-          i {
-            color: @color-danger;
-            font-style: normal;
-          }
-        }
-      }
-
-      .ant-form-item-explain-error {
-        margin-top: 2px;
-        font-size: @font-size-auxiliary;
-        line-height: @line-height-auxiliary;
-      }
-    }
-
-    .ant-select {
-      width: 100%;
-    }
-  }
-
   &__switch {
     display: flex;
     align-items: center;
@@ -131,6 +84,23 @@
       display: block;
       margin-top: 2px;
       .text-auxiliary();
+    }
+  }
+
+  &__avatar {
+    .ant-upload-wrapper .ant-upload {
+      margin: 0;
+    }
+
+    &-tip {
+      margin-top: @spacing-2xs;
+      color: @color-text-secondary;
+      font-size: @font-size-auxiliary;
+    }
+
+    /* 隐藏 avatar_url 隐藏字段的 input */
+    .ant-form-item-hidden {
+      display: none;
     }
   }
 

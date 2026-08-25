@@ -19,29 +19,31 @@ export type OperationStatus = 'normal' | 'pending' | 'paused'
 
 /** 机构列表项 */
 export interface InstitutionItem {
-  id: string
+  id: number
   /** 机构编码：JG0001 */
   code: string
   name: string
   /** 机构类型：健康驿站 / 护理院 */
-  type: string
-  /** 机构来源 */
-  source: string
-  /** 所在区域：拱墅区 */
-  region: string
-  /** 所在街道：申花街道 */
-  street: string
+  type: number; // 1-护理院 2-驿站
+  /** 省份 */
+  province: string
+  /** 城市 */
+  city: string
+  // 区
+  district: string
   /** 详细地址 */
   address: string
-  contactPhone: string
-  /** 已配服务数 */
-  serviceCount: number
-  /** 商品数 */
-  productCount: number
-  /** 服务数 */
-  serviceTotal: number
-  syncStatus: SyncStatus
-  operationStatus: OperationStatus
+  // 服务半径
+  service_radius_km: number
+  // 联系电话
+  contact_phone: string
+  // 管理员
+  manager_name: string;
+  // 管理员联系电话
+  manager_phone: string
+  // 状态
+  status: number  // 1-启用 9-禁用
+  created_at: string; // 时间戳
 }
 
 /** 机构已添加服务 */

@@ -210,12 +210,12 @@ export const routes: RouteConfig[] = [
       {
         path: '',
         meta: { title: '用户管理' },
-        component: lazy(() => import('@/pages/system/account')),
+        component: lazy(() => import('@/pages/system/Account/account')),
       },
       {
         path: 'role',
         meta: { title: '角色管理' },
-        component: lazy(() => import('@/pages/system/role')),
+        component: lazy(() => import('@/pages/system/Role/role')),
       },
       {
         path: 'agreement',

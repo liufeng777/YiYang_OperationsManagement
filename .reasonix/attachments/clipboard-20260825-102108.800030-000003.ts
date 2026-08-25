@@ -1,19 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { authApi } from '@/api'
 import { useNavigationStore } from './navigation'
 
-/** 用户信息（登录出参 admin 映射而来） */
+/** 用户信息 */
 export interface UserInfo {
-  id: number
+  id: number | string
   username: string
   nickname: string
   avatar?: string
-  phone?: string | null
-  email?: string | null
   roles: string[]
-  /** 权限码数组，如 ["order:view","order:manage"] */
-  permissions: string[]
 }
 
 interface UserState {
@@ -21,7 +16,7 @@ interface UserState {
   userInfo: UserInfo | null
   setToken: (token: string) => void
   setUserInfo: (userInfo: UserInfo) => void
-  /** 登录：调用 POST /api/admin/auth/login */
+  /** 登录（当前为 mock 实现，接入真实后端后替换为调用登录接口） */
   login: (params: { username: string; password: string }) => Promise<void>
   logout: () => void
 }
@@ -34,35 +29,19 @@ export const useUserStore = create<UserState>()(
       setToken: (token) => set({ token }),
       setUserInfo: (userInfo) => set({ userInfo }),
       login: async (params) => {
+        // TODO: 接入真实登录接口后替换为：
         // const res = await authApi.login(params)
-        // const { admin } = res
-        // set({
-        //   token: res.token,
-        //   userInfo: {
-        //     id: admin.id,
-        //     username: admin.username,
-        //     nickname: admin.nickname,
-        //     avatar: admin.avatar_url ?? undefined,
-        //     phone: admin.phone,
-        //     email: admin.email,
-        //     roles: admin.roles,
-        //     permissions: admin.permissions,
-        //   },
-        // })
+        // set({ token: res.token, userInfo: res.userInfo })
+        void params
         set({
           token: `mock-token-${Date.now()}`,
           userInfo: {
             id: 1,
             username: params.username,
             nickname: params.username,
-            avatar: undefined,
-            phone: '18258419062',
-            email: null,
-            roles: ["finance", "operator"],
-            permissions: ["order:view", "order:manage", "finance:reconcile"]
+            roles: ['admin'],
           },
         })
-         
       },
       logout: () => {
         set({ token: '', userInfo: null })

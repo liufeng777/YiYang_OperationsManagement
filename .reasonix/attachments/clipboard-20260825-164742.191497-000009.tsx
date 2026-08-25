@@ -4,94 +4,147 @@
  * 当前为 mock 数据，后端就绪后替换为 systemApi.getAccountList / saveAccount
  */
 import { useMemo, useState } from 'react'
-import { App, Button, Card, Drawer, Form, Input, Radio, Select, Switch, Table } from 'antd'
+import { App, Button, Card, Drawer, Form, Input, Radio, Select, Space, Switch, Table, Tag, Upload } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import type { UploadFile } from 'antd'
 import { BarChartOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
-import type { AccountItem } from '@/api/modules/system'
+import type { AccountItem } from '@/api/modules/system';
+import { formatDateTime } from '@/utils'
 import './account.less'
 
-const roleSummary: Record<string, string> = {
-  平台管理员: '拥有全部平台功能权限，包含用户、角色与系统设置。',
-  运营人员: '机构管理、服务项目、活动与内容；不包含退款审核、财务对账和系统设置。',
-  财务人员: '订单查看、退款审核与财务对账；不包含机构与内容维护。',
-  订单客服: '订单查询与退款处理；不包含财务对账和系统设置。',
+/** 角色字典：id → 名称/编码/权限摘要（1-超管 2-运营人员 3-财务人员 4-订单客服） */
+const roleDict: Record<
+  number,
+  { role_name: string; role_code: string; summary: string }
+> = {
+  1: {
+    role_name: '超管',
+    role_code: 'super',
+    summary: '拥有全部平台功能权限，包含用户、角色与系统设置。',
+  },
+  2: {
+    role_name: '运营人员',
+    role_code: 'operator',
+    summary: '机构管理、服务项目、活动与内容；不包含退款审核、财务对账和系统设置。',
+  },
+  3: {
+    role_name: '财务人员',
+    role_code: 'finance',
+    summary: '订单查看、退款审核与财务对账；不包含机构与内容维护。',
+  },
+  4: {
+    role_name: '订单客服',
+    role_code: 'orderCustomerService',
+    summary: '订单查询与退款处理；不包含财务对账和系统设置。',
+  },
 }
 
 const initialAccounts: AccountItem[] = [
   {
-    id: '1',
+    id: 1,
     username: 'chen.yunying',
-    name: '陈运营',
-    roleName: '平台管理员',
+    nickname: '陈运营',
+    password: '',
+    roles: [{
+      id: 1,
+      role_name: "超管",
+      role_code: "super"
+    }],
     phone: '138****1026',
-    loginType: '账号密码',
-    enabled: true,
-    lastLoginTime: '今日 09:12',
-    creator: '系统初始化',
+    email: null,
+    status: 1,
+    last_login_at: 1787645591,
+    last_login_ip: '127.0.0.1',
+    created_at: 1787645591,
   },
   {
-    id: '2',
+    id: 2,
     username: 'li.caiwu',
-    name: '李财务',
-    roleName: '财务人员',
+    nickname: '李财务',
+    password: '',
+    roles: [{
+      id: 2,
+      role_name: "运营人员",
+      role_code: "operator"
+    }, {
+      id: 3,
+      role_name: "财务人员",
+      role_code: "finance"
+    }],
     phone: '136****5381',
-    loginType: '账号密码',
-    enabled: true,
-    lastLoginTime: '今日 08:45',
-    creator: '陈运营',
+    email: 'li.caiwu@163.com',
+    status: 9,
+    last_login_at: 1787645591,
+    last_login_ip: '127.0.0.1',
+    created_at: 1787645591
   },
   {
-    id: '3',
+    id: 3,
     username: 'wang.kefu',
-    name: '王客服',
-    roleName: '订单客服',
+    nickname: '王客服',
+    password: '',
+    roles: [{
+      id: 4,
+      role_name: "订单客服",
+      role_code: "orderCustomerService"
+    }],
     phone: '159****2218',
-    loginType: '账号密码',
-    enabled: true,
-    lastLoginTime: '昨日 17:36',
-    creator: '陈运营',
+    email: '',
+    status: 1,
+    last_login_at: 1787645591,
+    last_login_ip: '127.0.0.1',
+    created_at: 1787645591,
   },
   {
-    id: '4',
+    id: 4,
     username: 'zhou.neirong',
-    name: '周内容',
-    roleName: '运营人员',
+    nickname: '周内容',
     phone: '137****6632',
-    loginType: '账号密码',
-    enabled: true,
-    lastLoginTime: '昨日 16:20',
-    creator: '陈运营',
+    roles: [{
+      id: 2,
+      role_name: "运营人员",
+      role_code: "operator"
+    }, {
+      id: 3,
+      role_name: "财务人员",
+      role_code: "finance"
+    }],
+    password: '',
+    status: 1,
+    last_login_at: 1787645591,
+    last_login_ip: '127.0.0.1',
+    created_at: 1787645591,
+    email: 'neirong@qq.com',
   },
   {
-    id: '5',
+    id: 5,
     username: 'zhao.yunying',
-    name: '赵运营',
-    roleName: '运营人员',
+    nickname: '赵运营',
+    password: '',
     phone: '135****9066',
-    loginType: '账号密码',
-    enabled: false,
-    lastLoginTime: '08-01 10:08',
-    creator: '陈运营',
-  },
-  {
-    id: '6',
-    username: 'test.operation',
-    name: '测试账号',
-    roleName: '运营人员',
-    phone: '188****3175',
-    loginType: '账号密码',
-    enabled: false,
-    lastLoginTime: '07-28 14:42',
-    creator: '陈运营',
-  },
+    roles: [{
+      id: 2,
+      role_name: "运营人员",
+      role_code: "operator"
+    }, {
+      id: 3,
+      role_name: "财务人员",
+      role_code: "finance"
+    }],
+    email: '',
+    status: 9,
+    last_login_at: 1787645591,
+    last_login_ip: '127.0.0.1',
+    created_at: 1787645591,
+  }
 ]
 
 const tabItems = [
   { key: 'all', label: '全部' },
   { key: 'enabled', label: '启用 10' },
   { key: 'disabled', label: '停用 2' },
-  { key: '平台管理员', label: '平台管理员 2' },
+  { key: '平台管理员', label: '超管 1' },
   { key: '运营人员', label: '运营人员 4' },
   { key: 'other', label: '其他角色 6' },
 ]
@@ -125,35 +178,68 @@ export default function AccountList() {
     login: 'all',
   })
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string>()
+  const [avatarList, setAvatarList] = useState<UploadFile[]>([])
 
   interface AccountFormValues {
-    name: string
+    avatar_url?: string
+    nickname: string
     phone: string
     username: string
-    role: string
-    enabled: boolean
+    password: string
+    email?: string
+    role_ids: number[]
+    status: number // 1 启用 / 9 停用
   }
 
   const [form] = Form.useForm<AccountFormValues>()
-  const formRole = Form.useWatch('role', form) ?? '运营人员'
+  const formRoleIds = Form.useWatch('role_ids', form) ?? []
+
+  /** 头像上传：本地预览，后端就绪后接入 uploadApi.uploadFile */
+  const handleAvatarChange = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      message.error('仅支持上传图片')
+      return Upload.LIST_IGNORE
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const url = reader.result as string
+      setAvatarUrl(url)
+      setAvatarList([{ uid: '-1', name: file.name, status: 'done', url }])
+      form.setFieldValue('avatar_url', url)
+    }
+    reader.readAsDataURL(file)
+    return false
+  }
+
+  const handleRemoveAvatar = () => {
+    setAvatarUrl(undefined)
+    setAvatarList([])
+    form.setFieldValue('avatar_url', undefined)
+  }
+
+  const onStatusChecked = (checked: boolean) => (checked ? 1 : 9)
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
       const keywordHit =
         !applied.keyword ||
-        item.name.includes(applied.keyword) ||
+        item.username.includes(applied.keyword) ||
         item.username.toLowerCase().includes(applied.keyword.toLowerCase()) ||
         item.phone.includes(applied.keyword)
-      const roleHit = applied.role === 'all' || item.roleName === applied.role
+      const roleNames = item.roles.map((r) => r.role_name)
+      const roleHit =
+        applied.role === 'all' || roleNames.includes(applied.role)
       const statusHit =
         applied.status === 'all' ||
-        (applied.status === 'enabled' ? item.enabled : !item.enabled)
+        (applied.status === 'enabled' ? item.status === 1 : item.status === 9)
       const tabHit =
         tab === 'all' ||
-        (tab === 'enabled' && item.enabled) ||
-        (tab === 'disabled' && !item.enabled) ||
-        (tab === 'other' && item.roleName !== '平台管理员' && item.roleName !== '运营人员') ||
-        item.roleName === tab
+        (tab === 'enabled' && item.status === 1) ||
+        (tab === 'disabled' && item.status === 9) ||
+        (tab === 'other' &&
+          !roleNames.some((name) => name === '超管' || name === '运营人员')) ||
+        roleNames.includes(tab)
       return keywordHit && roleHit && statusHit && tabHit
     })
   }, [applied, data, tab])
@@ -171,6 +257,8 @@ export default function AccountList() {
   }
 
   const openDrawer = () => {
+    setAvatarUrl(undefined)
+    setAvatarList([])
     form.resetFields()
     setDrawerOpen(true)
   }
@@ -178,22 +266,33 @@ export default function AccountList() {
   const handleCreate = async () => {
     try {
       const values = await form.validateFields()
+      const nickname = values.nickname.trim()
+      const username = values.username.trim()
+      const now = Math.floor(Date.now() / 1000)
       setData((prev) => [
         ...prev,
         {
-          id: `new-${Date.now()}`,
-          username: values.username.trim(),
-          name: values.name.trim(),
-          roleName: values.role,
+          id: Date.now(),
+          username,
+          nickname,
+          password: values.password,
           phone: values.phone.trim(),
-          loginType: '账号密码',
-          enabled: values.enabled,
-          lastLoginTime: '—',
-          creator: '陈运营',
+          email: values.email?.trim() || null,
+          status: values.status, // 1 启用 / 9 停用
+          roles: values.role_ids.map((rid) => ({
+            id: rid,
+            role_name: roleDict[rid].role_name,
+            role_code: roleDict[rid].role_code,
+          })),
+          created_at: now,
+          last_login_at: now,
+          last_login_ip: '--',
         },
       ])
-      message.success(`用户 ${values.name.trim()} 已创建（mock）`)
+      message.success(`用户 ${nickname} 已创建（mock）`)
       form.resetFields()
+      setAvatarUrl(undefined)
+      setAvatarList([])
       setDrawerOpen(false)
     } catch {
       // 校验失败由 Form.Item 就地提示
@@ -202,37 +301,41 @@ export default function AccountList() {
 
   const handleToggle = (record: AccountItem) => {
     setData((prev) =>
-      prev.map((item) => (item.id === record.id ? { ...item, enabled: !item.enabled } : item)),
+      prev.map((item) =>
+        item.id === record.id
+          ? { ...item, status: item.status === 1 ? 9 : 1 }
+          : item,
+      ),
     )
-    message.success(`${record.name} 已${record.enabled ? '停用' : '启用'}（mock）`)
+    message.success(`${record.username} 已${record.status === 1 ? '停用' : '启用'}（mock）`)
   }
 
   const columns = useMemo<ColumnsType<AccountItem>>(
     () => [
       {
-        title: '账号 / 姓名',
+        title: '用户名 / 昵称',
         key: 'username',
         render: (_, record) => (
           <div className="account-name">
             <strong>{record.username}</strong>
-            <span>{record.name}</span>
+            <span>{record.nickname}</span>
           </div>
         ),
       },
-      { title: '所属角色', dataIndex: 'roleName', key: 'roleName', width: 120 },
+      { title: '角色', dataIndex: 'roles', key: 'roles', render: (roles: AccountItem['roles']) => (
+        <Space>{roles.map(v => <Tag key={v.id}>{v.role_name}</Tag>)}</Space>
+      )},
       { title: '手机号', dataIndex: 'phone', key: 'phone', width: 130 },
-      { title: '登录方式', dataIndex: 'loginType', key: 'loginType', width: 100 },
       {
         title: '账号状态',
-        dataIndex: 'enabled',
-        key: 'enabled',
+        dataIndex: 'status',
+        key: 'status',
         width: 100,
-        render: (value: boolean) => (
-          <span className={`account-status${value ? ' is-on' : ''}`}>{value ? '启用' : '停用'}</span>
+        render: (value: number) => (
+          <span className={`account-status${value === 1 ? ' is-on' : ''}`}>{value === 1 ? '启用' : '停用'}</span>
         ),
       },
-      { title: '最近登录', dataIndex: 'lastLoginTime', key: 'lastLoginTime', width: 120 },
-      { title: '创建人', dataIndex: 'creator', key: 'creator', width: 110 },
+      { title: '最近登录', dataIndex: 'last_login_at', key: 'last_login_at', width: 160, render: (v: number) => formatDateTime(v * 1000)},
       {
         title: '操作',
         key: 'action',
@@ -245,10 +348,10 @@ export default function AccountList() {
             <Button
               type="link"
               size="small"
-              danger={record.enabled}
+              danger={record.status === 1}
               onClick={() => handleToggle(record)}
             >
-              {record.enabled ? '停用' : '启用'}
+              {record.status === 1 ? '停用' : '启用'}
             </Button>
           </div>
         ),
@@ -370,17 +473,19 @@ export default function AccountList() {
         <div className="account-drawer">
           <div className="account-drawer__tip">
             <strong>权限由所属角色统一决定</strong>
-            <p>一期每个用户只分配一个角色，不在用户侧单独配置权限。</p>
+            <p>可为一个用户分配多个角色，权限为各角色权限的并集。</p>
           </div>
           <Form
             form={form}
-            layout="vertical"
+            // layout="vertical"
             requiredMark={false}
-            initialValues={{ role: '运营人员', enabled: true }}
+            labelCol={{ span: 6 }}
+            wrapperCol={{ span: 18 }}
+            initialValues={{ status: 1, role_ids: [2] }}
           >
             <div className="account-drawer__field">
               <Form.Item
-                name="name"
+                name="nickname"
                 label={<span>姓名 <i>*</i></span>}
                 rules={[{ required: true, message: '请输入用户姓名' }]}
               >
@@ -410,11 +515,42 @@ export default function AccountList() {
             </div>
             <div className="account-drawer__field">
               <Form.Item
-                name="role"
-                label={<span>所属角色 <i>*</i></span>}
-                rules={[{ required: true, message: '请选择所属角色' }]}
+                name="password"
+                label={<span>登录密码 <i>*</i></span>}
+                rules={[
+                  { required: true, message: '请输入登录密码' },
+                  { min: 6, message: '密码至少 6 位' },
+                ]}
               >
-                <Select options={Object.keys(roleSummary).map((name) => ({ label: name, value: name }))} />
+                <Input.Password placeholder="请输入登录密码（用于首次登录）" />
+              </Form.Item>
+            </div>
+            <div className="account-drawer__field">
+              <Form.Item
+                name="email"
+                label={<>邮箱</>}
+                rules={[{ type: 'email', message: '请输入正确的邮箱地址' }]}
+              >
+                <Input placeholder="请输入邮箱（选填）" />
+              </Form.Item>
+            </div>
+            <div className="account-drawer__field">
+              <Form.Item
+                name="role_ids"
+                label={<span>所属角色 <i>*</i></span>}
+                rules={[
+                  { required: true, message: '请选择所属角色' },
+                  { type: 'array', min: 1, message: '请至少选择一个角色' },
+                ]}
+              >
+                <Select
+                  mode="multiple"
+                  placeholder="请选择所属角色（可多选）"
+                  options={Object.keys(roleDict).map((key) => {
+                    const id = Number(key)
+                    return { label: roleDict[id].role_name, value: id }
+                  })}
+                />
               </Form.Item>
             </div>
             <div className="account-drawer__field account-drawer__switch">
@@ -422,14 +558,51 @@ export default function AccountList() {
                 <label>账号状态</label>
                 <span>启用后允许用户登录运营平台</span>
               </div>
-              <Form.Item name="enabled" valuePropName="checked" noStyle>
+              <Form.Item
+                name="status"
+                valuePropName="checked"
+                getValueFromEvent={onStatusChecked}
+                getValueProps={(value: number) => ({ checked: value === 1 })}
+                noStyle
+              >
                 <Switch />
+              </Form.Item>
+            </div>
+            <div className="account-drawer__field account-drawer__avatar">
+              <label>头像</label>
+              <Upload
+                listType="picture-card"
+                maxCount={1}
+                accept="image/*"
+                fileList={avatarList}
+                beforeUpload={handleAvatarChange}
+                onRemove={handleRemoveAvatar}
+              >
+                {avatarUrl
+                  ? null
+                  : (
+                  <div>
+                    <PlusOutlined />
+                    <div className="account-drawer__avatar-tip">上传头像</div>
+                  </div>
+                  )}
+              </Upload>
+              <Form.Item name="avatar_url" hidden noStyle>
+                <input />
               </Form.Item>
             </div>
           </Form>
           <div className="account-drawer__summary">
-            <strong>{formRole} · 权限摘要</strong>
-            <p>{roleSummary[formRole]}</p>
+            <strong>所选角色 · 权限摘要</strong>
+            {formRoleIds.length > 0 ? (
+              formRoleIds.map((rid) => (
+                <p key={rid}>
+                  <b>{roleDict[rid].role_name}</b>：{roleDict[rid].summary}
+                </p>
+              ))
+            ) : (
+              <p className="account-drawer__summary-empty">请选择角色以查看权限摘要</p>
+            )}
           </div>
         </div>
       </Drawer>

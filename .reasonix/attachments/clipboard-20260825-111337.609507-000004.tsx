@@ -2,7 +2,7 @@
  * 基础布局：侧边栏 + 顶部导航 + 内容区
  */
 import { useEffect } from 'react'
-import { Layout, Avatar, Tooltip } from 'antd'
+import { Layout, Avatar } from 'antd'
 import { GitlabFilled, UserOutlined } from '@ant-design/icons'
 import { Outlet, useLocation } from 'react-router-dom'
 import SiderMenu from './SiderMenu'
@@ -44,43 +44,20 @@ export default function BasicLayout() {
         trigger={null}
         className="basic-layout__sider"
       >
-        <div className={collapsed ? "basic-layout__logo__collapsed" : "basic-layout__logo"}>
-          {collapsed ? (
-            <Tooltip title="幸福颐养 · 运营管理平台" placement="right">
-              <span className="basic-layout__logo-icon">
-                <GitlabFilled style={{ color: '#27866B', fontSize: 24 }} />
-              </span>
-            </Tooltip>
-          ) : (
-            <>
-              <GitlabFilled style={{ color: '#27866B', fontSize: 24 }} />
-              <span className='logo-text'>
-                <span className='logo-value'>幸福颐养</span>
-                <span className='logo-label'>运营管理平台</span>
-              </span>
-            </>
-          )}
+        <div className="basic-layout__logo">
+          <GitlabFilled style={{ color: '#27866B', fontSize: 24 }}  />
+          <span className='logo-text'>
+            <span className='logo-value'>幸福颐养</span>
+            <span className='logo-label'>运营管理平台</span>
+          </span>
         </div>
         <SiderMenu />
         <div className='basic-layout__user'>
-          {collapsed ? (
-            <Tooltip
-              placement="right"
-              title={`${userInfo?.username || ''}${
-                userInfo?.roles?.length ? `（${userInfo!.roles.join('、')}）` : ''
-              }`}
-            >
-              <Avatar size={28} icon={<UserOutlined />} style={{ background: '#27866B' }} />
-            </Tooltip>
-          ) : (
-            <>
-              <Avatar size={28} icon={<UserOutlined />} style={{ background: '#27866B' }} />
-              <span className='user-info'>
-                <span className='user-name'>{userInfo?.username}</span>
-                <span className='user-roles'>{userInfo?.roles}</span>
-              </span>
-            </>
-          )}
+          <Avatar size={28} icon={<UserOutlined />} style={{ background: '#27866B' }} />
+          <span className='user-info'>
+            <span className='user-name'>{userInfo?.username}</span>
+            <span className='user-roles'>{userInfo?.roles}</span>
+          </span>
         </div>
       </Sider>
       <Layout className="basic-layout__main">
