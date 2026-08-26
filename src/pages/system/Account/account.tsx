@@ -13,6 +13,13 @@ import { formatDateTime } from '@/utils'
 import AddAccount from './AddAccount'
 import './account.less'
 
+export const roleOptions = [
+  { label: '平台管理员', value: 'super' },
+  { label: '运营人员', value: 'operator' },
+  { label: '财务人员', value: 'finance' },
+  { label: '订单客服', value: 'orderCustomerService' },
+]
+
 const initialAccounts: AccountItem[] = [
   {
     id: 1,
@@ -21,7 +28,7 @@ const initialAccounts: AccountItem[] = [
     password: '',
     roles: [{
       id: 1,
-      role_name: "超管",
+      role_name: "平台管理员",
       role_code: "super"
     }],
     phone: '138****1026',
@@ -356,10 +363,7 @@ export default function AccountList() {
             onChange={setRole}
             options={[
               { label: '全部角色', value: 'all' },
-              { label: '平台管理员', value: '平台管理员' },
-              { label: '运营人员', value: '运营人员' },
-              { label: '财务人员', value: '财务人员' },
-              { label: '订单客服', value: '订单客服' },
+              ...roleOptions
             ]}
           />
           <Select
@@ -380,10 +384,10 @@ export default function AccountList() {
               { label: '7 日内登录', value: 'week' },
             ]}
           />
+          <Button onClick={handleReset}>重置</Button>
           <Button type="primary" onClick={applyFilters}>
             查询
           </Button>
-          <Button onClick={handleReset}>重置</Button>
         </Card>
 
         <Card variant="borderless" className="list-card">

@@ -8,7 +8,6 @@ import { App, Button, Card, Input, Select, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { CustomerServiceOutlined, PlusOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
-import SystemTabs from '@/pages/system/components/SystemTabs'
 import type { FaqItem } from '@/api/modules/system'
 import './help.less'
 
@@ -125,8 +124,6 @@ export default function HelpConfig() {
       }
     >
       <div className="help-page">
-        <SystemTabs />
-
         <div className="help-page__top">
           <Card variant="borderless" className="help-card">
             <div className="help-card__header">

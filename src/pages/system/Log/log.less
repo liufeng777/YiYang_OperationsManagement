@@ -1,0 +1,40 @@
+.log-page {
+  /* 筛选区与列表卡片复用公共类 .filter-bar / .list-card（src/styles/list-page.less） */
+  &__filter {
+    margin-top: @spacing-md;
+  }
+
+  .log-operator {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      .text-auxiliary();
+    }
+  }
+
+  .log-resource-id {
+    margin-left: 2px;
+    font-style: normal;
+    color: @color-text-secondary;
+    .text-auxiliary();
+  }
+
+  .log-request {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-xs;
+    min-width: 0;
+
+    &__url {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: @color-text-secondary;
+    }
+  }
+}

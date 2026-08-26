@@ -74,6 +74,14 @@ export interface MessageTemplateDTO {
   template_code: string
   /** 模板类型 */
   template_type: number
+  /** 业务类型 */
+  business_type?: string
+  /** 触发节点 */
+  trigger_node?: string
+  /** 接收对象 */
+  receiver_targets?: string[]
+  /** 微信服务消息模板ID */
+  wx_template_id?: string
   content: string
   /** 启用渠道：站内 / 微信 / 短信 */
   channels: string[]

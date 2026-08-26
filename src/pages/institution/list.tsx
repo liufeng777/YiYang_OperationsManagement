@@ -370,8 +370,8 @@ export default function InstitutionList() {
             onChange={setRegion}
             options={[{ label: '全部区域', value: 'all' }, ...regionOptions]}
           />
-          <Button type="primary" onClick={handleQuery}>查询</Button>
           <Button onClick={handleReset}>重置</Button>
+          <Button type="primary" onClick={handleQuery}>查询</Button>
         </Card>
 
         <Card variant="borderless" className="list-card">

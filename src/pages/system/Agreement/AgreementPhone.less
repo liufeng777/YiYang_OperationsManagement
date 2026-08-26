@@ -1,0 +1,78 @@
+/* 患者端协议预览手机壳 */
+.agreement-phone {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 520px;
+  width: 300px;
+  border: 1px solid @color-border;
+  border-radius: @radius-lg;
+  overflow: hidden;
+  background: @color-bg-card;
+
+  &__scroll {
+    flex: 1;
+    overflow: auto;
+    min-height: 0;
+  }
+
+  &__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: @spacing-xs @spacing-md;
+    border-bottom: 1px solid @color-border;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      .text-auxiliary();
+    }
+  }
+
+  &__body {
+    padding: @spacing-md;
+
+    h4 {
+      margin: 0 0 @spacing-xs;
+      .text-title-card();
+    }
+
+    h5 {
+      margin: @spacing-md 0 @spacing-xs;
+      .text-body-medium();
+    }
+
+    p {
+      margin: 0 0 @spacing-sm;
+      .text-auxiliary();
+      color: @color-text-secondary;
+    }
+
+    ul {
+      margin: 0 0 @spacing-sm;
+      padding-left: @spacing-md;
+      .text-auxiliary();
+      color: @color-text-secondary;
+    }
+  }
+
+  &__meta {
+    color: @color-text-secondary;
+  }
+
+  &__contact {
+    margin-top: @spacing-md;
+    padding: @spacing-xs @spacing-md;
+    color: @color-info;
+    background: fade(@color-info, 8%);
+    border-radius: @radius-sm;
+    .text-auxiliary();
+  }
+
+  &__footer {
+    padding: @spacing-md;
+  }
+}

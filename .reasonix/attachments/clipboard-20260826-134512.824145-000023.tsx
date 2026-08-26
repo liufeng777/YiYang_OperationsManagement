@@ -3,20 +3,27 @@
  * 视觉对齐设计稿：协议基本信息 + 协议正文编辑器，右侧发布设置 + 患者端实时预览
  * 当前为 mock 数据，后端就绪后替换为 systemApi.saveAgreement
  */
-import { App, Button, Card, Form, Input, Select, Switch } from 'antd'
-import {
-  BoldOutlined,
-  ItalicOutlined,
-  LinkOutlined,
-  MenuOutlined,
-  OrderedListOutlined,
-  PlusOutlined,
-  RedoOutlined,
-  UndoOutlined,
-} from '@ant-design/icons'
+import { App, Button, Card, Form, Input, Select, Space, Switch } from 'antd'
+import { PlusOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
+import RichTextEditor from '@/components/RichTextEditor'
+import AgreementPhone from './AgreementPhone'
 import './agreement-edit.less'
+
+/** 协议正文初始内容（富文本 HTML） */
+const agreementHtml = `
+<h2>幸福颐养隐私政策</h2>
+<p>我们重视您的个人信息和健康数据安全。本政策说明我们如何收集、使用、存储、共享和保护您的信息，以及您可以如何行使相关权利。</p>
+<h3>一、我们收集的信息</h3>
+<ol>
+  <li>账户与身份信息：手机号码、姓名、实名认证状态。</li>
+  <li>服务信息：预约机构、服务项目、订单和退款记录。</li>
+  <li>健康信息：仅在您明确授权后处理健康档案、评估和报告数据。</li>
+</ol>
+<h3>二、健康数据授权与撤回</h3>
+<p>健康数据属于敏感个人信息。我们将在展示授权目的、范围和期限后单独征得您的同意。您可以在“设置与隐私”中撤回授权；撤回不影响此前基于授权完成的处理。</p>
+`
 
 export default function AgreementEdit() {
   const navigate = useNavigate()
@@ -33,22 +40,27 @@ export default function AgreementEdit() {
       title={isNew ? '新建协议版本' : '编辑协议版本'}
       description="基于当前生效版本创建草稿，发布后按生效时间切换"
       extra={
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={async () => {
-            try {
-              await form.validateFields()
-            } catch {
-              message.warning('请先完善必填项：协议类型、协议名称')
-              return
-            }
-            message.success('协议版本已保存并发布，将按生效时间切换（mock）')
+        <Space>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => {
             navigate('/system/agreement')
-          }}
-        >
-          保存并发布
-        </Button>
+          }}>返回协议与授权</Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={async () => {
+              try {
+                await form.validateFields()
+              } catch {
+                message.warning('请先完善必填项：协议类型、协议名称')
+                return
+              }
+              message.success('协议版本已保存并发布，将按生效时间切换（mock）')
+              // navigate('/system/agreement')
+            }}
+          >
+            保存并发布
+          </Button>
+        </Space>
       }
     >
       <Form
@@ -65,10 +77,10 @@ export default function AgreementEdit() {
       >
       <div className="agreement-edit">
         <div className="agreement-edit__form">
-          <Card variant="borderless" className="edit-card">
+          <Card variant="borderless" className="edit-card" style={{height: 228}}>
             <div className="edit-card__header">
               <h3>协议基本信息</h3>
-              <span>基于 V1.3 创建</span>
+              <span className='header-label'>基于 V1.3 创建</span>
             </div>
             <div className="edit-field__row">
               <div className="edit-field">
@@ -112,47 +124,19 @@ export default function AgreementEdit() {
             </div>
           </Card>
 
-          <Card variant="borderless" className="edit-card">
+          <Card variant="borderless" className="edit-card RichTextEditor-card" style={{height: 593.75}}>
             <div className="edit-card__header">
               <h3>协议正文</h3>
-              <span>支持标题、正文、列表和链接</span>
+              <span className='header-label'>支持标题、正文、列表和链接</span>
             </div>
-            <div className="editor-toolbar">
-              <Button size="small" type="text">正文</Button>
-              <Button size="small" type="text" icon={<BoldOutlined />} />
-              <Button size="small" type="text">H2</Button>
-              <Button size="small" type="text" icon={<MenuOutlined />} />
-              <Button size="small" type="text" icon={<OrderedListOutlined />} />
-              <Button size="small" type="text" icon={<LinkOutlined />} />
-              <Button size="small" type="text" icon={<ItalicOutlined />} />
-              <Button size="small" type="text" icon={<UndoOutlined />} />
-              <Button size="small" type="text" icon={<RedoOutlined />} />
-            </div>
-            <div className="editor-body">
-              <h4>{name}</h4>
-              <p className="editor-meta">更新日期：2026年8月10日　生效日期：2026年8月15日</p>
-              <p>
-                幸福颐养运营方（以下简称“我们”）重视您的个人信息和健康数据安全。本政策说明我们如何收集、使用、存储、共享和保护您的信息，以及您可以如何行使相关权利。
-              </p>
-              <h5>一、我们收集的信息</h5>
-              <ol>
-                <li>账户与身份信息：手机号码、姓名、实名认证状态。</li>
-                <li>服务信息：预约机构、服务项目、订单和退款记录。</li>
-                <li>健康信息：仅在您明确授权后处理健康档案、评估和报告数据。</li>
-              </ol>
-              <h5>二、健康数据授权与撤回</h5>
-              <p>
-                健康数据属于敏感个人信息。我们将在展示授权目的、范围和期限后单独征得您的同意。您可以在“设置与隐私”中撤回授权；撤回不影响此前基于授权完成的处理。
-              </p>
-              <div className="editor-tip">
-                法务提示：发布前请确认主体名称、联系方式、处理目的和授权撤回路径。
-              </div>
+            <div style={{flex: 1}}>
+              <RichTextEditor value={agreementHtml} />
             </div>
           </Card>
         </div>
 
         <div className="agreement-edit__side">
-          <Card variant="borderless" className="edit-card">
+          <Card variant="borderless" className="edit-card" style={{height: 228}}>
             <div className="edit-card__header">
               <h3>发布设置</h3>
             </div>
@@ -181,38 +165,12 @@ export default function AgreementEdit() {
                 刷新预览
               </Button>
             </div>
-            <div className="agreement-phone">
-              <div className="agreement-phone__bar">
-                <span>9:41</span>
-                <span>•••</span>
-              </div>
-              <div className="agreement-phone__nav">
-                <span>‹</span>
-                <strong>隐私政策</strong>
-                <span>•••</span>
-              </div>
-              <div className="agreement-phone__body">
-                <h4>{name}</h4>
-                <p className="agreement-phone__meta">{version} · 生效日期 2026年8月15日</p>
-                <p>
-                  我们重视您的个人信息和健康数据安全。本政策说明我们如何处理您的信息，以及您可以如何行使相关权利。
-                </p>
-                <h5>一、我们收集的信息</h5>
-                <ul>
-                  <li>账户与身份信息</li>
-                  <li>预约、订单和服务记录</li>
-                  <li>经单独授权的健康档案与报告</li>
-                </ul>
-                <h5>二、健康数据授权与撤回</h5>
-                <p>
-                  健康数据属于敏感个人信息。您可以在“设置与隐私”中撤回授权，撤回不影响此前基于授权完成的处理。
-                </p>
-                <div className="agreement-phone__contact">联系我们：010-6888 6688</div>
-              </div>
-              <button type="button" className="agreement-phone__cta">
-                我已阅读并同意
-              </button>
-            </div>
+            <AgreementPhone
+              name={name}
+              type="隐私政策"
+              version={version}
+              effectiveDate="2026年8月15日"
+            />
           </Card>
         </div>
       </div>

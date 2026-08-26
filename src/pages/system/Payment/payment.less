@@ -1,0 +1,226 @@
+@import '@/styles/variables.less';
+@import '@/styles/mixins.less';
+
+.payment-settings {
+  display: flex;
+  gap: @spacing-lg;
+
+  &__main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-lg;
+  }
+
+  &__sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-lg;
+  }
+}
+
+/* 主内容卡片 */
+.payment-card {
+  .card-surface();
+
+  &__header {
+    margin-bottom: 0;
+
+    .payment-card__title {
+      .text-title-card();
+      margin: 0;
+    }
+
+    .payment-card__subtitle {
+      .text-auxiliary();
+      margin: @spacing-2xs 0 0;
+    }
+  }
+
+  .ant-divider {
+    border-color: @color-border;
+  }
+
+  &__footer-tip {
+    margin-top: @spacing-md;
+    padding: @spacing-sm @spacing-md;
+    .text-auxiliary();
+    background: @color-bg-page;
+    border-radius: @radius-sm;
+  }
+}
+
+/* 信息行 */
+.payment-info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: @spacing-md;
+  padding: @spacing-md 0;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid @color-border;
+  }
+
+  &__label {
+    width: 100px;
+    flex-shrink: 0;
+    .text-label();
+    color: @color-text-secondary;
+    padding-top: 2px;
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: @spacing-md;
+
+    strong {
+      .text-body-medium();
+      display: block;
+    }
+  }
+
+  &__desc {
+    .text-auxiliary();
+    margin: @spacing-2xs 0 0;
+  }
+
+  &__action {
+    flex-shrink: 0;
+  }
+}
+
+.payment-mask {
+  .text-body-medium();
+  letter-spacing: 2px;
+  color: @color-text-primary;
+}
+
+.payment-url {
+  .text-body();
+  color: @color-info;
+  word-break: break-all;
+}
+
+/* 侧边栏卡片 */
+.payment-sidebar-card {
+  .card-surface();
+
+  &__title {
+    .text-title-card();
+    margin: 0 0 @spacing-md;
+  }
+
+  &__desc {
+    .text-auxiliary();
+    margin: 0 0 @spacing-md;
+  }
+
+  &__tip {
+    .text-auxiliary();
+    margin: @spacing-md 0 0;
+  }
+}
+
+/* 渠道运行状态 */
+.payment-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: @spacing-md;
+  background: @color-primary-light;
+  border-radius: @radius-sm;
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      .text-auxiliary();
+    }
+  }
+}
+
+/* 连接测试 */
+.payment-test-result {
+  padding: @spacing-md;
+  background: @color-primary-light;
+  border-radius: @radius-sm;
+  margin-bottom: @spacing-md;
+
+  strong {
+    .text-body-medium();
+    color: @color-primary;
+    display: block;
+  }
+
+  span {
+    .text-auxiliary();
+    display: block;
+    margin-top: 2px;
+  }
+}
+
+.payment-test-btn {
+  width: 100%;
+}
+
+/* 操作记录 */
+.payment-log-list {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-md;
+}
+
+.payment-log-item {
+  padding-bottom: @spacing-md;
+  border-bottom: 1px solid @color-border;
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: @spacing-sm;
+    margin-bottom: @spacing-2xs;
+  }
+
+  &__time {
+    .text-auxiliary();
+    flex-shrink: 0;
+  }
+
+  &__action {
+    .text-body-medium();
+  }
+
+  &__detail {
+    .text-auxiliary();
+    margin: 0;
+  }
+}
+
+/* 响应式 */
+@media (max-width: 1024px) {
+  .payment-settings {
+    flex-direction: column;
+
+    &__sidebar {
+      width: 100%;
+    }
+  }
+}

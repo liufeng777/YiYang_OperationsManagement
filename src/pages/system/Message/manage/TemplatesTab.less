@@ -1,0 +1,101 @@
+@import '@/styles/variables.less';
+@import '@/styles/mixins.less';
+
+/* Drawer 标题 */
+.template-drawer__title {
+  h3 {
+    .text-title-card();
+    margin: 0;
+  }
+}
+
+.template-drawer__subtitle {
+  .text-auxiliary();
+  display: block;
+  margin-top: @spacing-2xs;
+}
+
+/* Drawer 表单 */
+.template-drawer__form {
+  .ant-form-item {
+    margin-bottom: @spacing-md;
+  }
+}
+
+/* 两列布局 */
+.template-drawer__two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: @spacing-md;
+}
+
+/* 提示文字 */
+.template-drawer__hint {
+  .text-auxiliary();
+  margin: -@spacing-sm 0 @spacing-md;
+}
+
+/* 消息内容预览 */
+.template-drawer__preview-label {
+  .text-label();
+  margin-bottom: @spacing-xs;
+}
+
+.template-drawer__preview {
+  padding: @spacing-md;
+  background: @color-bg-page;
+  border-radius: @radius-sm;
+  border: 1px solid @color-border;
+  margin-bottom: @spacing-lg;
+
+  strong {
+    .text-body-medium();
+    display: block;
+    margin-bottom: @spacing-xs;
+  }
+
+  p {
+    .text-auxiliary();
+    margin: @spacing-2xs 0 0;
+  }
+}
+
+/* 注解区域 */
+.template-drawer__annotation {
+  padding: @spacing-md;
+  background: fade(@color-info, 4%);
+  border-radius: @radius-sm;
+  border: 1px solid fade(@color-info, 10%);
+  margin-bottom: @spacing-md;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: @spacing-xs;
+    margin-bottom: @spacing-sm;
+
+    strong {
+      .text-body-medium();
+      color: @color-info;
+    }
+
+    .ant-tag {
+      margin: 0;
+    }
+  }
+
+  &__body {
+    p {
+      .text-auxiliary();
+      margin: @spacing-2xs 0 0;
+      line-height: 1.6;
+    }
+  }
+}
+
+/* Drawer 底部按钮 */
+.template-drawer__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: @spacing-sm;
+}

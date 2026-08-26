@@ -13,7 +13,10 @@
 
   .edit-card {
     .card-surface();
-    padding: @spacing-lg @spacing-xl;
+    .ant-card-body {
+      padding: @spacing-md @spacing-lg;
+    }
+    
 
     &__header {
       display: flex;
@@ -33,8 +36,6 @@
   }
 
   .edit-field {
-    margin-bottom: @spacing-md;
-
     label {
       display: block;
       margin-bottom: @spacing-xs;

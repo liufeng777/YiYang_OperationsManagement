@@ -208,7 +208,7 @@ export const routes: RouteConfig[] = [
     meta: { title: '系统设置', icon: <SettingOutlined /> },
     children: [
       {
-        path: '',
+        path: 'account',
         meta: { title: '用户管理' },
         component: lazy(() => import('@/pages/system/Account/account')),
       },
@@ -220,32 +220,32 @@ export const routes: RouteConfig[] = [
       {
         path: 'agreement',
         meta: { title: '协议与授权' },
-        component: lazy(() => import('@/pages/system/agreement')),
+        component: lazy(() => import('@/pages/system/Agreement/agreement')),
       },
       {
         path: 'help',
         meta: { title: '帮助与电话' },
-        component: lazy(() => import('@/pages/system/help')),
+        component: lazy(() => import('@/pages/system/Help/help')),
       },
       {
         path: 'message',
-        meta: { title: '消息模板' },
-        component: lazy(() => import('@/pages/system/message')),
+        meta: { title: '消息通知管理' },
+        component: lazy(() => import('@/pages/system/Message/MessageManage')),
       },
       {
-        path: 'announcement',
-        meta: { title: '系统公告' },
-        component: lazy(() => import('@/pages/system/announcement')),
+        path: 'payment',
+        meta: { title: '支付设置' },
+        component: lazy(() => import('@/pages/system/Payment/payment')),
       },
       {
         path: 'log',
         meta: { title: '操作日志' },
-        component: lazy(() => import('@/pages/system/log')),
+        component: lazy(() => import('@/pages/system/Log/log')),
       },
       {
         path: 'agreement/edit/:id',
         meta: { title: '新建协议版本', hideInMenu: true },
-        component: lazy(() => import('@/pages/system/agreement-edit')),
+        component: lazy(() => import('@/pages/system/Agreement/agreement-edit')),
       },
     ],
   },

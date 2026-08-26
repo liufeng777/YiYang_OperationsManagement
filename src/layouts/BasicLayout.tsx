@@ -10,7 +10,8 @@ import HeaderBar from './HeaderBar'
 import { useAppStore } from '@/store/modules/app'
 import { useNavigationStore } from '@/store/modules/navigation'
 import { useUserStore } from '@/store/modules/user'
-import { routes } from '@/router/routes'
+import { routes } from '@/router/routes';
+import { roleOptions } from '@/pages/system/Account/account'
 import './layout.less'
 
 const { Sider, Content } = Layout
@@ -33,6 +34,15 @@ export default function BasicLayout() {
       remember(section, location.pathname + location.search)
     }
   }, [location, remember])
+
+  const getUserRoles = () => {
+    if (!userInfo?.roles?.length) return '';
+    const roleArr = userInfo.roles.map(v => {
+      const item = roleOptions.find(i => i.value === v);
+      return item?.label
+    })
+    return roleArr.join('、')
+  }
 
   return (
     <Layout className="basic-layout">
@@ -67,7 +77,7 @@ export default function BasicLayout() {
             <Tooltip
               placement="right"
               title={`${userInfo?.username || ''}${
-                userInfo?.roles?.length ? `（${userInfo!.roles.join('、')}）` : ''
+                userInfo?.roles?.length ? `（${getUserRoles()}）` : ''
               }`}
             >
               <Avatar size={28} icon={<UserOutlined />} style={{ background: '#27866B' }} />
@@ -77,7 +87,7 @@ export default function BasicLayout() {
               <Avatar size={28} icon={<UserOutlined />} style={{ background: '#27866B' }} />
               <span className='user-info'>
                 <span className='user-name'>{userInfo?.username}</span>
-                <span className='user-roles'>{userInfo?.roles}</span>
+                <span className='user-roles'>{getUserRoles()}</span>
               </span>
             </>
           )}

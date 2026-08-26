@@ -9,7 +9,6 @@ import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import SystemTabs from '@/pages/system/components/SystemTabs'
 import type { AgreementItem } from '@/api/modules/system'
 import './agreement.less'
 
@@ -167,8 +166,6 @@ export default function AgreementList() {
       }
     >
       <div className="agreement-page">
-        <SystemTabs />
-
         <div className="agreement-page__banner">
           版本规则：编辑已生效协议时自动创建新草稿；发布新版本后，旧版本进入历史记录，患者端按生效时间展示最新版本。
         </div>

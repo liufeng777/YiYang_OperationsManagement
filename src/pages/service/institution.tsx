@@ -364,8 +364,8 @@ export default function ServiceInstitutionPage() {
               { label: '已下架', value: 3 },
             ]}
           />
-          <Button type="primary" onClick={() => applyFilters()}>查询</Button>
           <Button onClick={handleReset}>重置</Button>
+          <Button type="primary" onClick={() => applyFilters()}>查询</Button>
         </Card>
 
         <div className="inst-service__main">

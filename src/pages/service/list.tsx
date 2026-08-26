@@ -370,8 +370,8 @@ export default function ServicePoolList() {
               { label: '已停用', value: 'off' },
             ]}
           />
-          <Button type="primary" onClick={() => applyFilters()}>查询</Button>
           <Button onClick={handleReset}>重置</Button>
+          <Button type="primary" onClick={() => applyFilters()}>查询</Button>
         </Card>
 
         <div className="service-pool__main">

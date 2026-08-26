@@ -359,10 +359,10 @@ export default function ActivityList() {
             onChange={(event) => setTime(event.target.value)}
             onPressEnter={applyFilters}
           />
+          <Button onClick={handleReset}>重置</Button>
           <Button type="primary" onClick={applyFilters}>
             查询
           </Button>
-          <Button onClick={handleReset}>重置</Button>
         </Card>
 
         <Card variant="borderless" className="list-card">

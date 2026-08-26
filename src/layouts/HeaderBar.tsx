@@ -27,7 +27,7 @@ export default function HeaderBar() {
       findBreadcrumb(location.pathname).map((item, index, list) => ({
         // 末级为当前页不可点击；其余层级点击直接跳转对应页面
         title:
-          index === list.length - 1 ? (
+          index === 0 || index === list.length - 1 ? (
             item.title
           ) : (
             <a

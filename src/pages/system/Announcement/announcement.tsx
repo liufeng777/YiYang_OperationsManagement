@@ -9,7 +9,6 @@ import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import SystemTabs from '@/pages/system/components/SystemTabs'
 import type { AnnouncementItem } from '@/api/modules/system'
 import './announcement.less'
 
@@ -192,7 +191,6 @@ export default function AnnouncementList() {
       }
     >
       <div className="announcement-page">
-        <SystemTabs />
         <div className="announcement-page__subtabs">
           <button type="button" onClick={() => navigate('/system/message')}>
             业务消息模板 8

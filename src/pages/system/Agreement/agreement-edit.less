@@ -1,0 +1,178 @@
+.agreement-edit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: @spacing-md;
+  align-items: start;
+
+  &__form,
+  &__side {
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-md;
+  }
+
+  // 富文本框
+  .RichTextEditor-card {
+    .ant-card-body {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  .edit-card {
+    .card-surface();
+    .ant-card-body {
+      padding: @spacing-md @spacing-lg;
+    }
+    
+
+    &__header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: @spacing-md;
+
+      h3 {
+        margin: 0;
+        .text-title-card();
+      }
+
+      .header-label {
+        .text-auxiliary();
+      }
+    }
+  }
+
+  .edit-field {
+    label {
+      display: block;
+      margin-bottom: @spacing-xs;
+      .text-label();
+      color: @color-text-primary;
+
+      i {
+        color: @color-danger;
+        font-style: normal;
+      }
+    }
+
+    /* Form.Item 复刻原 label 排布 */
+    .ant-form-item {
+      margin-bottom: 0;
+
+      .ant-form-item-label {
+        padding-bottom: @spacing-xs;
+
+        > label {
+          height: auto;
+          margin-bottom: 0;
+          .text-label();
+          color: @color-text-primary;
+
+          i {
+            color: @color-danger;
+            font-style: normal;
+          }
+        }
+      }
+
+      .ant-form-item-explain-error {
+        margin-top: 2px;
+        font-size: @font-size-auxiliary;
+        line-height: @line-height-auxiliary;
+      }
+    }
+
+    .ant-select {
+      width: 100%;
+    }
+  }
+
+  .edit-field__row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: @spacing-md;
+  }
+
+  .editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-xs @spacing-sm;
+    background: @color-bg-page;
+    border: 1px solid @color-border;
+    border-bottom: 0;
+    border-radius: @radius-sm @radius-sm 0 0;
+  }
+
+  .editor-body {
+    padding: @spacing-lg;
+    border: 1px solid @color-border;
+    border-radius: 0 0 @radius-sm @radius-sm;
+
+    h4 {
+      margin: 0 0 @spacing-xs;
+      .text-title-card();
+    }
+
+    h5 {
+      margin: @spacing-md 0 @spacing-xs;
+      .text-body-medium();
+    }
+
+    p {
+      margin: 0 0 @spacing-sm;
+      .text-body();
+      color: @color-text-secondary;
+    }
+
+    ol {
+      margin: 0 0 @spacing-sm;
+      padding-left: @spacing-lg;
+      .text-body();
+      color: @color-text-secondary;
+    }
+
+    .editor-meta {
+      .text-auxiliary();
+    }
+
+    .editor-tip {
+      margin-top: @spacing-md;
+      padding: @spacing-md;
+      color: @color-info;
+      background: fade(@color-info, 8%);
+      border-radius: @radius-sm;
+      .text-auxiliary();
+    }
+  }
+
+  .publish-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: @spacing-md;
+    .text-body();
+  }
+
+  .publish-note {
+    margin: 0 0 @spacing-md;
+    .text-auxiliary();
+  }
+
+  .publish-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 1200px) {
+  .agreement-edit {
+    grid-template-columns: 1fr;
+
+    .edit-field__row {
+      grid-template-columns: 1fr;
+    }
+  }
+}
