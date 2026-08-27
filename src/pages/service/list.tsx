@@ -5,7 +5,7 @@
  */
 import { useMemo, useState } from 'react'
 import type { Key } from 'react'
-import { App, Button, Card, Input, Modal, Select, Table } from 'antd'
+import { App, Button, Card, Input, Modal, Select, Table, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -132,15 +132,17 @@ interface ServiceFilters {
   status: ServiceStatus | 'all'
 }
 
-interface OfflineTarget {
+/** 上停用目标：action=offline 走「停用原因」流程，action=online 走确认启用流程 */
+interface StatusTarget {
   ids: string[]
   title: string
   code?: string
+  action: 'online' | 'offline'
 }
 
 export default function ServicePoolList() {
   const navigate = useNavigate()
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const [data, setData] = useState(mockServices)
   const [keyword, setKeyword] = useState('')
   const [category, setCategory] = useState('全部服务')
@@ -153,7 +155,7 @@ export default function ServicePoolList() {
     status: 'all',
   })
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
-  const [offlineTarget, setOfflineTarget] = useState<OfflineTarget | null>(null)
+  const [statusTarget, setStatusTarget] = useState<StatusTarget | null>(null)
   const [offlineReason, setOfflineReason] = useState('')
 
   const filteredData = useMemo(() => {
@@ -198,35 +200,87 @@ export default function ServicePoolList() {
     applyFilters({ category: name })
   }
 
+  /* 勾选服务的 status 一致性：一致才可批量启用/停用 */
+  const selectedItems = useMemo(
+    () => data.filter((item) => selectedRowKeys.includes(item.id)),
+    [data, selectedRowKeys],
+  )
+  const selectedStatuses = useMemo(
+    () => new Set(selectedItems.map((item) => item.status)),
+    [selectedItems],
+  )
+  /** 勾选非空且状态一致时才允许批量操作 */
+  const batchEnabled = selectedItems.length > 0 && selectedStatuses.size === 1
+  /** 状态一致时的批量方向：已启用 → 批量停用；草稿/已停用 → 批量启用 */
+  const batchAction: 'online' | 'offline' =
+    selectedItems[0]?.status === 'on' ? 'offline' : 'online'
+  const batchTooltip = !selectedItems.length
+    ? '请先勾选服务项目'
+    : selectedStatuses.size > 1
+      ? '所选择的服务状态不一致，无法批量启用/停用'
+      : ''
+
   const openOfflineModal = (record: ServiceItem) => {
     setOfflineReason('')
-    setOfflineTarget({ ids: [record.id], title: `集团服务池 · ${record.name}`, code: record.code })
+    setStatusTarget({
+      ids: [record.id],
+      title: `集团服务池 · ${record.name}`,
+      code: record.code,
+      action: 'offline',
+    })
   }
 
-  const openBatchOfflineModal = () => {
-    const ids = data.filter((item) => selectedRowKeys.includes(item.id) && item.status === 'on').map((item) => item.id)
-    if (!ids.length) {
-      message.warning('请选择可停用的已启用服务')
+  const openBatchStatusModal = () => {
+    if (!selectedItems.length) {
+      message.warning('请先勾选服务项目')
       return
     }
+    if (selectedStatuses.size > 1) {
+      message.warning('所选择的服务状态不一致，无法批量启用/停用')
+      return
+    }
+    const ids = selectedItems.map((item) => item.id)
     setOfflineReason('')
-    setOfflineTarget({ ids, title: `批量停用 ${ids.length} 项服务` })
+    setStatusTarget(
+      batchAction === 'offline'
+        ? { ids, title: `批量停用 ${ids.length} 项服务`, action: 'offline' }
+        : { ids, title: `批量启用 ${ids.length} 项服务`, action: 'online' },
+    )
   }
 
   const handleEnable = (record: ServiceItem) => {
-    setData((prev) => prev.map((item) => (item.id === record.id ? { ...item, status: 'on' } : item)))
-    message.success(`${record.name} 已启用`)
+    modal.confirm({
+      title: '启用服务',
+      content: `确认启用 “${record.name}” ？启用后机构可选择添加该服务。`,
+      okText: '确认启用',
+      cancelText: '取消',
+      onOk: () => {
+        setData((prev) =>
+          prev.map((item) => (item.id === record.id ? { ...item, status: 'on' } : item)),
+        )
+        message.success(`${record.name} 已启用`)
+      },
+    })
   }
 
-  const handleConfirmOffline = () => {
-    if (!offlineTarget) return
-    if (offlineReason.trim().length < 5) {
-      message.warning('请填写下架原因，至少 5 个字')
-      return
+  const handleConfirmStatusChange = () => {
+    if (!statusTarget) return
+    if (statusTarget.action === 'offline') {
+      if (offlineReason.trim().length < 5) {
+        message.warning('请填写停用原因，至少 5 个字')
+        return
+      }
+      setData((prev) =>
+        prev.map((item) => (statusTarget.ids.includes(item.id) ? { ...item, status: 'off' } : item)),
+      )
+      message.success(`已停用 ${statusTarget.ids.length} 项服务`)
+    } else {
+      setData((prev) =>
+        prev.map((item) => (statusTarget.ids.includes(item.id) ? { ...item, status: 'on' } : item)),
+      )
+      message.success(`已启用 ${statusTarget.ids.length} 项服务`)
     }
-    setData((prev) => prev.map((item) => (offlineTarget.ids.includes(item.id) ? { ...item, status: 'off' } : item)))
-    message.success(`已停用 ${offlineTarget.ids.length} 项服务`)
-    setOfflineTarget(null)
+    setStatusTarget(null)
     setSelectedRowKeys([])
   }
 
@@ -273,7 +327,7 @@ export default function ServicePoolList() {
         render: (_, record) => updateTimeMap[record.id] ?? '08-01 10:00',
       },
       {
-        title: '定义状态',
+        title: '状态',
         dataIndex: 'status',
         key: 'status',
         width: 100,
@@ -282,10 +336,10 @@ export default function ServicePoolList() {
       {
         title: '操作',
         key: 'action',
-        width: 120,
+        width: 160,
         render: (_, record) => (
           <div className="pool-actions">
-            <Button type="link" size="small" onClick={() => navigate(`/service/detail/${record.id}`)}>
+            <Button type="link" size="small" onClick={() => navigate(`/service/list/detail/${record.id}`)}>
               编辑
             </Button>
             {record.status === 'on' ? (
@@ -297,6 +351,22 @@ export default function ServicePoolList() {
                 启用
               </Button>
             )}
+            <Button type="link" size="small" danger onClick={() => {
+              modal.confirm({
+                title: '确认删除',
+                content: `确认删除 “${record.name}” ？`,
+                okText: '确认删除',
+                cancelText: '取消',
+                onOk: () => {
+                  message.success('已确认删除（mock）')
+                },
+                okButtonProps: {
+                  danger: true
+                }
+              })
+            }}>
+              删除
+            </Button>
           </div>
         ),
       },
@@ -309,7 +379,7 @@ export default function ServicePoolList() {
       title="集团服务池"
       description="统一定义服务基础信息与集团定价，机构从服务池选择项目后再配置线上履约规则"
       extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/service/detail/new')}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/service/list/detail/new')}>
           新建服务项目
         </Button>
       }
@@ -379,7 +449,7 @@ export default function ServicePoolList() {
             <div style={{flex: 1}}>
             <div className="pool-category__header">
               <h3>服务分类</h3>
-              <Button size="small" icon={<PlusOutlined />} onClick={() => message.info('新增分类开发中')}>
+              <Button size="small" type='primary' icon={<PlusOutlined />} onClick={() => message.info('新增分类开发中')}>
                 新增分类
               </Button>
             </div>
@@ -406,7 +476,7 @@ export default function ServicePoolList() {
                 <li>适用人群、服务时长与须知</li>
               </ul>
               <h4 className="is-danger">不在这里配置</h4>
-              <p>机构服务半径、日容量、接单时间与预约上下架状态。</p>
+              <p>机构服务半径、日容量、接单时间与预约上停用状态。</p>
             </div>
           </Card>
 
@@ -416,7 +486,14 @@ export default function ServicePoolList() {
                 <span className="list-card__header__title">服务项目</span>
                 <span className="list-card__header__tips">共 128 项 · 机构添加时继承集团基础信息与价格</span>
               </div>
-              <Button onClick={openBatchOfflineModal}>批量停用</Button>
+              <Tooltip title={batchTooltip}>
+                {/* disabled 按钮不触发鼠标事件，需包一层 span 才能展示 Tooltip */}
+                <span>
+                  <Button disabled={!batchEnabled} onClick={openBatchStatusModal}>
+                    批量启用/停用
+                  </Button>
+                </span>
+              </Tooltip>
             </div>
             <Table<ServiceItem>
               size="small"
@@ -431,37 +508,58 @@ export default function ServicePoolList() {
       </div>
 
       <Modal
-        open={!!offlineTarget}
-        title="下架服务"
-        onCancel={() => setOfflineTarget(null)}
+        open={!!statusTarget}
+        title={statusTarget?.action === 'online' ? '启用服务' : '停用服务'}
+        onCancel={() => setStatusTarget(null)}
         footer={
           <div className="offline-modal__footer">
-            <Button onClick={() => setOfflineTarget(null)}>取消</Button>
-            <Button danger type="primary" onClick={handleConfirmOffline}>
-              确认下架
-            </Button>
+            <Button onClick={() => setStatusTarget(null)}>取消</Button>
+            {statusTarget?.action === 'online' ? (
+              <Button type="primary" onClick={handleConfirmStatusChange}>
+                确认启用
+              </Button>
+            ) : (
+              <Button danger type="primary" onClick={handleConfirmStatusChange}>
+                确认停用
+              </Button>
+            )}
           </div>
         }
       >
-        {offlineTarget && (
+        {statusTarget && (
           <div className="offline-modal">
-            <div className="offline-modal__warning">
-              <strong>下架后用户端将立即停止展示和预约</strong>
-              <p>已产生的预约订单不受影响，仍按原履约流程处理。</p>
-            </div>
-            <div className="offline-modal__service">
-              <span>{offlineTarget.title}</span>
-              <span>{offlineTarget.code ?? `${offlineTarget.ids.length} 项`}</span>
-            </div>
-            <div className="offline-modal__reason">
-              <label>下架原因 <i>*</i></label>
-              <Input.TextArea
-                rows={4}
-                placeholder="请填写下架原因，至少 5 个字"
-                value={offlineReason}
-                onChange={(event) => setOfflineReason(event.target.value)}
-              />
-            </div>
+            {statusTarget.action === 'offline' ? (
+              <>
+                <div className="offline-modal__warning">
+                  <strong>停用后用户端将立即停止展示和预约</strong>
+                  <p>已产生的预约订单不受影响，仍按原履约流程处理。</p>
+                </div>
+                <div className="offline-modal__service">
+                  <span>{statusTarget.title}</span>
+                  <span>{statusTarget.code ?? `${statusTarget.ids.length} 项`}</span>
+                </div>
+                <div className="offline-modal__reason">
+                  <label>停用原因 <i>*</i></label>
+                  <Input.TextArea
+                    rows={4}
+                    placeholder="请填写停用原因，至少 5 个字"
+                    value={offlineReason}
+                    onChange={(event) => setOfflineReason(event.target.value)}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="offline-modal__warning" style={{background: '#e8f4f0'}}>
+                  <strong>启用后机构可选择添加该服务</strong>
+                  <p>机构添加时继承集团基础信息与价格，再配置线上履约规则。</p>
+                </div>
+                <div className="offline-modal__service">
+                  <span>{statusTarget.title}</span>
+                  <span>{statusTarget.code ?? `${statusTarget.ids.length} 项`}</span>
+                </div>
+              </>
+            )}
           </div>
         )}
       </Modal>

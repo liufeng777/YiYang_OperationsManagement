@@ -1,0 +1,52 @@
+.member-list {
+  /* 筛选区与列表卡片复用公共类 .filter-bar / .list-card（src/styles/list-card.less） */
+  &__filter {
+    margin-top: @spacing-md;
+  }
+
+  .member-cell {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  .follow-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &::before {
+      width: 6px;
+      height: 6px;
+      border-radius: @radius-full;
+      background: currentColor;
+      content: '';
+    }
+
+    &--following {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--uncontacted {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+
+    &--no_intent {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+  }
+}

@@ -1,0 +1,64 @@
+.points-list {
+  /* 筛选区与列表卡片复用公共类 .filter-bar / .list-card（src/styles/list-card.less） */
+  &__filter {
+    margin-top: @spacing-md;
+  }
+
+  .points-cell {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  .points-value {
+    font-weight: @font-weight-body-medium;
+
+    &--plus {
+      color: @color-primary;
+    }
+
+    &--minus {
+      color: @color-danger;
+    }
+  }
+
+  .biz-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &::before {
+      width: 6px;
+      height: 6px;
+      border-radius: @radius-full;
+      background: currentColor;
+      content: '';
+    }
+
+    &--order {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--refund {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--none {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+  }
+}

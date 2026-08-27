@@ -162,7 +162,7 @@ export default function InstitutionDetailPage() {
       title={detail.name}
       description="管理机构基础资料、服务项目与患者端展示介绍"
       extra={
-        <Button type="primary" icon={<ArrowLeftOutlined />} onClick={() => {
+        <Button icon={<ArrowLeftOutlined />} onClick={() => {
           navigate(`/institution`)
         }}>
           返回机构列表

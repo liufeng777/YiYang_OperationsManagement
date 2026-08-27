@@ -4,9 +4,9 @@
  * 右侧当前操作 / 接单时效 / 服务备注，底部订单操作记录
  * 当前为 mock 数据，后端就绪后替换为 orderApi.getOrderDetail
  */
-import { App, Button, Card, Modal, Table } from 'antd'
+import { App, Button, Card, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { CheckOutlined, PlusOutlined } from '@ant-design/icons'
+import { CheckOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import type { OrderLog, OrderStatus, WorkOrderStatus } from '@/api/modules/order'
@@ -127,13 +127,13 @@ const logColumns: ColumnsType<OrderLog> = [
 
 export default function OrderDetail() {
   const navigate = useNavigate()
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const params = useParams<{ id: string }>()
   const base = orderBaseMap[params.id ?? '1'] ?? orderBaseMap['1']
   const isPending = base.workOrderStatus === 'pending'
 
   const handleCancel = () => {
-    Modal.confirm({
+    modal.confirm({
       title: '取消订单',
       content: '确认取消该订单吗？取消后将按退款规则原路退回款项。',
       okText: '确认取消',
@@ -148,7 +148,7 @@ export default function OrderDetail() {
       title="订单详情"
       description={`${base.orderNo} · ${base.serviceName} · ${base.institutionName}`}
       extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/order')}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/order')}>
           返回订单列表
         </Button>
       }

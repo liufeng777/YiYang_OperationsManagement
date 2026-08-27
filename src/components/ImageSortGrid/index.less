@@ -17,9 +17,18 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  /* 固定小图块：用于与封面框保持同尺寸的场景 */
+  /* 固定小图块：用于与封面框保持同尺寸的场景
+     使用 flex 换行而非 grid auto-fill：flex 容器的 max-content = 全部图块排一行的宽度，
+     父级 flex: 0 1 auto 时才能实现「正常宽度=内容实际宽度、最大宽度=剩余宽度、占满后再换行」 */
   &--fixed {
-    grid-template-columns: repeat(auto-fill, 132px);
+    display: flex;
+    flex-wrap: wrap;
+
+    .image-sort-grid__tile,
+    .image-sort-grid__add {
+      flex-shrink: 0;
+      width: 132px;
+    }
   }
 
   &__tile {

@@ -92,11 +92,6 @@
     border-radius: @radius-sm;
   }
 
-  /* ============================================================
-     患者端展示内容：列表封面 / 详情图片 / 服务内容 同一行紧邻排布
-     - 三块按 封面(132px) → 详情图片 → 服务内容 顺序排列，间距 @spacing-md
-     - 详情图片区宽度自适应内容，图少时服务内容紧贴其后（不被挤到最右）
-     ============================================================ */
   .editor-content {
     display: flex;
     align-items: flex-start;
@@ -106,7 +101,6 @@
       margin-bottom: 0;
     }
 
-    /* 展示块标签（封面 / 详情图片 span 标签 + 服务内容 Form label）统一排布 */
     .editor-upload > span,
     .ant-form-item-label > label {
       display: block;
@@ -127,7 +121,7 @@
     }
   }
 
-  /* 列表封面：132px 固定图块（与 ImageSortGrid fixed 变体同尺寸），不参与伸缩 */
+  // 封面与详情图块同宽（132px 固定图块，同 ImageSortGrid fixed 变体）；详情图区占满剩余宽度
   .editor-upload--cover {
     flex-shrink: 0;
 
@@ -182,25 +176,38 @@
     }
   }
 
-  /* 详情图片：flex 0 1 auto —— 不放大、可收缩、基准为内容宽度
-     - 正常宽度 = 图片网格的实际内容宽度（max-content：全部图块排在同一行）
-     - 最大宽度 = 父容器剩余宽度；图片够多占满剩余宽度后，内部 grid 自动换行 */
+  // 详情图片（共享组件 ImageSortGrid fixed：132×110 图块，与列表封面同尺寸）
+  // 水平排布并占满剩余空间，图块填满一行后自动换行（grid auto-fill）
   .editor-upload--detail {
-    flex: 0 1 auto;
-    min-width: 0;
+    // flex: 1 1 auto;
+    // min-width: 0;
+    max-width: calc(100% - 300px);
   }
 
-  /* 服务内容：固定宽度、不可伸缩，始终紧跟详情图片区 */
+  // 服务内容：固定宽度（原 320 的一半），高度与图块一致
   .editor-content__textarea {
-    flex-shrink: 0;
-    min-width: 160px;
+    // flex-shrink: 0;
+    width: 160px;
   }
 
-  /* 展示块底部提示（患者端详情按图片顺序展示……） */
-  .editor-upload__tip {
-    margin: 0;
-    .text-auxiliary();
-    text-align: center;
+  .editor-upload {
+    > span {
+      display: block;
+      margin-bottom: @spacing-xs;
+      .text-label();
+      color: @color-text-primary;
+
+      i {
+        color: @color-danger;
+        font-style: normal;
+      }
+    }
+
+    &__tip {
+      margin: @spacing-xs 0 0;
+      .text-auxiliary();
+      text-align: center;
+    }
   }
 
   .editor-publish {
@@ -374,7 +381,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      // margin-top: @spacing-md;
+      margin-top: @spacing-md;
       padding: @spacing-md @spacing-lg;
 
     > span {
@@ -395,6 +402,10 @@
     .editor-preview {
       position: static;
     }
+
+    .editor-content {
+      grid-template-columns: 1fr;
+    }
   }
 }
 
@@ -407,8 +418,6 @@
     .editor-content {
       flex-direction: column;
 
-      /* 纵向堆叠时详情图片区与服务内容均占满整行 */
-      .editor-upload--detail,
       .editor-content__textarea {
         width: 100%;
       }

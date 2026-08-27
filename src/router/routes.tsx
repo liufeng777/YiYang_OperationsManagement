@@ -20,6 +20,7 @@ import {
   UndoOutlined,
   AccountBookOutlined,
   FileTextOutlined,
+  TeamOutlined,
   SettingOutlined,
 } from '@ant-design/icons'
 import type { LazyExoticComponent, ComponentType } from 'react'
@@ -85,13 +86,13 @@ export const routes: RouteConfig[] = [
     meta: { title: '服务项目', icon: <AppstoreOutlined /> },
     children: [
       {
-        path: '',
+        path: 'list',
         meta: { title: '集团服务池' },
         component: lazy(() => import('@/pages/service/list')),
       },
       {
         path: 'institution',
-        meta: { title: '机构服务' },
+        meta: { title: '机构服务上下架' },
         component: lazy(() => import('@/pages/service/institution')),
       },
       {
@@ -100,10 +101,15 @@ export const routes: RouteConfig[] = [
         component: lazy(() => import('@/pages/service/category')),
       },
       {
-        path: 'detail/:id',
+        path: 'list/detail/new',
         meta: { title: '新建服务项目', hideInMenu: true },
         component: lazy(() => import('@/pages/service/detail')),
       },
+      {
+        path: 'list/detail/:id',
+        meta: { title: '编辑服务项目', hideInMenu: true },
+        component: lazy(() => import('@/pages/service/detail')),
+      }
     ],
   },
   {
@@ -200,6 +206,27 @@ export const routes: RouteConfig[] = [
         path: 'article/edit/:id',
         meta: { title: '新建科普内容', hideInMenu: true },
         component: lazy(() => import('@/pages/content/article-edit')),
+      },
+    ],
+  },
+  {
+    path: '/member',
+    meta: { title: '会员管理', icon: <TeamOutlined /> },
+    children: [
+      {
+        path: '',
+        meta: { title: '会员列表' },
+        component: lazy(() => import('@/pages/member/list')),
+      },
+      {
+        path: 'points',
+        meta: { title: '积分明细' },
+        component: lazy(() => import('@/pages/member/points')),
+      },
+      {
+        path: 'verify',
+        meta: { title: '实名审核' },
+        component: lazy(() => import('@/pages/member/verify')),
       },
     ],
   },

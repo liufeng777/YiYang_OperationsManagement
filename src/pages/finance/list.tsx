@@ -4,7 +4,7 @@
  * 当前为 mock 数据，后端就绪后替换为 financeApi.getReconcileList
  */
 import { useMemo, useState } from 'react'
-import { App, Button, Card, Input, Modal, Radio, Select, Table } from 'antd'
+import { App, Button, Card, Input, Radio, Select, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
@@ -120,7 +120,7 @@ const formatAmount = (value: number) =>
   `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`
 
 export default function FinanceReconcileList() {
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const [data, setData] = useState(initialData)
   const [keyword, setKeyword] = useState('')
   const [institution, setInstitution] = useState('all')
@@ -165,7 +165,7 @@ export default function FinanceReconcileList() {
   }
 
   const handleConfirm = (record: ReconcileItem) => {
-    Modal.confirm({
+    modal.confirm({
       title: '确认核对',
       content: `确认 ${record.reconcileDate} ${record.institutionName} 的对账结果无误吗？净收金额 ${formatAmount(record.netAmount)}。`,
       okText: '确认核对',
@@ -180,7 +180,7 @@ export default function FinanceReconcileList() {
   }
 
   const handleResolveDiff = (record: ReconcileItem) => {
-    Modal.confirm({
+    modal.confirm({
       title: '处理差异',
       content: `${record.reconcileDate} ${record.institutionName} 存在支付与退款差异（待处理 ¥168.00），确认人工核对完成并标记为已核对？`,
       okText: '标记已核对',

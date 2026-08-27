@@ -27,7 +27,7 @@ interface ImageSortGridProps {
   /** 末尾是否显示「添加图片」虚线块（默认显示） */
   addable?: boolean
   addText?: string
-  /** fluid：均分容器宽度；fixed：固定 132px 宽小图块（与封面同尺寸场景） */
+  /** fluid：均分容器宽度；fixed：固定 132px 宽小图块，flex 换行（与封面同尺寸场景） */
   variant?: 'fluid' | 'fixed'
 }
 

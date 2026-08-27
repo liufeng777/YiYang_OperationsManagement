@@ -1,0 +1,248 @@
+.verify-list {
+  /* 筛选区与列表卡片复用公共类 .filter-bar / .list-card（src/styles/list-card.less） */
+  &__filter {
+    margin-top: @spacing-md;
+  }
+
+  .verify-cell {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  .verify-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &::before {
+      width: 6px;
+      height: 6px;
+      border-radius: @radius-full;
+      background: currentColor;
+      content: '';
+    }
+
+    &--pending {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--approved {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--rejected {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+  }
+}
+
+/* ===== 实名审核 Drawer ===== */
+.verify-drawer {
+  &__header {
+    h3 {
+      margin: 0;
+      font-size: @font-size-title-card;
+      line-height: @line-height-title-card;
+      font-weight: @font-weight-title-card;
+      color: @color-text-primary;
+    }
+
+    p {
+      margin: @spacing-2xs 0 0;
+      .text-auxiliary();
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-md;
+
+    h4 {
+      margin: 0 0 @spacing-sm;
+      .text-body-medium();
+    }
+  }
+
+  /* 服务对象信息卡片 */
+  &__info {
+    padding: @spacing-md;
+    background: @color-bg-active;
+    border-radius: @radius-md;
+
+    dl {
+      display: flex;
+      flex-direction: column;
+      gap: @spacing-sm;
+      margin: 0;
+
+      > div {
+        display: flex;
+        align-items: center;
+      }
+    }
+
+    dt {
+      flex: 0 0 96px;
+      .text-auxiliary();
+    }
+
+    dd {
+      margin: 0;
+      .text-body-medium();
+    }
+  }
+
+  /* 黄色隐私提示条 */
+  &__notice {
+    padding: @spacing-sm @spacing-md;
+    font-size: @font-size-auxiliary;
+    line-height: @line-height-auxiliary;
+    color: darken(@color-warning, 32%);
+    background: fade(@color-warning, 14%);
+    border-radius: @radius-sm;
+  }
+
+  /* 审核结果选项卡（两个大胶囊按钮） */
+  &__result-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: @spacing-sm;
+  }
+
+  &__result-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: @spacing-xs;
+    height: 48px;
+    font-size: @font-size-body;
+    color: @color-text-secondary;
+    cursor: pointer;
+    background: @color-bg-card;
+    border: 1px solid @color-border;
+    border-radius: @radius-sm;
+    transition: all 0.2s;
+
+    i {
+      width: 10px;
+      height: 10px;
+      border: 1px solid @color-border;
+      border-radius: @radius-full;
+      content: '';
+    }
+
+    &.is-active.is-approved {
+      color: @color-primary;
+      background: @color-primary-light;
+      border-color: @color-primary;
+
+      i {
+        background: @color-primary;
+        border-color: @color-primary;
+      }
+    }
+
+    &.is-active.is-rejected {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+      border-color: @color-danger;
+
+      i {
+        background: @color-danger;
+        border-color: @color-danger;
+      }
+    }
+  }
+
+  &__result-readonly {
+    .text-body-medium();
+
+    &--approved {
+      color: @color-primary;
+    }
+
+    &--rejected {
+      color: @color-danger;
+    }
+
+    span {
+      .text-auxiliary();
+    }
+  }
+
+  &__remark-tip {
+    margin: @spacing-xs 0 0;
+    .text-auxiliary();
+  }
+
+  &__remark-readonly {
+    margin: 0;
+    .text-body();
+  }
+
+  /* 一期审核规则（浅蓝信息区） */
+  &__rules {
+    padding: @spacing-md;
+    background: fade(@color-info, 8%);
+    border-radius: @radius-md;
+
+    ul {
+      display: flex;
+      flex-direction: column;
+      gap: @spacing-xs;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    li {
+      position: relative;
+      padding-left: @spacing-md;
+      font-size: @font-size-auxiliary;
+      line-height: @line-height-auxiliary;
+      color: @color-text-secondary;
+
+      &::before {
+        position: absolute;
+        top: 6px;
+        left: 0;
+        width: 4px;
+        height: 4px;
+        background: @color-info;
+        border-radius: @radius-full;
+        content: '';
+      }
+    }
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: @spacing-sm;
+  }
+
+  &__reject {
+    color: @color-danger;
+
+    &:hover {
+      color: @color-danger !important;
+      border-color: @color-danger !important;
+    }
+  }
+}

@@ -7,7 +7,7 @@
 import { useState } from 'react'
 import { App, Button, Card, Input, Modal, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { CheckOutlined, PlusOutlined } from '@ant-design/icons'
+import { CheckOutlined, ArrowLeftOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import type { CancelStatus, RefundLog, RefundStatus } from '@/api/modules/refund'
@@ -141,7 +141,7 @@ const logColumns: ColumnsType<RefundLog> = [
 
 export default function RefundDetail() {
   const navigate = useNavigate()
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const params = useParams<{ id: string }>()
   const base = refundBaseMap[params.id ?? '1'] ?? refundBaseMap['1']
   const [rejectOpen, setRejectOpen] = useState(false)
@@ -151,7 +151,7 @@ export default function RefundDetail() {
   const isAbnormal = base.status === 'abnormal'
 
   const handleApprove = () => {
-    Modal.confirm({
+    modal.confirm({
       title: '同意整单退款',
       content: `确认同意 ¥${base.amount}.00 整单退款吗？系统将先取消全部关联工单，全部取消成功后原路退款。`,
       okText: '确认同意',
@@ -175,7 +175,7 @@ export default function RefundDetail() {
       title="退款审核详情"
       description={`${base.refundNo} · 关联订单 ${base.orderNo} · ${base.userName}`}
       extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/refund')}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/refund')}>
           返回退款列表
         </Button>
       }

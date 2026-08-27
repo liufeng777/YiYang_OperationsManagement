@@ -2,7 +2,7 @@
  * 机构服务页样式（主从布局：左侧机构面板 + 右侧机构服务表）
  * 与集团服务池（service-pool 指标卡 + 分类侧栏）视觉区分：
  * 无指标卡、无分类侧栏，左栏为可选中的机构卡片列表
- * 服务条目 / 方式胶囊 / 下架弹窗样式复用 list.less（根节点带 .service-pool）
+ * 服务条目 / 方式胶囊 / 停用弹窗样式复用 list.less（根节点带 .service-pool）
  */
 
 .inst-service {
@@ -157,7 +157,7 @@
     }
   }
 
-  /* ===== 预约状态胶囊（1 可预约 / 2 待上架 / 3 已下架） ===== */
+  /* ===== 预约状态胶囊（1 可预约 / 2 待启用 / 3 已停用） ===== */
   .pool-status--1 {
     color: @color-primary;
     background: @color-primary-light;

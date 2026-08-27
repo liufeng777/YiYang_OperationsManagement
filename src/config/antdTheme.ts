@@ -70,6 +70,11 @@ const antdTheme: ThemeConfig = {
       colorLink: brandPrimary,
       colorLinkHover: brandPrimaryDark,
       colorLinkActive: brandPrimaryDark,
+      // 基础（默认）按钮 hover/focus：边框与文字使用品牌深色（@color-primary-dark）
+      defaultHoverColor: brandPrimaryDark,
+      defaultHoverBorderColor: brandPrimaryDark,
+      defaultActiveColor: brandPrimaryDark,
+      defaultActiveBorderColor: brandPrimaryDark,
     },
     Card: {
       headerBg: '#FFFFFF',

@@ -150,7 +150,7 @@ export default function ServiceEditorPage() {
       title={pageTitle}
       description="集团统一定义一次，机构选择后继承基础信息与价格；编辑时复用本页面"
       extra={
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/service')}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/service/list')}>
           返回服务池
         </Button>
       }
@@ -301,7 +301,7 @@ export default function ServiceEditorPage() {
               <p className="editor-upload__tip">患者端详情按图片顺序展示，可通过右侧手机预览确认整体阅读效果。</p>
             </Card>
 
-            {/* <Card variant="borderless" className="editor-card">
+            <Card variant="borderless" className="editor-card">
               <div className="editor-card__header">
                 <h3>发布设置</h3>
               </div>
@@ -322,16 +322,7 @@ export default function ServiceEditorPage() {
                 </Form.Item>
                 <span>保存后立即向机构开放</span>
               </div>
-            </Card> */}
-            <div className="service-editor__footer">
-              <span>启用后机构可从服务池选择添加；历史订单保留创建时快照。</span>
-              <div>
-                <Button onClick={() => handleSave('draft')}>保存草稿</Button>
-                <Button type="primary" icon={<CheckOutlined />} onClick={() => handleSave('on')}>
-                  保存并启用
-                </Button>
-              </div>
-            </div>
+            </Card>
           </div>
 
           <Card variant="borderless" className="editor-preview">
@@ -377,7 +368,7 @@ export default function ServiceEditorPage() {
           </Card>
         </div>
 
-        {/* <div className="service-editor__footer">
+        <div className="service-editor__footer">
           <span>必填项完成后可保存；编辑服务时，同一页面会带入已有内容。</span>
           <div>
             <Button onClick={() => handleSave('draft')}>保存草稿</Button>
@@ -385,7 +376,7 @@ export default function ServiceEditorPage() {
               保存并启用
             </Button>
           </div>
-        </div> */}
+        </div>
       </Form>
     </PageContainer>
   )

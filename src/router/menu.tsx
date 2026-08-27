@@ -107,7 +107,17 @@ export function findBreadcrumb(pathname: string): BreadcrumbItem[] {
   for (const route of routes) {
     if (!(pathname === route.path || pathname.startsWith(`${route.path}/`))) continue
 
-    const crumbs: BreadcrumbItem[] = [{ title: route.meta.title, path: route.path }]
+    // 一级导航落点：有默认页（''）时用一级路径；无默认页（如系统设置）落到第一个可见二级导航，
+    // 避免面包屑点击一级项时跳到无匹配路由的空白页
+    const defaultChild = route.children?.find((c) => !c.path && !c.meta.hideInMenu)
+    const firstVisibleChild = route.children?.find((c) => !c.meta.hideInMenu)
+    const landingPath = defaultChild
+      ? route.path
+      : firstVisibleChild
+        ? joinPath(route.path, firstVisibleChild.path)
+        : route.path
+
+    const crumbs: BreadcrumbItem[] = [{ title: route.meta.title, path: landingPath }]
     const pages = expandPages(route, route.path)
     const segments = pathname.split('/').filter(Boolean)
 

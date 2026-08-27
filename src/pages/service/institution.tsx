@@ -15,7 +15,7 @@ import type { ServiceMode } from '@/api/modules/service'
 import './list.less'
 import './institution.less'
 
-/** 预约状态：1 可预约 / 2 待上架 / 3 已下架 */
+/** 预约状态：1 可预约 / 2 待启用 / 3 已停用 */
 type BookingStatus = 1 | 2 | 3
 
 interface InstitutionService {
@@ -51,8 +51,8 @@ interface OfflineTarget {
 
 const statusText: Record<BookingStatus, string> = {
   1: '可预约',
-  2: '待上架',
-  3: '已下架',
+  2: '待启用',
+  3: '已停用',
 }
 
 const modeClass: Record<ServiceMode, string> = {
@@ -195,7 +195,7 @@ export default function ServiceInstitutionPage() {
 
   const handleEnable = (record: InstitutionService) => {
     patchServiceStatus([record.id], 1)
-    message.success(`「${record.name}」已上架，用户端恢复预约`)
+    message.success(`「${record.name}」已启用，用户端恢复预约`)
   }
 
   const handleBatchEnable = () => {
@@ -203,12 +203,12 @@ export default function ServiceInstitutionPage() {
       .filter((item) => selectedRowKeys.includes(item.id) && item.status !== 1)
       .map((item) => item.id)
     if (!ids.length) {
-      message.warning('请勾选待上架或已下架的服务')
+      message.warning('请勾选待启用或已停用的服务')
       return
     }
     patchServiceStatus(ids, 1)
     setSelectedRowKeys([])
-    message.success(`已批量上架 ${ids.length} 项服务`)
+    message.success(`已批量启用 ${ids.length} 项服务`)
   }
 
   const openOfflineModal = (record: InstitutionService) => {
@@ -225,17 +225,17 @@ export default function ServiceInstitutionPage() {
       return
     }
     setOfflineReason('')
-    setOfflineTarget({ ids, title: `批量下架 ${ids.length} 项服务` })
+    setOfflineTarget({ ids, title: `批量停用 ${ids.length} 项服务` })
   }
 
   const handleConfirmOffline = () => {
     if (!offlineTarget) return
     if (offlineReason.trim().length < 5) {
-      message.warning('请填写下架原因，至少 5 个字')
+      message.warning('请填写停用原因，至少 5 个字')
       return
     }
     patchServiceStatus(offlineTarget.ids, 3)
-    message.success(`已下架 ${offlineTarget.ids.length} 项服务`)
+    message.success(`已停用 ${offlineTarget.ids.length} 项服务`)
     setOfflineTarget(null)
     setSelectedRowKeys([])
   }
@@ -303,11 +303,11 @@ export default function ServiceInstitutionPage() {
             </Button>
             {record.status === 1 ? (
               <Button type="link" size="small" onClick={() => openOfflineModal(record)}>
-                下架
+                停用
               </Button>
             ) : (
               <Button type="link" size="small" onClick={() => handleEnable(record)}>
-                上架
+                启用
               </Button>
             )}
           </div>
@@ -320,13 +320,13 @@ export default function ServiceInstitutionPage() {
 
   return (
     <PageContainer
-      title="机构服务"
-      description="以机构为主体管理已接入的服务项目；选择左侧机构后查看其服务，并进行上架 / 下架运营"
-      extra={
-        <Button type="primary" onClick={() => navigate('/service')}>
-          进入集团服务池
-        </Button>
-      }
+      title="机构服务上下架"
+      description="以机构为主体管理已接入的服务项目；选择左侧机构后查看其服务，并进行启用 / 停用运营"
+      // extra={
+      //   <Button type="primary" onClick={() => navigate('/service')}>
+      //     进入集团服务池
+      //   </Button>
+      // }
     >
       <div className="service-pool inst-service">
         <Card variant="borderless" className="filter-bar inst-service__filter">
@@ -360,8 +360,8 @@ export default function ServiceInstitutionPage() {
             options={[
               { label: '全部预约状态', value: 0 },
               { label: '可预约', value: 1 },
-              { label: '待上架', value: 2 },
-              { label: '已下架', value: 3 },
+              { label: '待启用', value: 2 },
+              { label: '已停用', value: 3 },
             ]}
           />
           <Button onClick={handleReset}>重置</Button>
@@ -398,8 +398,8 @@ export default function ServiceInstitutionPage() {
                     <span className="inst-panel__addr">{inst.address}</span>
                     <div className="inst-panel__stats">
                       <span><i className="dot dot--on" />可预约 {countByStatus(inst.services, 1)}</span>
-                      <span>待上架 {countByStatus(inst.services, 2)}</span>
-                      <span>已下架 {countByStatus(inst.services, 3)}</span>
+                      <span>待启用 {countByStatus(inst.services, 2)}</span>
+                      <span>已停用 {countByStatus(inst.services, 3)}</span>
                     </div>
                     <span className="inst-panel__orders">近30日订单 {orderTotal}</span>
                   </button>
@@ -411,7 +411,7 @@ export default function ServiceInstitutionPage() {
             </div>
             <div className="inst-panel__tip">
               <h4>页面职责说明</h4>
-              <p>服务定义由集团服务池统一维护；机构添加服务在「机构管理」中完成，本页仅负责跨机构的上架 / 下架运营。</p>
+              <p>服务定义由集团服务池统一维护；机构添加服务在「机构管理」中完成，本页仅负责跨机构的启用 / 停用运营。</p>
             </div>
           </Card>
 
@@ -432,8 +432,8 @@ export default function ServiceInstitutionPage() {
                   进入机构详情
                   <ArrowRightOutlined />
                 </Button>
-                <Button onClick={handleBatchEnable}>批量上架</Button>
-                <Button onClick={openBatchOfflineModal}>批量下架</Button>
+                <Button onClick={handleBatchEnable}>批量启用</Button>
+                <Button onClick={openBatchOfflineModal}>批量停用</Button>
               </div>
             </div>
             <Table<InstitutionService>
@@ -450,13 +450,13 @@ export default function ServiceInstitutionPage() {
 
       <Modal
         open={!!offlineTarget}
-        title="下架服务"
+        title="停用服务"
         onCancel={() => setOfflineTarget(null)}
         footer={
           <div className="offline-modal__footer">
             <Button onClick={() => setOfflineTarget(null)}>取消</Button>
             <Button danger type="primary" onClick={handleConfirmOffline}>
-              确认下架
+              确认停用
             </Button>
           </div>
         }
@@ -464,7 +464,7 @@ export default function ServiceInstitutionPage() {
         {offlineTarget && (
           <div className="offline-modal">
             <div className="offline-modal__warning">
-              <strong>下架后用户端将立即停止展示和预约</strong>
+              <strong>停用后用户端将立即停止展示和预约</strong>
               <p>已产生的预约订单不受影响，仍按原履约流程处理。</p>
             </div>
             <div className="offline-modal__service">
@@ -472,10 +472,10 @@ export default function ServiceInstitutionPage() {
               <span>{offlineTarget.code ?? `${offlineTarget.ids.length} 项`}</span>
             </div>
             <div className="offline-modal__reason">
-              <label>下架原因 <i>*</i></label>
+              <label>停用原因 <i>*</i></label>
               <Input.TextArea
                 rows={4}
-                placeholder="请填写下架原因，至少 5 个字"
+                placeholder="请填写停用原因，至少 5 个字"
                 value={offlineReason}
                 onChange={(event) => setOfflineReason(event.target.value)}
               />

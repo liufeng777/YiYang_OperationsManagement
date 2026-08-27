@@ -25,9 +25,9 @@ export default function HeaderBar() {
   const breadcrumbItems = useMemo(
     () =>
       findBreadcrumb(location.pathname).map((item, index, list) => ({
-        // 末级为当前页不可点击；其余层级点击直接跳转对应页面
+        // 末级为当前页不可点击；其余层级（含一级导航）点击跳转对应落点页
         title:
-          index === 0 || index === list.length - 1 ? (
+          index === list.length - 1 ? (
             item.title
           ) : (
             <a

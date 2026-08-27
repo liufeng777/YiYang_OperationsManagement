@@ -25,6 +25,9 @@
 /* 主内容卡片 */
 .payment-card {
   .card-surface();
+  .ant-card-body {
+    padding: @spacing-md @spacing-lg;
+  }
 
   &__header {
     margin-bottom: 0;
@@ -42,11 +45,12 @@
 
   .ant-divider {
     border-color: @color-border;
+    margin: 10px 0 0 0 !important;
   }
 
   &__footer-tip {
     margin-top: @spacing-md;
-    padding: @spacing-sm @spacing-md;
+    padding: @spacing-xs @spacing-md;
     .text-auxiliary();
     background: @color-bg-page;
     border-radius: @radius-sm;
@@ -58,7 +62,7 @@
   display: flex;
   align-items: flex-start;
   gap: @spacing-md;
-  padding: @spacing-md 0;
+  padding: @spacing-xs 0;
 
   &:not(:last-child) {
     border-bottom: 1px solid @color-border;
@@ -111,6 +115,9 @@
 /* 侧边栏卡片 */
 .payment-sidebar-card {
   .card-surface();
+  .ant-card-body {
+    padding: @spacing-md @spacing-lg;
+  }
 
   &__title {
     .text-title-card();
@@ -180,11 +187,11 @@
 .payment-log-list {
   display: flex;
   flex-direction: column;
-  gap: @spacing-md;
+  gap: @spacing-xs;
 }
 
 .payment-log-item {
-  padding-bottom: @spacing-md;
+  padding-bottom: @spacing-xs;
   border-bottom: 1px solid @color-border;
 
   &:last-child {
