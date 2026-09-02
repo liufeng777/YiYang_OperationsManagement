@@ -94,3 +94,42 @@ body {
 .ant-form-item-extra {
   font-size: 12px !important;
 }
+
+.status-btn {
+  display: inline-block;
+  text-align: center;
+  padding: @spacing-2xs @spacing-xs;
+  font-size: @font-size-auxiliary;
+  border-radius: @radius-full;
+  min-width: 60px;
+}
+
+// 成功（绿）
+.status--success {
+  color: @color-primary;
+  background: @color-primary-light;
+}
+
+// 警告 (橙色)
+.status--warning {
+  color: darken(@color-warning, 18%);
+  background: fade(@color-warning, 18%);
+}
+
+// 通知（蓝色）
+.status--info {
+  color: @color-info;
+  background: fade(@color-info, 12%);
+}
+
+// 危险 (红)
+.status--danger {
+  color: @color-danger;
+  background: fade(@color-danger, 12%);
+}
+
+// 取消（灰色）
+.status--cancel {
+  color: @color-text-secondary;
+  background: @color-bg-active;
+}

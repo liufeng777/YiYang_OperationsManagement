@@ -11,41 +11,6 @@ import type { ApiPageParams, ApiPageResult, BatchResult, CommonStatus } from '@/
 /* 页面展示类型（mock，接后端后逐步切换到下方 DTO）                       */
 /* ------------------------------------------------------------------ */
 
-/** 同步状态：synced=已同步 updating=更新中 */
-export type SyncStatus = 'synced' | 'updating'
-
-/** 经营状态：normal=正常经营 pending=资料待完善 paused=暂停经营 */
-export type OperationStatus = 'normal' | 'pending' | 'paused'
-
-/** 机构列表项 */
-export interface InstitutionItem {
-  id: number
-  /** 机构编码：JG0001 */
-  code: string
-  name: string
-  /** 机构类型：健康驿站 / 护理院 */
-  type: number; // 1-护理院 2-驿站
-  /** 省份 */
-  province: string
-  /** 城市 */
-  city: string
-  // 区
-  district: string
-  /** 详细地址 */
-  address: string
-  // 服务半径
-  service_radius_km: number
-  // 联系电话
-  contact_phone: string
-  // 管理员
-  manager_name: string;
-  // 管理员联系电话
-  manager_phone: string
-  // 状态
-  status: number  // 1-启用 9-禁用
-  created_at: string; // 时间戳
-}
-
 /** 机构已添加服务 */
 export interface InstitutionService {
   id: string
@@ -75,65 +40,61 @@ export interface ServicePoolItem {
   status: '可预约' | '待上架' | '已下架'
 }
 
-/** 患者端介绍 */
-export interface InstitutionIntro {
-  displayTitle: string
-  description: string
-  tags: string[]
-  visible: boolean
-  coverUrl?: string
-  photos: string[]
-}
-
-/** 机构详情 */
-export interface InstitutionDetail extends InstitutionItem {
-  lastSyncTime: string
-  onlineRange: string
-  intro: InstitutionIntro
-}
-
 /* ------------------------------------------------------------------ */
 /* §3.1 机构管理（权限 institution:manage）                              */
 /* ------------------------------------------------------------------ */
 
 /** 机构类型：1-护理院 2-驿站 */
 export type InstitutionType = 1 | 2
+export type InstitutionStatus = 1 | 9
 
 /** 机构 DTO（映射 institutions，含服务半径扩展） */
-export interface InstitutionDTO {
+export interface InstitutionItem {
   id: number
+  code: string
+  address: string
+  brief: string // 患者端展示标题 varchar(64)，如：幸福颐养护理院 · 专业照护，安心颐养
+  description: string // 机构介绍 varchar(255)
   name: string
   name_en: string | null
   type: InstitutionType
-  address: string
-  province: string
-  city: string
-  district: string
-  lng: number | null
-  lat: number | null
+  province: string // 省
+  city: string // 市
+  district: string // 区
   /** 服务半径 km，NULL=不限 */
   service_radius_km: number | null
+  images: string[] // 服务端图片
   contact_phone: string
   manager_name: string
   manager_phone: string
   /** 1-启用 9-禁用 */
-  status: CommonStatus
+  status: InstitutionStatus
   created_at: number
 }
 
 /** 机构新增 / 编辑入参 */
-export type InstitutionSaveBody = Omit<InstitutionDTO, 'id' | 'created_at'>
+export type InstitutionSaveBody = Omit<InstitutionItem, 'id' | 'code' | 'created_at'>
 
-/** 机构列表 GET /api/admin/institutions（按类型/状态/关键字） */
+/** 机构详情（页面展示，mock）：DTO 字段 + 患者端介绍扩展（无「同步」概念，平台直接维护） */
+export interface InstitutionDetail extends InstitutionItem {
+  /** 特色标签（患者端展示，预留字段） */
+  introTags: string[]
+  /** 患者端是否展示 */
+  introVisible: boolean
+  /** 机构封面地址（本地预览） */
+  introCover?: string
+}
+
+/** 机构列表 GET /api/admin/institutions（按类型/状态/关键字(名称、地址)） */
 export function getInstitutions(
-  params?: ApiPageParams & { type?: InstitutionType; status?: CommonStatus },
+  params?: ApiPageParams & { keyword?: string, type?: InstitutionType; status?: InstitutionStatus },
 ) {
-  return http.get<ApiPageResult<InstitutionDTO>>('/admin/institutions', { ...params })
+  return http.get<ApiPageResult<InstitutionItem>>('/admin/institutions', { ...params })
 }
 
 /** 机构详情 GET /api/admin/institutions/:id */
 export function getInstitution(id: number) {
-  return http.get<InstitutionDTO>(`/admin/institutions/${id}`)
+  return http.get<InstitutionItem>(`/admin/institutions/${id}`)
 }
 
 /** 新增机构 POST /api/admin/institutions */

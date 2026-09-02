@@ -26,6 +26,8 @@ export default function SmsLogsTab() {
   const [data] = useState(mockSmsLogs)
   const [phone, setPhone] = useState('')
   const [status, setStatus] = useState('all')
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const filtered = useMemo(
     () =>
@@ -95,7 +97,6 @@ export default function SmsLogsTab() {
         <div className="list-card__header">
           <div>
             <span className="list-card__header__title">短信发送记录</span>
-            <span className="list-card__header__tips">共 {filtered.length} 条</span>
           </div>
         </div>
         <Table<SmsLogDTO>
@@ -103,7 +104,13 @@ export default function SmsLogsTab() {
           size="small"
           columns={columns}
           dataSource={filtered}
-          pagination={{ pageSize: 10, showSizeChanger: false }}
+          pagination={{
+            current: page,
+            pageSize,
+            total: filtered.length,
+            onChange: setPage,
+            showTotal: (total) => `共 ${total} 条`
+          }}
         />
       </Card>
     </>

@@ -1,0 +1,75 @@
+/**
+ * 机构管理 - 新增机构页面样式
+ * 表单网格样式复用 components/institution-form.less（InstitutionBaseFields 已引入）
+ */
+
+.institution-create {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-md;
+
+  .create-card {
+    .card-surface();
+
+    .ant-card-body {
+      padding: @spacing-md @spacing-lg;
+    }
+
+    &__header {
+      display: flex;
+      align-items: baseline;
+      gap: @spacing-sm;
+      margin-bottom: @spacing-md;
+
+      h3 {
+        margin: 0;
+        .text-title-card();
+      }
+
+      span {
+        .text-auxiliary();
+      }
+    }
+  }
+
+  /* 患者端图片：块标签 + 拖拽排序网格 + 辅助提示 */
+  &__images-label {
+    display: block;
+    margin-bottom: @spacing-xs;
+    .text-label();
+    color: @color-text-primary;
+  }
+
+  &__images-tip {
+    margin: @spacing-xs 0 0;
+    .text-auxiliary();
+  }
+
+  /* 底部操作条（同服务编辑页 footer 规范） */
+  &__footer {
+    .card-surface();
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: @spacing-md @spacing-lg;
+
+    > span {
+      .text-auxiliary();
+    }
+
+    > div {
+      display: flex;
+      gap: @spacing-sm;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .institution-create {
+    &__footer {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: @spacing-md;
+    }
+  }
+}

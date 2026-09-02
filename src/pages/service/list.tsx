@@ -157,6 +157,8 @@ export default function ServicePoolList() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
   const [statusTarget, setStatusTarget] = useState<StatusTarget | null>(null)
   const [offlineReason, setOfflineReason] = useState('')
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
@@ -400,7 +402,6 @@ export default function ServicePoolList() {
         <Card variant="borderless" className="filter-bar service-pool__filter">
           <Input
             allowClear
-            prefix={<SearchOutlined />}
             placeholder="搜索服务名称、项目编码"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
@@ -484,7 +485,6 @@ export default function ServicePoolList() {
             <div className="list-card__header">
               <div>
                 <span className="list-card__header__title">服务项目</span>
-                <span className="list-card__header__tips">共 128 项 · 机构添加时继承集团基础信息与价格</span>
               </div>
               <Tooltip title={batchTooltip}>
                 {/* disabled 按钮不触发鼠标事件，需包一层 span 才能展示 Tooltip */}
@@ -501,7 +501,13 @@ export default function ServicePoolList() {
               columns={columns}
               dataSource={filteredData}
               rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
-              pagination={{ total: 128, pageSize: 6, current: 1, showSizeChanger: false }}
+              pagination={{
+                current: page,
+                pageSize,
+                total: filteredData.length,
+                onChange: setPage,
+                showTotal: (total) => `共 ${total} 条`
+              }}
             />
           </Card>
         </div>

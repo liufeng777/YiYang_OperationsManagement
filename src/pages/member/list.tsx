@@ -37,6 +37,7 @@ const mockMembers: MemberOpsItem[] = [
     followStatus: 'following',
     lastOrder: '08-25 09:12',
     registerTime: '2026-05-18',
+    connection: '本人 · 健康会员'
   },
   {
     id: '2',
@@ -48,6 +49,7 @@ const mockMembers: MemberOpsItem[] = [
     followStatus: 'following',
     lastOrder: '08-24 16:30',
     registerTime: '2026-08-20',
+    connection: '母亲 · 健康会员'
   },
   {
     id: '3',
@@ -59,6 +61,7 @@ const mockMembers: MemberOpsItem[] = [
     followStatus: 'uncontacted',
     lastOrder: null,
     registerTime: '2026-02-11',
+    connection: '本人 · 健康会员'
   },
   {
     id: '4',
@@ -70,6 +73,7 @@ const mockMembers: MemberOpsItem[] = [
     followStatus: 'following',
     lastOrder: '05-12 11:08',
     registerTime: '2025-12-22',
+    connection: '暂未关联'
   },
   {
     id: '5',
@@ -81,6 +85,7 @@ const mockMembers: MemberOpsItem[] = [
     followStatus: 'uncontacted',
     lastOrder: '04-18 10:08',
     registerTime: '2026-08-23',
+    connection: '父亲 · 健康会员'
   },
   {
     id: '6',
@@ -92,6 +97,7 @@ const mockMembers: MemberOpsItem[] = [
     followStatus: 'uncontacted',
     lastOrder: null,
     registerTime: '2026-08-25',
+    connection: '暂未关联'
   },
 ]
 
@@ -104,7 +110,7 @@ const tabItems = [
 ]
 
 const metrics = [
-  { key: 'all', label: '全部会员', value: '2,846', note: '已完成手机号注册', tone: 'primary' },
+  { key: 'all', label: '全部注册会员', value: '2,846', note: '已完成平台注册', tone: 'primary' },
   { key: 'new', label: '本月新增', value: '186', note: '较上月 +12%', tone: 'info' },
   { key: 'pending', label: '待转化会员', value: '1,642', note: '注册后尚无有效订单', tone: 'warning' },
   { key: 'follow', label: '待跟进会员', value: '38', note: '超过 3 天未完成首次联系', tone: 'danger' },
@@ -130,6 +136,8 @@ export default function MemberList() {
     convertStatus: 'all',
     date: '',
   })
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const filteredData = useMemo(() => {
     return mockMembers.filter((item) => {
@@ -166,7 +174,7 @@ export default function MemberList() {
   const columns = useMemo<ColumnsType<MemberOpsItem>>(
     () => [
       {
-        title: '会员 / 手机号',
+        title: '注册会员 / 手机号',
         key: 'member',
         width: 150,
         render: (_, record) => (
@@ -208,11 +216,10 @@ export default function MemberList() {
         ),
       },
       {
-        title: '最近订单',
-        dataIndex: 'lastOrder',
-        key: 'lastOrder',
-        width: 110,
-        render: (value: string | null) => value ?? '暂无订单',
+        title: '关联健康会员',
+        dataIndex: 'connection',
+        key: 'connection',
+        width: 150
       },
       {
         title: '注册时间',
@@ -251,11 +258,11 @@ export default function MemberList() {
 
   return (
     <PageContainer
-      title="会员管理"
-      description="管理注册会员、运营跟进记录与订单转化状态"
+      title="注册会员管理"
+      description="管理平台注册会员、运营人员归属、跟进记录与订单转化状态"
       extra={
         <Button type="primary" icon={<PlusOutlined />} onClick={handleExport}>
-          导出会员
+          导出注册会员
         </Button>
       }
     >
@@ -280,7 +287,6 @@ export default function MemberList() {
         <Card variant="borderless" className="filter-bar member-list__filter">
           <Input
             allowClear
-            prefix={<SearchOutlined />}
             placeholder="会员姓名或手机号"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
@@ -321,7 +327,7 @@ export default function MemberList() {
         <Card variant="borderless" className="list-card">
           <div className="list-card__header">
             <div>
-              <span className="list-card__header__title">会员列表</span>
+              <span className="list-card__header__title">注册会员列表</span>
               <span className="list-card__header__tips">共 2,846 位会员 · 待跟进 38 位</span>
             </div>
             <Radio.Group
@@ -336,7 +342,13 @@ export default function MemberList() {
             rowKey="id"
             columns={columns}
             dataSource={filteredData}
-            pagination={{ total: 2846, pageSize: 6, current: 1, showSizeChanger: false }}
+            pagination={{
+              current: page,
+              pageSize,
+              total: filteredData.length,
+              onChange: setPage,
+              showTotal: (total) => `共 ${total} 条`
+            }}
           />
         </Card>
       </div>

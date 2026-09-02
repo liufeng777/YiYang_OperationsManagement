@@ -143,6 +143,8 @@ export default function OrderList() {
     workOrderStatus: 'all',
     date: '',
   })
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const filteredData = useMemo(() => {
     return mockOrders.filter((item) => {
@@ -296,7 +298,6 @@ export default function OrderList() {
         <Card variant="borderless" className="filter-bar order-list__filter">
           <Input
             allowClear
-            prefix={<SearchOutlined />}
             placeholder="订单号、用户姓名或手机号"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
@@ -372,7 +373,13 @@ export default function OrderList() {
             size="small"
             columns={columns}
             dataSource={filteredData}
-            pagination={{ total: 1286, pageSize: 6, current: 1, showSizeChanger: false }}
+            pagination={{
+              current: page,
+              pageSize,
+              total: filteredData.length,
+              onChange: setPage,
+              showTotal: (total) => `共 ${total} 条`
+            }}
           />
         </Card>
       </div>

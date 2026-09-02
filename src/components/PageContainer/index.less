@@ -1,5 +1,11 @@
 .page-container {
-  padding: @spacing-xl;
+  /* 底部留白由 __body::after 承担（见下方注释），容器自身底部 padding 置 0 */
+  padding: @spacing-xl @spacing-xl 0;
+  /* 高度继承内容区（__content 固定视口高度），内容超出时内部滚动 */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
 
   &__header {
     display: flex;
@@ -26,5 +32,19 @@
 
   &__body {
     min-height: 0;
+    flex: 1;
+
+    /*
+     * 滚动到底部时的 24px 留白占位。
+     * 注意：__body 是 flex item（flex:1; min-height:0），内容超高时 body 盒子会被压缩，
+     * 内容以 overflow:visible 溢出到盒子之外——放在 body 盒子之后的占位（容器 ::after）
+     * 或 body 自身的 padding-bottom 都会被溢出内容跳过，必须放在内容流内部末尾，
+     * 随内容一起溢出并计入滚动区域。
+     */
+    &::after {
+      content: '';
+      display: block;
+      height: @spacing-xl;
+    }
   }
 }

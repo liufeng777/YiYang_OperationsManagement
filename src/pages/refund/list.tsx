@@ -149,6 +149,8 @@ export default function RefundList() {
     cancelStatus: 'all',
     date: '',
   })
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const filteredData = useMemo(() => {
     return mockRefunds.filter((item) => {
@@ -281,7 +283,6 @@ export default function RefundList() {
         <Card variant="borderless" className="filter-bar refund-list__filter">
           <Input
             allowClear
-            prefix={<SearchOutlined />}
             placeholder="退款单号、订单号、用户姓名或手机号"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
@@ -356,7 +357,13 @@ export default function RefundList() {
             rowKey="id"
             columns={columns}
             dataSource={filteredData}
-            pagination={{ total: 138, pageSize: 6, current: 1, showSizeChanger: false }}
+            pagination={{
+              current: page,
+              pageSize,
+              total: filteredData.length,
+              onChange: setPage,
+              showTotal: (total) => `共 ${total} 条`
+            }}
           />
         </Card>
       </div>

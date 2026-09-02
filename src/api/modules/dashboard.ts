@@ -43,8 +43,8 @@ export interface RecentOrder {
   amount: number
   /** 下单时间 */
   orderTime: string
-  /** 订单状态：pending=待服务 confirmed=已确认 refunding=退款审核 finished=已完成 */
-  status: 'pending' | 'confirmed' | 'refunding' | 'finished'
+  /** 订单状态：1=待服务 2=已确认 3=退款审核 4=已完成 */
+  status: number
 }
 
 /** 待办提醒项 */

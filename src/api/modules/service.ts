@@ -155,6 +155,15 @@ export function deleteService(id: number) {
 }
 
 /* ------------------------------------------------------------------ */
+/* 服务-机构管理服务   */
+/* ------------------------------------------------------------------ */
+export function getInstitutionServices(id: number, params?: ApiPageParams & { service_id?: number; status?: CommonStatus }) {
+  return http.get<ApiPageResult<ServiceDTO>>(`/admin/institutions/${id}/services`, {
+    ...params,
+  })
+}
+
+/* ------------------------------------------------------------------ */
 /* §5.3 服务-耗材关联配置 service_consumables（权限 service:manage）      */
 /* ------------------------------------------------------------------ */
 

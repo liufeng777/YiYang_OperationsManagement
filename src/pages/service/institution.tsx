@@ -332,7 +332,6 @@ export default function ServiceInstitutionPage() {
         <Card variant="borderless" className="filter-bar inst-service__filter">
           <Input
             allowClear
-            prefix={<SearchOutlined />}
             placeholder="搜索服务名称、项目编码"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}

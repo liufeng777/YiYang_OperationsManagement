@@ -159,6 +159,8 @@ export default function AccountList() {
   })
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<AccountItem | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   /** 打开新增用户 Drawer */
   const openCreate = () => {
@@ -352,7 +354,6 @@ export default function AccountList() {
         <Card variant="borderless" className="filter-bar account-list__filter">
           <Input
             allowClear
-            prefix={<SearchOutlined />}
             placeholder="姓名、手机号或登录账号"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
@@ -409,7 +410,13 @@ export default function AccountList() {
             size="small"
             columns={columns}
             dataSource={filteredData}
-            pagination={{ total: data.length, pageSize: 10, current: 1, showSizeChanger: false }}
+            pagination={{
+              current: page,
+              pageSize,
+              total: filteredData.length,
+              onChange: setPage,
+              showTotal: (total) => `共 ${total} 条`
+            }}
           />
         </Card>
       </div>

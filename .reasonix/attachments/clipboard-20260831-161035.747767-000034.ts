@@ -15,9 +15,6 @@ export type ActivityStatus = 'draft' | 'pending' | 'signup' | 'ongoing' | 'full'
 /** 发布状态 */
 export type PublishStatus = 'published' | 'unpublished' | 'pending' | 'offline'
 
-/** 活动状态（共通 §6.12）：1-待发布 2-报名中 3-已结束 9-已取消 */
-export type ActivityStatusCode = 1 | 2 | 3 | 9
-
 /** 活动列表项 */
 export interface ActivityItem {
   id: string
@@ -32,7 +29,8 @@ export interface ActivityItem {
   signupCount: number | null
   /** 承接容量 */
   capacity: number
-  status: ActivityStatusCode
+  status: ActivityStatus
+  publishStatus: PublishStatus
   /** 活动时间展示，如 09-20 09:00 */
   activityTime: string
 }
@@ -68,27 +66,38 @@ export interface ActivityInstitutionConfig {
 /* §8.1 活动管理（权限 activity:manage）                                 */
 /* ------------------------------------------------------------------ */
 
+/** 活动状态（共通 §6.12）：1-草稿 2-进行中 3-已结束 9-已取消 */
+export type ActivityStatusCode = 1 | 2 | 3 | 9
+
+/** 活动参与机构配置（入参嵌套） */
+export interface ActivityInstitutionBody {
+  institution_id: number
+  max_participants: number
+  start_time?: number
+  end_time?: number
+}
+
 /** 活动参与机构（出参，含报名数） */
-export interface ActivityInstitutionDTO {
-  institution_id: number // 必填
-  max_participants: number // 选填 该机构名额上限
-  contact_name: string // 选填 联系人
-  contact_phone: string // 选填 联系电话
-  start_time: number // 选填 UTC秒 该机构场次开始时间
-  end_time: number // 选填 该机构场次结束时间
+export interface ActivityInstitutionDTO extends ActivityInstitutionBody {
+  institution_id: number
+  max_participants: number // 该机构名额上限
+  contact_name: string // 联系人
+  contact_phone: string // 联系电话
+  start_time: number // UTC秒
+  end_time: number // 该机构场次开始时间
 }
 
 /** 活动 DTO */
 export interface ActivityDTO {
-  title: string // 必填
-  title_en: string // 选填
-  description: string // 选填
-  cover_image: string // 选填
-  activity_type: number // 选填 /** 活动类型：1 社区活动 / 2 康养旅游 / 3 健康课堂 / 4 健康活动 / 5 其他 */
+  title: string
+  title_en: string | null
+  description: Record<string, unknown>
+  cover_image: string
+  activity_type: number /** 活动类型：1 社区活动 / 2 康养旅游 / 3 健康课堂 / 4 健康活动 / 5 其他 */
   /** UTC 秒；入参接受 yyyy-MM-dd*/
-  start_date: number // 选填
-  end_date: number // 选填
-  location: string // 选填
+  start_date: number
+  end_date: number
+  location: string
   institutions: ActivityInstitutionDTO[]
 }
 
@@ -133,7 +142,7 @@ export function batchUpdateActivityStatus(ids: number[], status: 1 | 9) {
 }
 
 /** 指定机构配置 PUT /api/admin/activities/:id/institutions */
-export function saveActivityInstitutions(id: number, institutions: ActivityInstitutionDTO) {
+export function saveActivityInstitutions(id: number, institutions: ActivityInstitutionBody[]) {
   return http.put<null>(`/admin/activities/${id}/institutions`, { institutions })
 }
 

@@ -34,6 +34,8 @@ export interface MemberOpsItem {
   lastOrder: string | null
   /** 注册时间 yyyy-MM-dd */
   registerTime: string
+  // 关联的健康会员
+  connection: string;
 }
 
 /* ------------------------------------------------------------------ */

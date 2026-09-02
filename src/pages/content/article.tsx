@@ -104,6 +104,8 @@ export default function ArticleList() {
     recommended: 'all',
   })
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
@@ -331,7 +333,13 @@ export default function ArticleList() {
             columns={columns}
             dataSource={filteredData}
             rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
-            pagination={{ total: 28, pageSize: 5, current: 1, showSizeChanger: false }}
+            pagination={{
+              current: page,
+              pageSize,
+              total: filteredData.length,
+              onChange: setPage,
+              showTotal: (total) => `共 ${total} 条`
+            }}
           />
           <div className="article-list__tip">
             提示：内容发布后同步至患者端“健康科普”；设为首页推荐后进入首页内容位。

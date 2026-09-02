@@ -1,4 +1,6 @@
 .institution-detail {
+  display: flex;
+  flex-direction: column;
   .institution-summary {
     .card-surface();
     .ant-card-body {
@@ -69,6 +71,7 @@
   }
 
   .detail-card {
+    flex: 1;
     margin-top: @spacing-md;
     .card-surface();
     .ant-card-body {
@@ -198,11 +201,12 @@
   .patient-intro {
     margin-top: @spacing-md;
     display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(328px, 0.8fr);
+    grid-template-columns: minmax(0, 1.6fr) minmax(390px, 0.8fr);
     gap: @spacing-md;
 
     .detail-card {
       margin-top: 0;
+      height: 100%;
     }
 
     &__left {

@@ -58,55 +58,29 @@
     font-size: @font-size-auxiliary;
     border-radius: @radius-full;
 
-    &--signup,
-    &--ongoing {
+    // 报名中
+    &--2 {
       color: @color-primary;
       background: @color-primary-light;
     }
 
-    &--full {
+    // 待发布
+    &--1 {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--0 {
       color: @color-info;
       background: fade(@color-info, 12%);
     }
 
-    &--draft {
+    &--3 {
       color: @color-text-secondary;
       background: @color-bg-active;
     }
 
-    &--pending {
-      color: darken(@color-warning, 18%);
-      background: fade(@color-warning, 18%);
-    }
-
-    &--finished {
-      color: @color-text-secondary;
-      background: @color-bg-active;
-    }
-  }
-
-  .publish-status {
-    display: inline-flex;
-    padding: @spacing-2xs @spacing-xs;
-    font-size: @font-size-auxiliary;
-    border-radius: @radius-full;
-
-    &--published {
-      color: @color-primary;
-      background: @color-primary-light;
-    }
-
-    &--unpublished {
-      color: @color-text-secondary;
-      background: @color-bg-active;
-    }
-
-    &--pending {
-      color: darken(@color-warning, 18%);
-      background: fade(@color-warning, 18%);
-    }
-
-    &--offline {
+    &--9 {
       color: @color-danger;
       background: fade(@color-danger, 12%);
     }

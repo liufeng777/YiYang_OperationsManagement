@@ -107,14 +107,15 @@
   }
 
   &__content {
-    min-height: calc(100vh - @header-height);
+    /* 固定视口高度，让内部 PageContainer 的 height:100% 可解析、溢出滚动 */
+    height: calc(100vh - @header-height);
     overflow: auto;
   }
 }
 
 /* ===== 路由切换过渡动画 ===== */
 .page-transition {
-  min-height: 100%;
+  height: 100%;
   animation: page-enter 0.28s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 

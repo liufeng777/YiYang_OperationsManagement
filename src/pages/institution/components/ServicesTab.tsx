@@ -24,7 +24,6 @@ import type { ColumnsType } from 'antd/es/table'
 import {
   CheckOutlined,
   InfoCircleFilled,
-  SearchOutlined,
 } from '@ant-design/icons'
 import type {
   InstitutionDetail,
@@ -359,7 +358,6 @@ export default function ServicesTab({
         <div className="service-drawer__search">
           <Input
             allowClear
-            prefix={<SearchOutlined />}
             placeholder="搜索服务名称、项目编码（共 58 项）"
             value={poolKeyword}
             onChange={(event) => setPoolKeyword(event.target.value)}

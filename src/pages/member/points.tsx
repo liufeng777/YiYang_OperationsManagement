@@ -135,6 +135,8 @@ export default function PointsList() {
     source: 'all',
     date: '',
   })
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const filteredData = useMemo(() => {
     return mockRecords.filter((item) => {
@@ -283,7 +285,6 @@ export default function PointsList() {
         <Card variant="borderless" className="filter-bar points-list__filter">
           <Input
             allowClear
-            prefix={<SearchOutlined />}
             placeholder="会员姓名、手机号或业务单号"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
@@ -340,7 +341,13 @@ export default function PointsList() {
             rowKey="id"
             columns={columns}
             dataSource={filteredData}
-            pagination={{ total: 8632, pageSize: 6, current: 1, showSizeChanger: false }}
+            pagination={{
+              current: page,
+              pageSize,
+              total: filteredData.length,
+              onChange: setPage,
+              showTotal: (total) => `共 ${total} 条`
+            }}
           />
         </Card>
       </div>

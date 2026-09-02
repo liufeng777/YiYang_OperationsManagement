@@ -49,6 +49,8 @@ export default function MessagesTab() {
   const [sendOpen, setSendOpen] = useState(false)
   const [form] = Form.useForm<MessageFormValues>()
   const [sendMode, setSendMode] = useState<'broadcast' | 'target'>('broadcast')
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const filtered = useMemo(
     () =>
@@ -196,7 +198,6 @@ export default function MessagesTab() {
         <div className="list-card__header">
           <div>
             <span className="list-card__header__title">站内消息</span>
-            <span className="list-card__header__tips">共 {filtered.length} 条</span>
           </div>
         </div>
         <Table<MessageDTO>
@@ -204,7 +205,13 @@ export default function MessagesTab() {
           size="small"
           columns={columns}
           dataSource={filtered}
-          pagination={false}
+          pagination={{
+            current: page,
+            pageSize,
+            total: filtered.length,
+            onChange: setPage,
+            showTotal: (total) => `共 ${total} 条`
+          }}
         />
       </Card>
 

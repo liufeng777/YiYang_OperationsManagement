@@ -9,8 +9,6 @@ import {
   App,
   Button,
   Card,
-  Cascader,
-  DatePicker,
   Drawer,
   Form,
   Input,
@@ -27,54 +25,19 @@ import {
   CheckOutlined,
   LeftOutlined,
   PlusOutlined,
+  SearchOutlined,
 } from '@ant-design/icons'
-import dayjs, { type Dayjs } from 'dayjs'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import ImageSortGrid from '@/components/ImageSortGrid'
 import type { SortableImage } from '@/components/ImageSortGrid'
 import type { ActivityInstitutionConfig } from '@/api/modules/activity'
-import pcaData from 'china-division/dist/pca.json'
 import './create.less'
 
-/** 省市区级联选项：{省:{市:[区]}} → Cascader 树 */
-type PcaData = Record<string, Record<string, string[]>>
-const pca = pcaData as PcaData
-const regionOptions = Object.entries(pca).map(([province, cities]) => ({
-  value: province,
-  label: province,
-  children: Object.entries(cities).map(([city, areas]) => ({
-    value: city,
-    label: city,
-    children: areas.map((area) => ({ value: area, label: area })),
-  })),
-}))
-
-/** 活动参与机构（扩展场次联系信息与时间选择器值） */
-interface InstitutionRow extends ActivityInstitutionConfig {
-  contactName?: string
-  contactPhone?: string
-  /** 场次开始/结束时间（dayjs，提交转 UTC 秒） */
-  startTime?: Dayjs | null
-  endTime?: Dayjs | null
-}
-
-const initialInstitutions: InstitutionRow[] = [
-  { id: '1', name: '幸福里健康驿站', area: '拱墅区·申花街道', activityTime: '09-20 09:00', capacity: 40, contactName: '王老师', contactPhone: '138****0000', startTime: dayjs('2026-09-20 09:00'), endTime: dayjs('2026-09-20 17:00') },
-  { id: '2', name: '康乐护理院', area: '西湖区·古荡街道', activityTime: '09-20 09:00', capacity: 50, contactName: '李馆长', contactPhone: '139****0000', startTime: dayjs('2026-09-20 09:00'), endTime: dayjs('2026-09-20 17:00') },
-  { id: '3', name: '长青健康驿站', area: '滨江区·长河街道', activityTime: '09-20 14:00', capacity: 30, contactName: '张站长', contactPhone: '137****0000', startTime: dayjs('2026-09-20 14:00'), endTime: dayjs('2026-09-20 18:00') },
-]
-
-/** 全部机构池（mock）：供可搜索 Select 选择；已添加的机构 disabled 并标识（已添加） */
-const mockInstitutionPool: Array<{ id: string; name: string; area: string }> = [
-  { id: '1', name: '幸福里健康驿站', area: '拱墅区·申花街道' },
-  { id: '2', name: '康乐护理院', area: '西湖区·古荡街道' },
-  { id: '3', name: '长青健康驿站', area: '滨江区·长河街道' },
-  { id: '4', name: '安怡养老院', area: '上城区·四季青街道' },
-  { id: '5', name: '和睦护理中心', area: '拱墅区·半山街道' },
-  { id: '6', name: '乐活居家养老站', area: '西湖区·转塘街道' },
-  { id: '7', name: '松鹤护理院', area: '滨江区·浦沿街道' },
-  { id: '8', name: '幸福家园驿站', area: '余杭区·闲林街道' },
+const initialInstitutions: ActivityInstitutionConfig[] = [
+  { id: '1', name: '幸福里健康驿站', area: '拱墅区·申花街道', activityTime: '09-20 09:00', capacity: 40 },
+  { id: '2', name: '康乐护理院', area: '西湖区·古荡街道', activityTime: '09-20 09:00', capacity: 50 },
+  { id: '3', name: '长青健康驿站', area: '滨江区·长河街道', activityTime: '09-20 14:00', capacity: 30 },
 ]
 
 const initialDetailImages: SortableImage[] = [
@@ -94,7 +57,7 @@ const previewScopes = ['活动封面与基础信息', '多张详情长图及排�
 
 export default function ActivityCreate() {
   const navigate = useNavigate()
-  const { message, modal } = App.useApp()
+  const { message } = App.useApp()
   const params = useParams<{ id: string }>()
   const isEdit = !!params.id && params.id !== 'new'
 
@@ -104,14 +67,11 @@ export default function ActivityCreate() {
   const audience = Form.useWatch('audience', form) ?? ''
   const feeType = Form.useWatch('feeType', form) ?? 'free'
   const notice = Form.useWatch('notice', form) ?? ''
-  const activityStart = Form.useWatch('start_date', form) as Dayjs | undefined
-  const activityEnd = Form.useWatch('end_date', form) as Dayjs | undefined
-  const [institutions, setInstitutions] = useState<InstitutionRow[]>(initialInstitutions)
+  const [institutions, setInstitutions] = useState<ActivityInstitutionConfig[]>(initialInstitutions)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewStatus, setPreviewStatus] = useState('normal')
-  /** 可搜索 Select 当前选中的机构 id（选中即添加并清空） */
-  const [selectedInstitutionId, setSelectedInstitutionId] = useState<string | undefined>()
+  const [drawerKeyword, setDrawerKeyword] = useState('')
   // 报名须知编辑入口暂时隐藏（切换按钮被注释），保留状态便于恢复
   const [noticeOpen] = useState(false)
   const [images, setImages] = useState<SortableImage[]>(initialDetailImages)
@@ -120,18 +80,8 @@ export default function ActivityCreate() {
   const totalCapacity = institutions.reduce((sum, item) => sum + (item.capacity || 0), 0)
   const feeText = feeType === 'free' ? '免费' : '付费'
 
-  const handleRemoveInstitution = (record: InstitutionRow) => {
-    modal.confirm({
-      title: `确认移除机构「${record.name}」？`,
-      content: '移除后该机构将不参与本活动，已配置的场次时间与承接人数将被清空。',
-      okText: '确认移除',
-      okButtonProps: { danger: true },
-      cancelText: '取消',
-      onOk: () => {
-        setInstitutions((prev) => prev.filter((item) => item.id !== record.id))
-        message.success(`已移除「${record.name}」（mock）`)
-      },
-    })
+  const handleRemoveInstitution = (id: string) => {
+    setInstitutions((prev) => prev.filter((item) => item.id !== id))
   }
 
   const handleCapacityChange = (id: string, value: number | null) => {
@@ -140,67 +90,29 @@ export default function ActivityCreate() {
     )
   }
 
-  /** 更新机构联系类字段（联系人/电话） */
-  const updateInstitution = (id: string, patch: Partial<InstitutionRow>) => {
-    setInstitutions((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)))
-  }
-
-  const handleStartTimeChange = (id: string, value: Dayjs | null) => {
+  const handleTimeChange = (id: string, value: string) => {
     setInstitutions((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item
-        const startTime = value ?? null
-        // 若结束时间早于新开始时间，自动同步结束时间
-        const endTime = item.endTime && startTime && item.endTime.isBefore(startTime)
-          ? startTime
-          : item.endTime
-        return { ...item, startTime, endTime, activityTime: startTime?.format('MM-DD HH:mm') ?? '' }
-      }),
+      prev.map((item) => (item.id === id ? { ...item, activityTime: value } : item)),
     )
   }
 
-  const handleEndTimeChange = (id: string, value: Dayjs | null) => {
-    setInstitutions((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, endTime: value ?? null, activityTime: item.startTime?.format('MM-DD HH:mm') ?? '' }
-          : item,
-      ),
-    )
-  }
-
-  /** 机构场次日期限制在活动 start_date ~ end_date 区间内 */
-  const disableInstitutionDate = (current: Dayjs) => {
-    if (activityStart && current.isBefore(activityStart.startOf('day'))) return true
-    if (activityEnd && current.isAfter(activityEnd.endOf('day'))) return true
-    return false
-  }
-
-  const handleAddInstitution = (id?: string) => {
-    if (!id) return
-    const poolItem = mockInstitutionPool.find((item) => item.id === id)
-    if (!poolItem) return
-    if (institutions.some((item) => item.id === id)) {
-      message.warning('该机构已添加，请选择其他机构')
-      setSelectedInstitutionId(undefined)
+  const handleAddInstitution = () => {
+    const keyword = drawerKeyword.trim()
+    if (!keyword) {
+      message.warning('请先搜索并选择要添加的机构')
       return
     }
     setInstitutions((prev) => [
       ...prev,
       {
-        id: poolItem.id,
-        name: poolItem.name,
-        area: poolItem.area,
-        activityTime: '',
+        id: `new-${Date.now()}`,
+        name: keyword,
+        area: '待补充区域',
+        activityTime: '09-20 09:00',
         capacity: 20,
-        contactName: '',
-        contactPhone: '',
-        startTime: null,
-        endTime: null,
       },
     ])
-    setSelectedInstitutionId(undefined)
-    message.success(`已添加「${poolItem.name}」`)
+    setDrawerKeyword('')
   }
 
   const handleImageUpload = (file: File) => {
@@ -223,7 +135,7 @@ export default function ActivityCreate() {
     return false
   }
 
-  const institutionColumns: ColumnsType<InstitutionRow> = [
+  const institutionColumns: ColumnsType<ActivityInstitutionConfig> = [
     {
       title: '参与机构',
       key: 'name',
@@ -235,61 +147,20 @@ export default function ActivityCreate() {
       ),
     },
     {
-      title: '联系人',
-      key: 'contactName',
-      width: 110,
-      render: (_, record) => (
-        <Input
-          value={record.contactName}
-          placeholder="联系人"
-          onChange={(e) => updateInstitution(record.id, { contactName: e.target.value })}
-        />
-      ),
-    },
-    {
-      title: '联系电话',
-      key: 'contactPhone',
-      width: 140,
-      render: (_, record) => (
-        <Input
-          value={record.contactPhone}
-          placeholder="联系电话"
-          onChange={(e) => updateInstitution(record.id, { contactPhone: e.target.value })}
-        />
-      ),
-    },
-    {
-      title: '场次开始',
-      key: 'startTime',
+      title: '活动时间',
+      key: 'activityTime',
       width: 180,
       render: (_, record) => (
-        <DatePicker
-          showTime
-          format="MM-DD HH:mm"
-          disabledDate={disableInstitutionDate}
-          value={record.startTime}
-          onChange={(value) => handleStartTimeChange(record.id, value)}
-        />
-      ),
-    },
-    {
-      title: '场次结束',
-      key: 'endTime',
-      width: 180,
-      render: (_, record) => (
-        <DatePicker
-          showTime
-          format="MM-DD HH:mm"
-          disabledDate={disableInstitutionDate}
-          value={record.endTime}
-          onChange={(value) => handleEndTimeChange(record.id, value)}
+        <Input
+          value={record.activityTime}
+          onChange={(event) => handleTimeChange(record.id, event.target.value)}
         />
       ),
     },
     {
       title: '承接人数',
       key: 'capacity',
-      width: 120,
+      width: 140,
       render: (_, record) => (
         <InputNumber
           min={1}
@@ -302,14 +173,9 @@ export default function ActivityCreate() {
     {
       title: '操作',
       key: 'action',
-      width: 70,
+      width: 80,
       render: (_, record) => (
-        <Button
-          type="link"
-          size="small"
-          danger
-          onClick={() => handleRemoveInstitution(record)}
-        >
+        <Button type="link" size="small" danger onClick={() => handleRemoveInstitution(record.id)}>
           移除
         </Button>
       ),
@@ -376,23 +242,21 @@ export default function ActivityCreate() {
       extra={
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate('/activity')}
+          onClick={() => navigate(isEdit ? `/activity/detail/${params.id}` : '/activity')}
         >
-          返回活动列表
+          {isEdit ? '返回活动详情' : '返回活动列表'}
         </Button>
       }
     >
       <Form
         form={form}
         layout="vertical"
+        requiredMark={false}
         initialValues={{
           name: isEdit ? '秋日康养游园会' : '',
           type: '社区活动',
           summary: isEdit ? '健康相伴 · 乐享秋日好时光' : '',
-          location: undefined,
-          addressDetail: '',
-          start_date: dayjs('2026-08-15'),
-          end_date: dayjs('2026-09-18'),
+          signupTime: '2026-08-15 至 09-18',
           audience: '60 岁以上长者',
           feeType: 'free',
           notice: isEdit ? '活动免费，报名成功后如需取消请提前 24 小时操作；名额有限，先到先得。' : '',
@@ -404,51 +268,27 @@ export default function ActivityCreate() {
               <h3>活动基础信息<span>患者端结构化展示</span></h3>
               <div className='create-card__basicInfo'>
                 <div className='create-card__basicInfo__left'>
-                  <div className="create-grid create-grid--two">
-                    <Form.Item
-                      name="name"
-                      label="活动名称"
-                      rules={[{ required: true, message: '请输入活动名称' }]}
-                    >
-                      <Input placeholder="请输入活动名称" />
-                    </Form.Item>
-                    <Form.Item
-                      name="type"
-                      label="活动类型"
-                      rules={[{ required: true, message: '请选择活动类型' }]}
-                    >
-                      <Select
-                        options={[
-                          { label: '社区活动', value: '社区活动' },
-                          { label: '康养旅游', value: '康养旅游' },
-                          { label: '健康课堂', value: '健康课堂' },
-                          { label: '健康活动', value: '健康活动' },
-                        ]}
-                      />
-                    </Form.Item>
-                  </div>
-                  
-                  <div className="create-grid create-grid--two">
-                    <Form.Item
-                      name="location"
-                      label={<span>活动地址</span>}
-                      rules={[{ required: true, message: '请选择省 / 市 / 区' }]}
-                    >
-                      <Cascader
-                        options={regionOptions}
-                        placeholder="请选择省 / 市 / 区"
-                        showSearch
-                      />
-                    </Form.Item>
-                    <Form.Item
-                      name="addressDetail"
-                      label={<span>详细地址</span>}
-                      rules={[{ required: true, message: '请输入详细地址' }]}
-                    >
-                      <Input placeholder="请输入详细地址（街道、门牌）" />
-                    </Form.Item>
-                  </div>
-                  
+                  <Form.Item
+                    name="name"
+                    label="活动名称"
+                    rules={[{ required: true, message: '请输入活动名称' }]}
+                  >
+                    <Input placeholder="请输入活动名称" />
+                  </Form.Item>
+                  <Form.Item
+                    name="type"
+                    label="活动类型"
+                    rules={[{ required: true, message: '请选择活动类型' }]}
+                  >
+                    <Select
+                      options={[
+                        { label: '社区活动', value: '社区活动' },
+                        { label: '康养旅游', value: '康养旅游' },
+                        { label: '健康课堂', value: '健康课堂' },
+                        { label: '健康活动', value: '健康活动' },
+                      ]}
+                    />
+                  </Form.Item>
                   <Form.Item name="summary" label="活动摘要">
                     <Input placeholder="用于活动列表和详情首屏展示，建议 30 字以内" />
                   </Form.Item>
@@ -474,20 +314,13 @@ export default function ActivityCreate() {
 
             <Card variant="borderless" className="create-card">
               <h3>报名与参与设置<span>活动内容统一配置；各机构独立设置活动时间和承接人数</span></h3>
-              <div className="create-grid create-grid--four">
+              <div className="create-grid create-grid--three">
                 <Form.Item
-                  name="start_date"
-                  label={<span>报名开始</span>}
-                  rules={[{ required: true, message: '请选择报名开始日期' }]}
+                  name="signupTime"
+                  label="报名时间"
+                  rules={[{ required: true, message: '请输入报名时间' }]}
                 >
-                  <DatePicker placeholder="选择开始日期" style={{ width: '100%' }} />
-                </Form.Item>
-                <Form.Item
-                  name="end_date"
-                  label={<span>报名结束</span>}
-                  rules={[{ required: true, message: '请选择报名结束日期' }]}
-                >
-                  <DatePicker placeholder="选择结束日期" style={{ width: '100%' }} />
+                  <Input />
                 </Form.Item>
                 <Form.Item name="audience" label="适用人群">
                   <Input />
@@ -495,10 +328,9 @@ export default function ActivityCreate() {
                 <Form.Item
                   name="feeType"
                   label="收费方式"
-                  rules={[{ message: '请选择收费方式' }]}
+                  rules={[{ required: true, message: '请选择收费方式' }]}
                 >
                   <Select
-                    disabled
                     options={[
                       { label: '免费', value: 'free' },
                       { label: '付费', value: 'paid' },
@@ -553,7 +385,7 @@ export default function ActivityCreate() {
                       try {
                         await form.validateFields()
                       } catch {
-                        message.warning('请先完善必填项：活动名称、活动类型、省市区与详细地址、报名起止日期、收费方式')
+                        message.warning('请先完善必填项：活动名称、活动类型、报名时间、收费方式')
                         return
                       }
                       message.success(isEdit ? '活动已更新并发布' : '活动已发布')
@@ -583,7 +415,7 @@ export default function ActivityCreate() {
 
       <Drawer
         open={drawerOpen}
-        width={1000}
+        width={720}
         title="配置参与机构"
         onClose={() => setDrawerOpen(false)}
         footer={
@@ -604,27 +436,22 @@ export default function ActivityCreate() {
         <div className="institution-drawer">
           <p className="institution-drawer__desc">每家机构独立配置活动时间与承接人数</p>
           <div className="institution-drawer__add">
-            <Select
-              showSearch
+            <Input
               allowClear
-              placeholder="搜索机构名称，选择后添加到本活动"
-              value={selectedInstitutionId}
-              onChange={handleAddInstitution}
-              optionFilterProp="label"
-              options={mockInstitutionPool.map((item) => {
-                const added = institutions.some((inst) => inst.id === item.id)
-                return {
-                  value: item.id,
-                  label: added ? `${item.name}（已添加）` : item.name,
-                  disabled: added,
-                }
-              })}
+              prefix={<SearchOutlined />}
+              placeholder="搜索机构名称，添加到本活动"
+              value={drawerKeyword}
+              onChange={(event) => setDrawerKeyword(event.target.value)}
+              onPressEnter={handleAddInstitution}
             />
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddInstitution}>
+              添加机构
+            </Button>
           </div>
           <div className="institution-drawer__summary">
             已选择 {institutions.length} 家参与机构 / 总承接 {totalCapacity} 人
           </div>
-          <Table<InstitutionRow>
+          <Table<ActivityInstitutionConfig>
             rowKey="id"
             size="small"
             columns={institutionColumns}

@@ -1,0 +1,64 @@
+/**
+ * 机构表单字段排布（新增机构 / 机构详情-基础资料 共用）
+ * 网格布局 + Form.Item 标签样式，复刻服务编辑页 editor-grid 的视觉规范
+ */
+
+.institution-form {
+  &__grid {
+    display: grid;
+    gap: @spacing-md;
+
+    &--2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    &--3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  /* 非网格场景（患者端介绍等）字段纵向堆叠 */
+  &--stack {
+    display: flex;
+    flex-direction: column; 
+  }
+
+  /* Form.Item 标签排布：上方标签 + 控件 + 错误提示 */
+  .ant-form-item {
+    margin-bottom: 0;
+
+    .ant-form-item-label {
+      padding-bottom: @spacing-2xs;
+
+      > label {
+        height: auto;
+        .text-label();
+        color: @color-text-primary;
+
+        i {
+          color: @color-danger;
+          font-style: normal;
+        }
+      }
+    }
+
+    .ant-form-item-explain-error {
+      margin-top: 2px;
+      font-size: @font-size-auxiliary;
+      line-height: @line-height-auxiliary;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .institution-form {
+    &__grid--2,
+    &__grid--3 {
+      grid-template-columns: 1fr;
+    }
+  }
+}

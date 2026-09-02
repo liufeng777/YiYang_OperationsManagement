@@ -1,6 +1,6 @@
 /**
  * 机构详情 - 患者端介绍 Tab
- * 协作平台同步资料（只读）+ 患者端介绍表单 + 患者端实时预览
+ * 患者端介绍表单 + 患者端实时预览（机构信息由平台直接维护，无「同步」概念）
  * 当前为 mock 数据，后端就绪后替换为 institutionApi 对应接口
  * 注：父级通过 key={detail.id} 重挂载本组件以切换机构时重置表单
  */
@@ -13,14 +13,17 @@ interface PatientIntroTabProps {
   detail: InstitutionDetail
 }
 
+/** 预览环境照片占位（mock） */
+const previewPhotoPlaceholders = ['接待大厅', '康复空间', '适老房间']
+
 export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
   const { message } = App.useApp()
 
-  const [introTitle, setIntroTitle] = useState(detail.intro.displayTitle)
-  const [introDesc, setIntroDesc] = useState(detail.intro.description)
-  const [introTags, setIntroTags] = useState<string[]>(detail.intro.tags)
-  const [introVisible, setIntroVisible] = useState(detail.intro.visible)
-  const [introCover, setIntroCover] = useState<string | null>(null)
+  const [introTitle, setIntroTitle] = useState(detail.brief)
+  const [introDesc, setIntroDesc] = useState(detail.description)
+  const [introTags, setIntroTags] = useState<string[]>(detail.introTags)
+  const [introVisible, setIntroVisible] = useState(detail.introVisible)
+  const [introCover, setIntroCover] = useState<string | null>(detail.introCover ?? null)
   const [envPhotos, setEnvPhotos] = useState<string[]>([])
 
   /** 本地图片选择：拦截真实上传，生成预览地址（接后端后替换为上传接口） */
@@ -40,19 +43,6 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
     <div className="patient-intro">
       <div className="patient-intro__left">
         <Card variant="borderless" className="detail-card">
-          <div className="detail-card__header detail-card__header--compact">
-            <h3>协作平台同步资料</h3>
-            <span>只读 · 最近同步 {detail.lastSyncTime}</span>
-          </div>
-          <div className="sync-info">
-            <div><span>机构类型</span><strong>{detail.type}</strong></div>
-            <div><span>机构地址</span><strong>{detail.address}</strong></div>
-            <div><span>联系电话</span><strong>{detail.contactPhone}</strong></div>
-            <div><span>线上服务范围</span><strong>{detail.onlineRange}</strong></div>
-          </div>
-        </Card>
-
-        <Card variant="borderless" className="detail-card">
           <div className="detail-card__header">
             <h3>患者端介绍</h3>
             <div className="patient-visible">
@@ -68,12 +58,10 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
               <Input value={introTitle} onChange={(event) => setIntroTitle(event.target.value)} />
             </label>
             <label>
-              <span>
-                <span className='require-star'>*</span> 机构介绍
-              </span>
+              <span>机构介绍</span>
               <Input.TextArea rows={4} value={introDesc} onChange={(event) => setIntroDesc(event.target.value)} />
             </label>
-            <div className="intro-tags">
+            {/* <div className="intro-tags">
               <span>特色标签（最多4个）</span>
               <div className='intro-tags-list'>
                 {introTags.map((tag) => (
@@ -87,37 +75,42 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
                   </Tag>
                 )}
               </div>
-            </div>
-            <div className="intro-photos">
-              <Upload accept="image/*" showUploadList={false} beforeUpload={pickCover}>
-                <div className={`intro-photos__item intro-photos__item--cover${introCover ? ' has-image' : ''}`}>
-                  {introCover ? (
-                    <img src={introCover} alt="机构封面" />
-                  ) : (
-                    <>
-                      <PlusOutlined />
-                      <span>上传机构封面</span>
-                    </>
+            </div> */}
+              <label>
+                <span>机构封面图片</span>
+                <div className="intro-photos">
+                  <Upload accept="image/*" showUploadList={false} beforeUpload={pickCover}>
+                    <div className={`intro-photos__item intro-photos__item--cover${introCover ? ' has-image' : ''}`}>
+                      {introCover ? (
+                        <img src={introCover} alt="机构封面" />
+                      ) : (
+                        <>
+                          <PlusOutlined />
+                          <span>上传机构封面</span>
+                        </>
+                      )}
+                    </div>
+                  </Upload>
+                </div>
+              </label>
+              <label>
+                <span>机构环境图片</span>
+                <div className="intro-photos">
+                  {envPhotos.map((url, index) => (
+                    <div className="intro-photos__item has-image" key={url}>
+                      <img src={url} alt={`环境照片 ${index + 1}`} />
+                    </div>
+                  ))}
+                  {envPhotos.length < 8 && (
+                    <Upload accept="image/*" showUploadList={false} multiple beforeUpload={pickEnvPhoto}>
+                      <div className="intro-photos__item">
+                        <PlusOutlined />
+                        <span>添加环境照片</span>
+                      </div>
+                    </Upload>
                   )}
                 </div>
-              </Upload>
-              {envPhotos.map((url, index) => (
-                <div className="intro-photos__item has-image" key={url}>
-                  <img src={url} alt={`环境照片 ${index + 1}`} />
-                </div>
-              ))}
-              {envPhotos.length < 8 && (
-                <Upload accept="image/*" showUploadList={false} multiple beforeUpload={pickEnvPhoto}>
-                  <div className="intro-photos__item">
-                    <PlusOutlined />
-                    <span>添加环境照片</span>
-                  </div>
-                </Upload>
-              )}
-              <div className="intro-photos__item intro-photos__item--muted">
-                <span>最多9张</span>
-              </div>
-            </div>
+              </label>
             <p className="intro-photos__tip">建议封面尺寸 750×420；环境相册用于患者端了解机构环境与设施。</p>
           </div>
         </Card>
@@ -159,7 +152,7 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
                 <span>查看全部 9 张 ›</span>
               </div>
               <div className="phone__photos">
-                {(detail.intro.photos.length ? detail.intro.photos : ['接待大厅', '康复空间', '适老房间']).map((item) => (
+                {previewPhotoPlaceholders.map((item) => (
                   <i key={item}>{item}</i>
                 ))}
               </div>

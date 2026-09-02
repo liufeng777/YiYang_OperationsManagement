@@ -4,9 +4,9 @@
  * 当前为 mock 数据，后端就绪后替换为 activityApi.getActivitySignups
  */
 import { useMemo, useState } from 'react'
-import { App, Button, Card, Col, Input, Modal, Radio, Row, Select, Table } from 'antd'
+import { App, Button, Card, Col, Input, Modal, Radio, Row, Select, Table, Space } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { BarChartOutlined, SearchOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, BarChartOutlined, SearchOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import type { ActivitySignup } from '@/api/modules/activity'
@@ -120,6 +120,8 @@ export default function ActivitySignups() {
     date: '',
   })
   const [cancelTarget, setCancelTarget] = useState<ActivitySignup | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
@@ -245,9 +247,14 @@ export default function ActivitySignups() {
       title={activity.name}
       description={`活动编号 ${activity.code} · 免费活动 · ${activity.time} · 用户报名时选择参加机构`}
       extra={
-        <Button type="primary" onClick={() => navigate(`/activity/detail/${activityId}`)}>
-          编辑活动
-        </Button>
+        <Space>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/activity')}>
+            返回活动列表
+          </Button>
+          <Button type="primary" onClick={() => navigate(`/activity/detail/${activityId}`)}>
+            编辑活动
+          </Button>
+        </Space>
       }
     >
       <div className="activity-signups">
@@ -273,7 +280,6 @@ export default function ActivitySignups() {
         <Card variant="borderless" className="filter-bar activity-signups__filter">
           <Input
             allowClear
-            prefix={<SearchOutlined />}
             placeholder="报名编号 / 姓名或手机号"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
@@ -330,7 +336,13 @@ export default function ActivitySignups() {
             size="small"
             columns={columns}
             dataSource={filteredData}
-            pagination={{ total: 36, pageSize: 6, current: 1, showSizeChanger: false }}
+            pagination={{
+              current: page,
+              pageSize,
+              total: filteredData.length,
+              onChange: setPage,
+              showTotal: (total) => `共 ${total} 条`
+            }}
           />
         </Card>
       </div>

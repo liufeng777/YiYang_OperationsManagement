@@ -1,73 +1,73 @@
 /**
- * 机构管理 - 机构详情
- * - 基础资料 / 服务项目 / 患者端介绍为页内 Tab，已拆分为 components/ 下独立组件
+ * 机构管理 - 机构详情（编辑与配置）
+ * - 基础资料（可编辑）/ 服务项目 / 患者端介绍为页内 Tab，已拆分为 components/ 下独立组件
  * - Tab 通过 ?tab= 查询参数驱动，可直接分享链接；默认展示「服务项目」
- * 当前为 mock 数据，后端就绪后替换为 institutionApi 对应接口
+ * - 机构信息由平台直接维护，无「同步」概念
+ * 当前为 mock 数据，后端就绪后替换为 institutionApi.getInstitution
  */
 import { useMemo, useState } from 'react'
 import { Button, Card, Tabs, Tag } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import type { InstitutionDetail, InstitutionService } from '@/api/modules/institution'
-import BaseInfoTab from './components/BaseInfoTab'
-import ServicesTab from './components/ServicesTab'
-import PatientIntroTab from './components/PatientIntroTab'
+import type { InstitutionDetail, InstitutionService, InstitutionType } from '@/api/modules/institution'
+import BaseInfoTab from '../components/BaseInfoTab'
+import ServicesTab from '../components/ServicesTab'
+import PatientIntroTab from '../components/PatientIntroTab'
 import './detail.less'
 
 type DetailTab = 'base' | 'services' | 'patient'
 
+const typeText: Record<InstitutionType, string> = {
+  1: '护理院',
+  2: '驿站',
+}
+
 const institutionMocks: Record<string, InstitutionDetail> = {
   '1': {
-    id: '1',
+    id: 1,
     code: 'JG0001',
     name: '幸福里健康驿站',
-    type: '健康驿站',
-    source: '医养协作平台',
-    region: '拱墅区',
-    street: '申花街道',
-    address: '杭州市拱墅区申花街道莫干山路 987 号',
-    contactPhone: '0571-8876 1028',
-    serviceCount: 12,
-    productCount: 18,
-    serviceTotal: 12,
-    syncStatus: 'synced',
-    operationStatus: 'normal',
-    lastSyncTime: '2026-08-10 15:20',
-    onlineRange: '机构电子围栏 5 公里',
-    intro: {
-      displayTitle: '幸福颐养护理院 · 专业照护，安心颐养',
-      description:
-        '幸福颐养护理院面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。院内配备专业医护团队和适老化环境，为长者提供安全、温暖、有尊严的照护体验。',
-      tags: ['医护团队', '康复照护', '适老环境'],
-      visible: true,
-      photos: ['接待大厅', '康复空间', '适老房间'],
-    },
+    name_en: 'Xingfuli Health Station',
+    type: 2,
+    province: '浙江省',
+    city: '杭州市',
+    district: '拱墅区',
+    address: '申花街道莫干山路 987 号',
+    contact_phone: '0571-8876 1028',
+    manager_name: '刘主任',
+    manager_phone: '13866661028',
+    service_radius_km: 5,
+    brief: '幸福里健康驿站 · 专业照护，安心颐养',
+    description:
+      '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。站内配备专业护理团队和适老化环境，为长者提供安全、温暖、有尊严的照护体验。',
+    images: [],
+    status: 1,
+    created_at: 1788244635,
+    introTags: ['医护团队', '康复照护', '适老环境'],
+    introVisible: true,
   },
   '2': {
-    id: '2',
+    id: 2,
     code: 'JG0002',
     name: '康乐护理院',
-    type: '护理院',
-    source: '医养协作平台',
-    region: '西湖区',
-    street: '古荡街道',
-    address: '杭州市西湖区古荡街道文三西路 428 号',
-    contactPhone: '0571-8899 2631',
-    serviceCount: 7,
-    productCount: 11,
-    serviceTotal: 8,
-    syncStatus: 'synced',
-    operationStatus: 'normal',
-    lastSyncTime: '2026-08-10 15:20',
-    onlineRange: '机构电子围栏 3 公里',
-    intro: {
-      displayTitle: '康乐护理院 · 专业照护，安心颐养',
-      description: '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。',
-      tags: ['医护团队', '康复照护'],
-      visible: true,
-      photos: [],
-    },
+    name_en: null,
+    type: 1,
+    province: '浙江省',
+    city: '杭州市',
+    district: '西湖区',
+    address: '古荡街道文三西路 428 号',
+    contact_phone: '0571-8899 2631',
+    manager_name: '赵海',
+    manager_phone: '13888886666',
+    service_radius_km: 3,
+    brief: '康乐护理院 · 专业照护，安心颐养',
+    description: '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。',
+    images: [],
+    status: 9,
+    created_at: 1788244635,
+    introTags: ['医护团队', '康复照护'],
+    introVisible: true,
   },
 }
 
@@ -120,8 +120,8 @@ const initialServices: InstitutionService[] = [
 
 const detailTabs: { key: DetailTab; label: string }[] = [
   { key: 'base', label: '基础资料' },
-  { key: 'services', label: '服务项目' },
   { key: 'patient', label: '患者端介绍' },
+  { key: 'services', label: '服务项目' },
 ]
 
 function getInstitutionMock(id: string): InstitutionDetail {
@@ -160,7 +160,7 @@ export default function InstitutionDetailPage() {
   return (
     <PageContainer
       title={detail.name}
-      description="管理机构基础资料、服务项目与患者端展示介绍"
+      description="编辑机构基础资料、配置服务项目与患者端展示介绍"
       extra={
         <Button icon={<ArrowLeftOutlined />} onClick={() => {
           navigate(`/institution`)
@@ -173,18 +173,21 @@ export default function InstitutionDetailPage() {
         <Card variant="borderless" className="institution-summary">
           <div className="institution-summary__main">
             <h3>{detail.name}</h3>
-            <p>机构编码 {detail.code} · {detail.type}</p>
+            <p>机构编码 {detail.code} · {typeText[detail.type]}</p>
           </div>
           <div className="institution-summary__item">
             <span>经营地址</span>
-            <strong>{detail.address}</strong>
+            <strong>{detail.province} · {detail.city} · {detail.district} · {detail.address}</strong>
           </div>
           <div className="institution-summary__item">
             <span>联系电话</span>
-            <strong>{detail.contactPhone}</strong>
+            <strong>{detail.contact_phone}</strong>
           </div>
-          <Tag className="institution-summary__status" color="green">
-            已同步
+          <Tag
+            className="institution-summary__status"
+            color={detail.status === 1 ? 'green' : 'red'}
+          >
+            {detail.status === 1 ? '启用' : '停用'}
           </Tag>
         </Card>
 
@@ -192,7 +195,8 @@ export default function InstitutionDetailPage() {
           <Tabs activeKey={activeTab} items={tabItems} onChange={handleTabChange} />
         </Card>
 
-        {activeTab === 'base' && <BaseInfoTab detail={detail} />}
+        {activeTab === 'base' && <BaseInfoTab key={detail.id} detail={detail} />}
+        {activeTab === 'patient' && <PatientIntroTab key={detail.id} detail={detail} />}
         {activeTab === 'services' && (
           <ServicesTab
             detail={detail}
@@ -202,7 +206,6 @@ export default function InstitutionDetailPage() {
             onDrawerOpenChange={setDrawerOpen}
           />
         )}
-        {activeTab === 'patient' && <PatientIntroTab key={detail.id} detail={detail} />}
       </div>
     </PageContainer>
   )

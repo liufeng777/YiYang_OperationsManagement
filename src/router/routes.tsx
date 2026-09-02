@@ -75,9 +75,14 @@ export const routes: RouteConfig[] = [
         component: lazy(() => import('@/pages/institution/audit')),
       },
       {
+        path: 'create',
+        meta: { title: '新增机构', hideInMenu: true },
+        component: lazy(() => import('@/pages/institution/create/index')),
+      },
+      {
         path: 'detail/:id',
         meta: { title: '机构详情', hideInMenu: true },
-        component: lazy(() => import('@/pages/institution/detail')),
+        component: lazy(() => import('@/pages/institution/detail/detail')),
       },
     ],
   },
@@ -214,8 +219,8 @@ export const routes: RouteConfig[] = [
     meta: { title: '会员管理', icon: <TeamOutlined /> },
     children: [
       {
-        path: '',
-        meta: { title: '会员列表' },
+        path: 'registered',
+        meta: { title: '注册会员' },
         component: lazy(() => import('@/pages/member/list')),
       },
       {

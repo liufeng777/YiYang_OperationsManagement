@@ -9,10 +9,10 @@
  *   <Card variant="borderless" className="metric-card">
  *     <div className="metric-card__head">
  *       <span className="metric-card__label">今日订单</span>
- *       <i className="metric-card__icon metric-card__icon--primary" />
+ *       <i className="metric-card__icon status--success" />
  *     </div>
  *     <strong className="metric-card__value">128</strong>
- *     <em className="metric-card__note metric-card__note--primary">较昨日 +12%</em>
+ *     <em className="metric-card__note status--success">较昨日 +12%</em>
  *   </Card>
  * </div>
  * ============================================================
@@ -63,32 +63,6 @@
     height: 40px;
     font-style: normal;
     border-radius: @radius-sm;
-
-    &--primary {
-      color: @color-primary;
-      background: @color-primary-light;
-    }
-
-    &--info {
-      color: @color-info;
-      background: fade(@color-info, 12%);
-    }
-
-    &--warning {
-      color: darken(@color-warning, 18%);
-      background: fade(@color-warning, 18%);
-    }
-
-    &--danger {
-      color: @color-danger;
-      background: fade(@color-danger, 12%);
-    }
-
-    &--round {
-      width: 40px;
-      height: 40px;
-      border-radius: @radius-full;
-    }
   }
 
   /* 指标数值 28/36 Bold */
@@ -125,25 +99,5 @@
     font-size: @font-size-auxiliary;
     line-height: @line-height-auxiliary;
     border-radius: @radius-full;
-
-    &--primary {
-      color: @color-primary;
-      background: @color-primary-light;
-    }
-
-    &--info {
-      color: @color-info;
-      background: fade(@color-info, 12%);
-    }
-
-    &--warning {
-      color: darken(@color-warning, 18%);
-      background: fade(@color-warning, 18%);
-    }
-
-    &--danger {
-      color: @color-danger;
-      background: fade(@color-danger, 12%);
-    }
   }
 }

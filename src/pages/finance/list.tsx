@@ -135,6 +135,8 @@ export default function FinanceReconcileList() {
     channel: 'all',
     date: '',
   })
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
@@ -326,7 +328,6 @@ export default function FinanceReconcileList() {
         <Card variant="borderless" className="filter-bar finance-list__filter">
           <Input
             allowClear
-            prefix={<SearchOutlined />}
             placeholder="对账日期、机构名称或对账批次"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
@@ -396,7 +397,13 @@ export default function FinanceReconcileList() {
             size="small"
             columns={columns}
             dataSource={filteredData}
-            pagination={{ total: 31, pageSize: 6, current: 1, showSizeChanger: false }}
+            pagination={{
+              current: page,
+              pageSize,
+              total: filteredData.length,
+              onChange: setPage,
+              showTotal: (total) => `共 ${total} 条`
+            }}
           />
         </Card>
       </div>

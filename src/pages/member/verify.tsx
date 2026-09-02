@@ -140,6 +140,8 @@ export default function VerifyList() {
   })
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [current, setCurrent] = useState<VerifyRecord | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const filteredData = useMemo(() => {
     return records.filter((item) => {
@@ -292,7 +294,6 @@ export default function VerifyList() {
         <Card variant="borderless" className="filter-bar verify-list__filter">
           <Input
             allowClear
-            prefix={<SearchOutlined />}
             placeholder="姓名或身份证号"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
@@ -348,7 +349,13 @@ export default function VerifyList() {
             rowKey="id"
             columns={columns}
             dataSource={filteredData}
-            pagination={{ total: 126, pageSize: 6, current: 1, showSizeChanger: false }}
+            pagination={{
+              current: page,
+              pageSize,
+              total: filteredData.length,
+              onChange: setPage,
+              showTotal: (total) => `共 ${total} 条`
+            }}
           />
         </Card>
       </div>

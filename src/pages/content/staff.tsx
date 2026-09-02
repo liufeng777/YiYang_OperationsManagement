@@ -103,6 +103,8 @@ export default function StaffList() {
   const [settingRecommended, setSettingRecommended] = useState(false)
   const [settingSort, setSettingSort] = useState<number | null>(1)
   const [settingIntro, setSettingIntro] = useState('')
+  const [page, setPage] = useState(1)
+  const pageSize = 10
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
@@ -337,7 +339,13 @@ export default function StaffList() {
             columns={columns}
             dataSource={filteredData}
             rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
-            pagination={{ total: 46, pageSize: 5, current: 1, showSizeChanger: false }}
+            pagination={{
+              current: page,
+              pageSize,
+              total: filteredData.length,
+              onChange: setPage,
+              showTotal: (total) => `共 ${total} 条`
+            }}
           />
         </Card>
       </div>

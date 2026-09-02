@@ -202,7 +202,6 @@ export default function SystemLog() {
         <Card variant="borderless" className="filter-bar log-page__filter">
           <Input
             allowClear
-            prefix={<SearchOutlined />}
             placeholder="按操作人 / IP / 请求地址搜索"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
@@ -238,7 +237,6 @@ export default function SystemLog() {
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">操作记录</span>
-              <span className="list-card__header__tips">共 {total} 条记录</span>
             </div>
           </div>
           <Table<OperationLogItem>

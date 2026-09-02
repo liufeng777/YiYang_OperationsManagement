@@ -92,6 +92,118 @@
     border-radius: @radius-sm;
   }
 
+  /* ===== 服务规格与套餐 ===== */
+  .editor-spec {
+    /* 耗材规格条（浅绿底）：是否涉及耗材 + 耗材规格 + 标准耗材 */
+    &__strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: @spacing-lg;
+      padding: @spacing-sm @spacing-md;
+      background: @color-primary-light;
+      border-radius: @radius-sm;
+
+      .ant-form-item {
+        margin-bottom: 0;
+      }
+    }
+
+    &__label {
+      .text-label();
+      color: @color-text-primary;
+
+      i {
+        color: @color-danger;
+        font-style: normal;
+      }
+    }
+
+    &__field {
+      display: flex;
+      align-items: center;
+
+      > span {
+        .text-label();
+        color: @color-text-primary;
+      }
+    }
+
+    /* 启用套餐行：标签 + 开关 + 状态 + 提示 + 添加按钮（右对齐） */
+    &__package-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: @spacing-sm;
+      margin-top: @spacing-md;
+
+      .ant-form-item {
+        margin-bottom: 0;
+      }
+    }
+
+    &__package-status {
+      .text-body();
+    }
+
+    &__package-hint {
+      .text-auxiliary();
+    }
+
+    &__add {
+      margin-left: auto;
+    }
+
+    &__tip {
+      margin-top: @spacing-md;
+    }
+  }
+
+  /* 套餐列表：文本表头 + 圆角边框行 */
+  .package-table {
+    margin-top: @spacing-sm;
+
+    &__head,
+    &__row {
+      display: grid;
+      grid-template-columns: 1.2fr 0.9fr 1.1fr 1.1fr 1fr;
+      gap: @spacing-sm;
+      align-items: center;
+    }
+
+    &__head {
+      padding: 0 @spacing-md @spacing-2xs;
+
+      span {
+        .text-label();
+      }
+    }
+
+    &__row {
+      padding: @spacing-sm @spacing-md;
+      border: 1px solid @color-border;
+      border-radius: @radius-sm;
+
+      & + & {
+        margin-top: @spacing-sm;
+      }
+
+      > span {
+        .text-body();
+      }
+    }
+
+    &__actions {
+      display: flex;
+      align-items: center;
+
+      .ant-btn {
+        padding-right: @spacing-2xs;
+        padding-left: @spacing-2xs;
+      }
+    }
+  }
+
   /* ============================================================
      患者端展示内容：列表封面 / 详情图片 / 服务内容 同一行紧邻排布
      - 三块按 封面(132px) → 详情图片 → 服务内容 顺序排列，间距 @spacing-md

@@ -20,14 +20,14 @@ import type {
 import './index.less'
 
 /** 色调：与 variables.less 中 metric-card / todo / pill 的修饰类一一对应 */
-type Tone = 'primary' | 'info' | 'warning' | 'danger'
+type Tone = 'success' | 'info' | 'warning' | 'danger'
 
-/** 订单状态 -> 文案（样式见 .status-pill--{status}） */
-const statusText: Record<RecentOrder['status'], string> = {
-  pending: '待服务',
-  confirmed: '已确认',
-  refunding: '退款审核',
-  finished: '已完成',
+/** 订单状态 -> 1=待服务 2=已确认 3=退款审核 4=已完成  */
+const statusText: Record<number, any> = {
+  1: {text: '待服务', tone: 'warning'},
+  2: {text: '已确认', tone: 'info'},
+  3: {text: '退款审核', tone: 'danger'},
+  4: {text: '已完成', tone: 'success'},
 }
 
 /** 待办项图标（设计稿为单色字块：退 / 商 / 内） */
@@ -82,7 +82,7 @@ export default function Dashboard() {
         customer: '李阿姨',
         amount: 168.0,
         orderTime: '08-06 10:24',
-        status: 'pending',
+        status: 1,
       },
       {
         orderNo: 'XY202608060119',
@@ -91,7 +91,7 @@ export default function Dashboard() {
         customer: '王叔叔',
         amount: 99.0,
         orderTime: '08-06 09:46',
-        status: 'confirmed',
+        status: 2,
       },
       {
         orderNo: 'XY202608050986',
@@ -100,7 +100,7 @@ export default function Dashboard() {
         customer: '陈女士',
         amount: 328.0,
         orderTime: '08-05 18:32',
-        status: 'refunding',
+        status: 3,
       },
       {
         orderNo: 'XY202608050921',
@@ -109,7 +109,7 @@ export default function Dashboard() {
         customer: '赵先生',
         amount: 1299.0,
         orderTime: '08-05 16:08',
-        status: 'finished',
+        status: 4,
       },
     ])
     setTrend({
@@ -134,7 +134,7 @@ export default function Dashboard() {
       label: '今日订单',
       value: overview?.todayOrderCount,
       badge: `+${overview?.todayOrderRate ?? 0}% 较昨日`,
-      tone: 'primary',
+      tone: 'success',
       icon: <BarChartOutlined />,
     },
     {
@@ -181,10 +181,9 @@ export default function Dashboard() {
         title: '订单状态',
         dataIndex: 'status',
         key: 'status',
-        render: (status: RecentOrder['status']) => (
-          <span className={`status-pill status-pill--${status}`}>
-            <i className="status-pill__dot" />
-            {statusText[status]}
+        render: (status: number) => (
+          <span className={`status-btn status--${statusText[status].tone}`}>
+            {statusText[status].text}
           </span>
         ),
       },
@@ -218,12 +217,12 @@ export default function Dashboard() {
             <Card className="metric-card" variant="borderless">
               <div className="metric-card__head">
                 <span className="metric-card__label">{card.label}</span>
-                <span className={`metric-card__icon metric-card__icon--${card.tone}`}>
+                <span className={`metric-card__icon status--${card.tone}`}>
                   {card.icon}
                 </span>
               </div>
               <div className="metric-card__value">{card.value ?? '-'}</div>
-              <span className={`metric-card__note metric-card__note--${card.tone}`}>
+              <span className={`metric-card__note status--${card.tone}`}>
                 {card.badge}
               </span>
             </Card>

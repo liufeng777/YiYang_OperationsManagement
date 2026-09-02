@@ -9,15 +9,15 @@ import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import type { ActivityItem } from '@/api/modules/activity'
+import type { ActivityItem, ActivityStatusCode, PublishStatus } from '@/api/modules/activity'
 import './list.less'
 
 const statusText: Record<number, string> = {
   0: '全部',
   1: '待发布',
   2: '报名中',
-  3: '已结束',
-  9: '已取消',
+  3: '已开始',
+  9: '已取消'
 }
 
 const initialActivities: ActivityItem[] = [
@@ -89,15 +89,14 @@ const initialActivities: ActivityItem[] = [
   },
 ]
 
-const tabItems = Object.keys(statusText).map((keyStr) => {
-  const key = Number(keyStr)
-  return {
-    key: keyStr,
-    label: `${statusText[key]}${
-      key === 0 ? initialActivities.length : initialActivities.filter((v) => v.status === key).length
-    }`,
-  }
-})
+const tabItems = useMemo(() => {
+  Object.keys(statusText).map((key: number) => {
+    return {
+      key,
+      label: `${statusText[key]} ${key === 0 ? initialActivities.length : initialActivities.filter(v => v.status === key).length}`
+    }
+  })
+}, [statusText, initialActivities])
 
 interface ActivityFilters {
   keyword: string
@@ -124,8 +123,6 @@ export default function ActivityList() {
     status: 0,
     time: '',
   })
-  const [page, setPage] = useState(1)
-  const pageSize = 10
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
@@ -135,16 +132,19 @@ export default function ActivityList() {
         item.code.toLowerCase().includes(applied.keyword.toLowerCase())
       const typeHit = applied.type === 'all' || item.type === applied.type
       const statusHit = applied.status === 0 || item.status === applied.status
-      // const tabHit = tab === 'all' || item.status === Number(tab)
-      return keywordHit && typeHit && statusHit
+      const tabHit =
+        tab === 'all' ||
+        (tab === 'signup' && (item.status === 'signup' || item.status === 'full')) ||
+        item.status === tab
+      return keywordHit && typeHit && statusHit && tabHit
     })
   }, [applied, data, tab])
 
   const metrics = [
-    { key: 0, label: '全部活动', value: 46, badge: '本月新增 8 个', tone: 'primary' },
-    { key: 2, label: '报名中', value: 12, badge: '今日新增报名 36 人', tone: 'info' },
-    { key: 1, label: '待发布', value: 3, badge: '1 个待完善承接机构',tone: 'danger' },
-    { key: 3, label: '已结束', value: 5, badge: '3 个活动已经结束', tone: 'warning' },
+    { key: 'all', label: '全部活动', value: 46, badge: '本月新增 8 个', tone: 'primary' },
+    { key: 'signup', label: '报名中', value: 12, badge: '今日新增报名 36 人', tone: 'info' },
+    { key: 'ongoing', label: '进行中', value: 5, badge: '3 个活动今日开始', tone: 'warning' },
+    { key: 'pending', label: '待发布', value: 3, badge: '1 个待完善承接机构',tone: 'danger' },
   ]
 
   const applyFilters = () => {
@@ -244,7 +244,11 @@ export default function ActivityList() {
         width: 150,
         render: (_, record) => (
           <div className="activity-actions">
-            {(record.status === 2 || record.status === 3) && (
+            {(record.status === 'signup' ||
+              record.status === 'ongoing' ||
+              record.status === 'full' ||
+              record.status === 'finished' ||
+              record.status === 'pending') && (
               <Button
                 type="link"
                 size="small"
@@ -253,7 +257,7 @@ export default function ActivityList() {
                 报名查询
               </Button>
             )}
-            {(record.status === 1 || record.status === 2) && (
+            {(record.status === 'signup' || record.status === 'ongoing' || record.status === 'draft') && (
               <Button
                 type="link"
                 size="small"
@@ -262,7 +266,7 @@ export default function ActivityList() {
                 编辑
               </Button>
             )}
-            {record.status === 1 && (
+            {record.status === 'pending' && (
               <Button type="link" size="small" onClick={() => handlePublish(record)}>
                 发布
               </Button>
@@ -311,6 +315,7 @@ export default function ActivityList() {
         <Card variant="borderless" className="filter-bar activity-list__filter">
           <Input
             allowClear
+            prefix={<SearchOutlined />}
             placeholder="活动名称或活动编号"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
@@ -340,11 +345,13 @@ export default function ActivityList() {
             value={status}
             onChange={setStatus}
             options={[
-              { label: '全部活动状态', value: 0 },
-              { label: '待发布', value: 1 },
-              { label: '报名中', value: 2 },
-              { label: '已结束', value: 3 },
-              { label: '已取消', value: 9 },
+              { label: '全部活动状态', value: 'all' },
+              { label: '草稿', value: 'draft' },
+              { label: '待发布', value: 'pending' },
+              { label: '报名中', value: 'signup' },
+              { label: '进行中', value: 'ongoing' },
+              { label: '已满员', value: 'full' },
+              { label: '已结束', value: 'finished' },
             ]}
           />
           <Input
@@ -364,28 +371,22 @@ export default function ActivityList() {
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">活动列表</span>
-              {/* <span  className="list-card__header__tips">共 46 场活动 · 点击「查看」可进入报名查询</span> */}
+              <span  className="list-card__header__tips">共 46 场活动 · 点击「查看」可进入报名查询</span>
             </div>
-            {/* <Radio.Group
+            <Radio.Group
               className="list-card__status-filter"
               optionType="button"
               value={tab}
               onChange={(event) => setTab(event.target.value)}
               options={tabItems.map((item) => ({ value: item.key, label: item.label }))}
-            /> */}
+            />
           </div>
           <Table<ActivityItem>
             rowKey="id"
             size="small"
             columns={columns}
             dataSource={filteredData}
-            pagination={{
-              current: page,
-              pageSize,
-              total: filteredData.length,
-              onChange: setPage,
-              showTotal: (total) => `共 ${total} 条`
-            }}
+            pagination={{ total: 46, pageSize: 6, current: 1, showSizeChanger: false }}
           />
         </Card>
       </div>

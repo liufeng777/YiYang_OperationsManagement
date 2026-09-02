@@ -5,7 +5,7 @@
  * 当前为 mock 数据，后端就绪后替换为 serviceApi.getServiceDetail / saveService
  */
 import { useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Form, Input, Radio, Select, Switch, Upload } from 'antd'
+import { App, Button, Card, Form, Input, InputNumber, Modal, Radio, Select, Switch, Upload } from 'antd'
 import { ArrowLeftOutlined, CheckOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
@@ -57,6 +57,26 @@ const consumableOptions = [
   { label: '否', value: '2' },
 ]
 
+/** 服务套餐项：fixed 为内置「单次服务」，不可删除 */
+interface PackageItem {
+  id: string
+  name: string
+  times: number
+  priceWith: number
+  priceWithout: number
+  fixed?: boolean
+}
+
+const initialPackages: PackageItem[] = [
+  { id: 'pkg-1', name: '单次服务', times: 1, priceWith: 275, priceWithout: 235, fixed: true },
+  { id: 'pkg-2', name: '5次套餐', times: 5, priceWith: 1300, priceWithout: 1100 },
+  { id: 'pkg-3', name: '10次套餐', times: 10, priceWith: 2500, priceWithout: 2100 },
+]
+
+/** 套餐价格展示：¥1,300.00 */
+const formatPackagePrice = (value: number) =>
+  `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
 const initialServiceImages: SortableImage[] = [
   { id: 'img-1', title: '服务流程图', size: '750 × 800px', tone: 'blue' },
   { id: 'img-2', title: '服务场景图', size: '750 × 800px', tone: 'warm' },
@@ -75,6 +95,8 @@ interface ServiceFormValues {
   consumable: '1' | '2'
   consumableSpec?: string
   consumableList?: string
+  /** 是否启用多次套餐（关闭后仅保留「单次服务」） */
+  packageEnabled: boolean
   summary: string
   content?: string
   publishStatus: 'draft' | 'on'
@@ -88,6 +110,9 @@ const initialFormValues: Partial<ServiceFormValues> = {
   duration: '60 分钟',
   audience: '老年人、术后康复人群',
   consumable: '1',
+  consumableSpec: '含耗材',
+  consumableList: '清洁用品、护理垫',
+  packageEnabled: true,
   publishStatus: 'draft',
   openAfterSave: true,
 }
@@ -95,7 +120,7 @@ const initialFormValues: Partial<ServiceFormValues> = {
 export default function ServiceEditorPage() {
   const navigate = useNavigate()
   const params = useParams()
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const serviceId = params.id ?? 'new'
   const isCreate = serviceId === 'new'
   const detail = useMemo(() => detailMocks[serviceId], [serviceId])
@@ -103,6 +128,10 @@ export default function ServiceEditorPage() {
   const [form] = Form.useForm<ServiceFormValues>()
   const [serviceImages, setServiceImages] = useState<SortableImage[]>(initialServiceImages)
   const [coverUrl, setCoverUrl] = useState<string>()
+  const [packages, setPackages] = useState<PackageItem[]>(initialPackages)
+  const [packageModalOpen, setPackageModalOpen] = useState(false)
+  const [editingPackage, setEditingPackage] = useState<PackageItem | null>(null)
+  const [packageForm] = Form.useForm<Omit<PackageItem, 'id' | 'fixed'>>()
 
   /** 封面上传：拦截真实请求，本地预览（接后端后替换为上传接口） */
   const handleCoverUpload = (file: File) => {
@@ -116,6 +145,9 @@ export default function ServiceEditorPage() {
   const previewPrice = Form.useWatch('price', form)
   const previewUnit = Form.useWatch('unit', form)
   const previewMode = Form.useWatch('mode', form)
+  /** 耗材与套餐联动：是否涉及耗材 / 是否启用套餐 */
+  const consumableValue = Form.useWatch('consumable', form) ?? '1'
+  const packageEnabled = Form.useWatch('packageEnabled', form) ?? true
 
   useEffect(() => {
     if (!detail) return
@@ -143,6 +175,53 @@ export default function ServiceEditorPage() {
     }
     message.success(targetStatus === 'on' ? '服务已保存并启用' : '草稿已保存')
     navigate('/service')
+  }
+
+  /** 添加 / 编辑套餐：打开弹窗（回填在下方 useEffect 中处理，确保 Modal 内 Form 已挂载） */
+  const openPackageModal = (pkg?: PackageItem) => {
+    setEditingPackage(pkg ?? null)
+    setPackageModalOpen(true)
+  }
+
+  useEffect(() => {
+    if (!packageModalOpen) return
+    if (editingPackage) {
+      packageForm.setFieldsValue(editingPackage)
+    } else {
+      packageForm.resetFields()
+    }
+  }, [packageModalOpen, editingPackage, packageForm])
+
+  const handlePackageSave = async () => {
+    try {
+      const values = await packageForm.validateFields()
+      if (editingPackage) {
+        setPackages((prev) =>
+          prev.map((item) => (item.id === editingPackage.id ? { ...item, ...values } : item)),
+        )
+        message.success('套餐已更新')
+      } else {
+        setPackages((prev) => [...prev, { id: `pkg-${Date.now()}`, ...values }])
+        message.success('套餐已添加')
+      }
+      setPackageModalOpen(false)
+    } catch {
+      /* 校验未通过，antd 已自动提示 */
+    }
+  }
+
+  const handlePackageDelete = (pkg: PackageItem) => {
+    modal.confirm({
+      title: '删除套餐',
+      content: `确认删除“${pkg.name}”？删除后机构端将不可再售该套餐。`,
+      okText: '确认删除',
+      cancelText: '取消',
+      okButtonProps: { danger: true },
+      onOk: () => {
+        setPackages((prev) => prev.filter((item) => item.id !== pkg.id))
+        message.success('已删除套餐')
+      },
+    })
   }
 
   return (
@@ -242,6 +321,7 @@ export default function ServiceEditorPage() {
                     <Input placeholder="清洁用品、护理垫" />
                   </Form.Item>
                 </div>
+                {/* 下方「服务规格与套餐」卡片与上述耗材字段同名绑定，修改任一处自动同步 */}
                 <Form.Item
                   className="editor-grid__full"
                   name="summary"
@@ -252,6 +332,110 @@ export default function ServiceEditorPage() {
                 </Form.Item>
               </div>
               <div className="editor-tip">提示：服务半径、日容量、接单时间与预约上下架，由机构添加服务后配置。</div>
+            </Card>
+
+            <Card variant="borderless" className="editor-card">
+              <div className="editor-card__header">
+                <h3>服务规格与套餐</h3>
+                <span>先配置耗材规格，再决定是否销售多次套餐</span>
+              </div>
+              <div className="editor-spec">
+                <div className="editor-spec__strip">
+                  <span className="editor-spec__label">是否涉及耗材 <i>*</i></span>
+                  <Form.Item
+                    name="consumable"
+                    noStyle
+                    rules={[{ required: true, message: '请选择是否涉及耗材' }]}
+                  >
+                    <Radio.Group
+                      options={[
+                        { label: '是', value: '1' },
+                        { label: '否', value: '2' },
+                      ]}
+                    />
+                  </Form.Item>
+                  {consumableValue === '1' && (
+                    <>
+                      <div className="editor-spec__field">
+                        <span>耗材规格：</span>
+                        <Form.Item name="consumableSpec" noStyle>
+                          <Select
+                            variant="borderless"
+                            style={{ width: 108 }}
+                            options={[
+                              { label: '含耗材', value: '含耗材' },
+                              { label: '不含耗材', value: '不含耗材' },
+                            ]}
+                          />
+                        </Form.Item>
+                      </div>
+                      <div className="editor-spec__field">
+                        <span>标准耗材：</span>
+                        <Form.Item name="consumableList" noStyle>
+                          <Input
+                            variant="borderless"
+                            style={{ width: 180 }}
+                            placeholder="清洁用品、护理垫"
+                          />
+                        </Form.Item>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="editor-spec__package-head">
+                  <span className="editor-spec__label">启用套餐</span>
+                  <Form.Item name="packageEnabled" valuePropName="checked" noStyle>
+                    <Switch />
+                  </Form.Item>
+                  <span className="editor-spec__package-status">
+                    {packageEnabled ? '已启用' : '已关闭'}
+                  </span>
+                  <span className="editor-spec__package-hint">关闭后仅保留“单次服务”</span>
+                  <Button
+                    className="editor-spec__add"
+                    icon={<PlusOutlined />}
+                    disabled={!packageEnabled}
+                    onClick={() => openPackageModal()}
+                  >
+                    添加套餐
+                  </Button>
+                </div>
+
+                <div className="package-table">
+                  <div className="package-table__head">
+                    <span>套餐名称</span>
+                    <span>服务次数</span>
+                    <span>含耗材价</span>
+                    <span>不含耗材价</span>
+                    <span>操作</span>
+                  </div>
+                  {(packageEnabled ? packages : packages.filter((item) => item.fixed)).map(
+                    (pkg) => (
+                      <div className="package-table__row" key={pkg.id}>
+                        <span>{pkg.name}</span>
+                        <span>{pkg.times}次</span>
+                        <span>{formatPackagePrice(pkg.priceWith)}</span>
+                        <span>{formatPackagePrice(pkg.priceWithout)}</span>
+                        <span className="package-table__actions">
+                          <Button type="link" size="small" onClick={() => openPackageModal(pkg)}>
+                            编辑
+                          </Button>
+                          {!pkg.fixed && (
+                            <Button type="link" size="small" onClick={() => handlePackageDelete(pkg)}>
+                              删除
+                            </Button>
+                          )}
+                        </span>
+                      </div>
+                    ),
+                  )}
+                </div>
+
+                <div className="editor-tip editor-spec__tip">
+                  套餐支付成功后，按“服务次数”自动生成对应数量的待预约子工单；每预约一次激活一张。
+                </div>
+              </div>
             </Card>
 
             <Card variant="borderless" className="editor-card">
@@ -387,6 +571,47 @@ export default function ServiceEditorPage() {
           </div>
         </div> */}
       </Form>
+
+      <Modal
+        title={editingPackage ? '编辑套餐' : '添加套餐'}
+        open={packageModalOpen}
+        onOk={handlePackageSave}
+        onCancel={() => setPackageModalOpen(false)}
+        okText="保存"
+        cancelText="取消"
+        destroyOnClose
+      >
+        <Form form={packageForm} layout="vertical" requiredMark={false}>
+          <Form.Item
+            name="name"
+            label="套餐名称"
+            rules={[{ required: true, message: '请输入套餐名称' }]}
+          >
+            <Input placeholder="例如：5次套餐" />
+          </Form.Item>
+          <Form.Item
+            name="times"
+            label="服务次数"
+            rules={[{ required: true, message: '请输入服务次数' }]}
+          >
+            <InputNumber min={1} precision={0} style={{ width: '100%' }} placeholder="套餐包含的服务次数" />
+          </Form.Item>
+          <Form.Item
+            name="priceWith"
+            label="含耗材价（元）"
+            rules={[{ required: true, message: '请输入含耗材价' }]}
+          >
+            <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            name="priceWithout"
+            label="不含耗材价（元）"
+            rules={[{ required: true, message: '请输入不含耗材价' }]}
+          >
+            <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+          </Form.Item>
+        </Form>
+      </Modal>
     </PageContainer>
   )
 }
