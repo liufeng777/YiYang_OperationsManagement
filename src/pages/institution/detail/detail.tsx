@@ -10,7 +10,7 @@ import { Button, Card, Tabs, Tag } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import type { InstitutionDetail, InstitutionService, InstitutionType } from '@/api/modules/institution'
+import type { InstitutionItem, InstitutionService, InstitutionType } from '@/api/modules/institution'
 import BaseInfoTab from '../components/BaseInfoTab'
 import ServicesTab from '../components/ServicesTab'
 import PatientIntroTab from '../components/PatientIntroTab'
@@ -23,7 +23,7 @@ const typeText: Record<InstitutionType, string> = {
   2: '驿站',
 }
 
-const institutionMocks: Record<string, InstitutionDetail> = {
+const institutionMocks: Record<string, InstitutionItem> = {
   '1': {
     id: 1,
     code: 'JG0001',
@@ -41,11 +41,10 @@ const institutionMocks: Record<string, InstitutionDetail> = {
     brief: '幸福里健康驿站 · 专业照护，安心颐养',
     description:
       '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。站内配备专业护理团队和适老化环境，为长者提供安全、温暖、有尊严的照护体验。',
+    cover_image: '',
     images: [],
     status: 1,
     created_at: 1788244635,
-    introTags: ['医护团队', '康复照护', '适老环境'],
-    introVisible: true,
   },
   '2': {
     id: 2,
@@ -63,11 +62,10 @@ const institutionMocks: Record<string, InstitutionDetail> = {
     service_radius_km: 3,
     brief: '康乐护理院 · 专业照护，安心颐养',
     description: '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。',
+    cover_image: '',
     images: [],
     status: 9,
     created_at: 1788244635,
-    introTags: ['医护团队', '康复照护'],
-    introVisible: true,
   },
 }
 
@@ -124,7 +122,7 @@ const detailTabs: { key: DetailTab; label: string }[] = [
   { key: 'services', label: '服务项目' },
 ]
 
-function getInstitutionMock(id: string): InstitutionDetail {
+function getInstitutionMock(id: string): InstitutionItem {
   return institutionMocks[id] ?? institutionMocks['1']
 }
 

@@ -39,6 +39,7 @@ const mockInstitutions: InstitutionItem[] = [
     contact_phone: '0571-8876 1028',
     brief: '专业照护，安心颐养',
     description: '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。院内配备专业医护团队和适老化环境，为长者提供安全、温暖、有尊严的照护体验。',
+    cover_image: '',
     images: [],
     manager_name: '',
     manager_phone: '',
@@ -59,6 +60,7 @@ const mockInstitutions: InstitutionItem[] = [
     contact_phone: '0571-8899 2631',
     brief: '专业照护，安心颐养',
     description: '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。院内配备专业医护团队和适老化环境，为长者提供安全、温暖、有尊严的照护体验。',
+    cover_image: '',
     images: [],
     manager_name: '',
     manager_phone: '',
@@ -79,6 +81,7 @@ const mockInstitutions: InstitutionItem[] = [
     contact_phone: '0571-8899 2631',
     brief: '专业照护，安心颐养',
     description: '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。院内配备专业医护团队和适老化环境，为长者提供安全、温暖、有尊严的照护体验。',
+    cover_image: '',
     images: [],
     manager_name: '',
     manager_phone: '',
@@ -99,6 +102,7 @@ const mockInstitutions: InstitutionItem[] = [
     contact_phone: '0571-8899 2631',
     brief: '专业照护，安心颐养',
     description: '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。院内配备专业医护团队和适老化环境，为长者提供安全、温暖、有尊严的照护体验。',
+    cover_image: '',
     images: [],
     manager_name: '',
     manager_phone: '',
@@ -119,6 +123,7 @@ const mockInstitutions: InstitutionItem[] = [
     contact_phone: '0571-8899 2631',
     brief: '专业照护，安心颐养',
     description: '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。院内配备专业医护团队和适老化环境，为长者提供安全、温暖、有尊严的照护体验。',
+    cover_image: '',
     images: [],
     manager_name: '',
     manager_phone: '',
@@ -236,6 +241,20 @@ export default function InstitutionList() {
     })
   }
 
+  const handleDelete = (record: InstitutionItem) => {
+    Modal.confirm({
+      title: `确认删除机构「${record.name}」？`,
+      content: '移除后机构的所有信息将被清空，用户端不可查看和预约',
+      okText: '确认删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: () => {
+        setData((prev) => prev.filter((item) => item.id !== record.id))
+        message.success(`已删除「${record.name}」（mock）`)
+      },
+    })
+  }
+
   const columns = useMemo<ColumnsType<InstitutionItem>>(
     () => [
       {
@@ -298,7 +317,7 @@ export default function InstitutionList() {
       {
         title: '操作',
         key: 'action',
-        width: 150,
+        width: 180,
         render: (_, record) => (
           <Space>
             <Button type="link" size="small" onClick={() => navigate(`/institution/detail/${record.id}`)}>
@@ -311,6 +330,9 @@ export default function InstitutionList() {
             ) : <Button type="link" size="small" danger onClick={() => openOfflineModal(record)}>
               停用
             </Button>}
+            <Button type="link" size="small" danger onClick={() => handleDelete(record)}>
+              删除
+            </Button>
           </Space>
         ),
       },

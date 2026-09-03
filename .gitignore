@@ -34,3 +34,4 @@ lerna-debug.log*
 
 # Work log (should be committed)
 !WORKLOG/**/*.md
+.reasonix

@@ -5,39 +5,64 @@
  * 注：父级通过 key={detail.id} 重挂载本组件以切换机构时重置表单
  */
 import { useState } from 'react'
-import { App, Button, Card, Input, Switch, Tag, Upload } from 'antd'
+import { App, Button, Card, Image, Input, Upload } from 'antd'
+import type { UploadFile, UploadProps } from 'antd'
 import { PhoneOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
-import type { InstitutionDetail } from '@/api/modules/institution'
+import type { InstitutionItem } from '@/api/modules/institution'
 
 interface PatientIntroTabProps {
-  detail: InstitutionDetail
+  detail: InstitutionItem
 }
 
 /** 预览环境照片占位（mock） */
 const previewPhotoPlaceholders = ['接待大厅', '康复空间', '适老房间']
+
+/** mock 上传：阻止真实网络请求，直接标记成功（接后端后删除） */
+const mockCustomRequest: UploadProps['customRequest'] = (options) => {
+  setTimeout(() => options.onSuccess?.({}, new XMLHttpRequest()), 0)
+}
 
 export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
   const { message } = App.useApp()
 
   const [introTitle, setIntroTitle] = useState(detail.brief)
   const [introDesc, setIntroDesc] = useState(detail.description)
-  const [introTags, setIntroTags] = useState<string[]>(detail.introTags)
-  const [introVisible, setIntroVisible] = useState(detail.introVisible)
-  const [introCover, setIntroCover] = useState<string | null>(detail.introCover ?? null)
-  const [envPhotos, setEnvPhotos] = useState<string[]>([])
+  const [coverImg, setCoverImg] = useState<string | null>(null)
+  const [envFiles, setEnvFiles] = useState<UploadFile[]>([])
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewImage, setPreviewImage] = useState('')
 
-  /** 本地图片选择：拦截真实上传，生成预览地址（接后端后替换为上传接口） */
+  /** 封面选择：拦截真实上传，本地预览（接后端后替换为上传接口） */
   const pickCover = (file: File) => {
-    setIntroCover(URL.createObjectURL(file))
+    setCoverImg(URL.createObjectURL(file))
     message.success('机构封面已上传（本地预览）')
     return false
   }
 
-  const pickEnvPhoto = (file: File) => {
-    setEnvPhotos((prev) => (prev.length >= 8 ? prev : [...prev, URL.createObjectURL(file)]))
-    message.success('环境照片已添加（本地预览）')
-    return false
+  /** 环境照片：受控 fileList，onChange 时为本地文件生成缩略图 */
+  const handleEnvChange: UploadProps['onChange'] = ({ fileList: newList }) => {
+    const list = newList.map((file) => {
+      if (file.originFileObj && !file.thumbUrl && !file.url && !file.preview) {
+        file.thumbUrl = URL.createObjectURL(file.originFileObj)
+      }
+      return file
+    })
+    setEnvFiles(list)
   }
+
+  /** 点击缩略图：大图预览 */
+  const handlePreview = async (file: UploadFile) => {
+    const src = file.url || file.preview || file.thumbUrl || ''
+    setPreviewImage(src)
+    setPreviewOpen(true)
+  }
+
+  const envUploadButton = (
+    <div>
+      <PlusOutlined />
+      <div style={{ marginTop: 8 }}>添加环境照片</div>
+    </div>
+  )
 
   return (
     <div className="patient-intro">
@@ -45,10 +70,6 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
         <Card variant="borderless" className="detail-card">
           <div className="detail-card__header">
             <h3>患者端介绍</h3>
-            <div className="patient-visible">
-              <span>患者端展示</span>
-              <Switch checked={introVisible} onChange={setIntroVisible} />
-            </div>
           </div>
           <div className="intro-form">
             <label>
@@ -61,56 +82,52 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
               <span>机构介绍</span>
               <Input.TextArea rows={4} value={introDesc} onChange={(event) => setIntroDesc(event.target.value)} />
             </label>
-            {/* <div className="intro-tags">
-              <span>特色标签（最多4个）</span>
-              <div className='intro-tags-list'>
-                {introTags.map((tag) => (
-                  <Tag key={tag} closable onClose={() => setIntroTags((prev) => prev.filter((item) => item !== tag))}>
-                    {tag}
-                  </Tag>
-                ))}
-                {introTags.length < 4 && (
-                  <Tag className="intro-tags__add" onClick={() => setIntroTags((prev) => [...prev, `特色标签${prev.length + 1}`])}>
-                    + 添加标签
-                  </Tag>
+            <label>
+              <span>机构封面图片</span>
+              <Upload
+                listType="picture-card"
+                accept="image/*"
+                showUploadList={false}
+                beforeUpload={pickCover}
+              >
+                {coverImg ? (
+                  <img
+                    src={coverImg}
+                    alt="机构封面"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
+                  />
+                ) : (
+                  <div>
+                    <PlusOutlined />
+                    <div style={{ marginTop: 8 }}>上传机构封面</div>
+                  </div>
                 )}
-              </div>
-            </div> */}
-              <label>
-                <span>机构封面图片</span>
-                <div className="intro-photos">
-                  <Upload accept="image/*" showUploadList={false} beforeUpload={pickCover}>
-                    <div className={`intro-photos__item intro-photos__item--cover${introCover ? ' has-image' : ''}`}>
-                      {introCover ? (
-                        <img src={introCover} alt="机构封面" />
-                      ) : (
-                        <>
-                          <PlusOutlined />
-                          <span>上传机构封面</span>
-                        </>
-                      )}
-                    </div>
-                  </Upload>
-                </div>
-              </label>
-              <label>
-                <span>机构环境图片</span>
-                <div className="intro-photos">
-                  {envPhotos.map((url, index) => (
-                    <div className="intro-photos__item has-image" key={url}>
-                      <img src={url} alt={`环境照片 ${index + 1}`} />
-                    </div>
-                  ))}
-                  {envPhotos.length < 8 && (
-                    <Upload accept="image/*" showUploadList={false} multiple beforeUpload={pickEnvPhoto}>
-                      <div className="intro-photos__item">
-                        <PlusOutlined />
-                        <span>添加环境照片</span>
-                      </div>
-                    </Upload>
-                  )}
-                </div>
-              </label>
+              </Upload>
+            </label>
+            <label>
+              <span>机构环境图片</span>
+              <Upload
+                listType="picture-card"
+                accept="image/*"
+                fileList={envFiles}
+                customRequest={mockCustomRequest}
+                onPreview={handlePreview}
+                onChange={handleEnvChange}
+              >
+                {envFiles.length >= 8 ? null : envUploadButton}
+              </Upload>
+              {previewImage && (
+                <Image
+                  styles={{ root: { display: 'none' } }}
+                  preview={{
+                    open: previewOpen,
+                    onOpenChange: (visible) => setPreviewOpen(visible),
+                    afterOpenChange: (visible) => !visible && setPreviewImage(''),
+                  }}
+                  src={previewImage}
+                />
+              )}
+            </label>
             <p className="intro-photos__tip">建议封面尺寸 750×420；环境相册用于患者端了解机构环境与设施。</p>
           </div>
         </Card>
@@ -119,7 +136,7 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
       <Card variant="borderless" className="detail-card patient-preview">
         <div className="detail-card__header detail-card__header--compact">
           <h3>患者端实时预览</h3>
-          <Button type="link" style={{fontSize: 12, height: 24}} icon={<ReloadOutlined />} onClick={() => message.success('预览已刷新')}>
+          <Button type="link" style={{ fontSize: 12, height: 24 }} icon={<ReloadOutlined />} onClick={() => message.success('预览已刷新')}>
             刷新预览
           </Button>
         </div>
@@ -140,21 +157,24 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
           </div>
           <div className="phone__body">
             <h4>{introTitle || detail.name}</h4>
-            <div className="phone__tags">
-              {introTags.slice(0, 3).map((tag) => (
-                <span key={tag}>{tag}</span>
-              ))}
-            </div>
             <p>{introDesc}</p>
             <div className="phone__section">
               <div>
                 <strong>机构环境</strong>
-                <span>查看全部 9 张 ›</span>
+                <span>查看全部 {envFiles.length || 9} 张 ›</span>
               </div>
               <div className="phone__photos">
-                {previewPhotoPlaceholders.map((item) => (
-                  <i key={item}>{item}</i>
-                ))}
+                {envFiles.length > 0
+                  ? envFiles.slice(0, 3).map((file) => (
+                      <i key={file.uid}>
+                        {file.thumbUrl ? (
+                          <img src={file.thumbUrl} alt={file.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          file.name
+                        )}
+                      </i>
+                    ))
+                  : previewPhotoPlaceholders.map((item) => <i key={item}>{item}</i>)}
               </div>
             </div>
             <div className="phone__tabs">

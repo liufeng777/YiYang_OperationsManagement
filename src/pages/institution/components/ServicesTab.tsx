@@ -26,7 +26,7 @@ import {
   InfoCircleFilled,
 } from '@ant-design/icons'
 import type {
-  InstitutionDetail,
+  InstitutionItem,
   InstitutionService,
   ServicePoolItem,
 } from '@/api/modules/institution'
@@ -44,7 +44,7 @@ const servicePoolMocks: ServicePoolItem[] = [
 const serviceCategories = ['全部', '生活照护', '康复护理', '健康管理', '陪诊出行']
 
 interface ServicesTabProps {
-  detail: InstitutionDetail
+  detail: InstitutionItem
   services: InstitutionService[]
   onServicesChange: Dispatch<SetStateAction<InstitutionService[]>>
   drawerOpen: boolean

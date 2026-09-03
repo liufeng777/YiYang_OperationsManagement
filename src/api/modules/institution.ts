@@ -63,7 +63,8 @@ export interface InstitutionItem {
   district: string // 区
   /** 服务半径 km，NULL=不限 */
   service_radius_km: number | null
-  images: string[] // 服务端图片
+  cover_image: string; // 封面图片
+  images: string[] // 环境照片
   contact_phone: string
   manager_name: string
   manager_phone: string
@@ -76,14 +77,14 @@ export interface InstitutionItem {
 export type InstitutionSaveBody = Omit<InstitutionItem, 'id' | 'code' | 'created_at'>
 
 /** 机构详情（页面展示，mock）：DTO 字段 + 患者端介绍扩展（无「同步」概念，平台直接维护） */
-export interface InstitutionDetail extends InstitutionItem {
-  /** 特色标签（患者端展示，预留字段） */
-  introTags: string[]
-  /** 患者端是否展示 */
-  introVisible: boolean
-  /** 机构封面地址（本地预览） */
-  introCover?: string
-}
+// export interface InstitutionDetail extends InstitutionItem {
+//   /** 特色标签（患者端展示，预留字段） */
+//   introTags: string[]
+//   /** 患者端是否展示 */
+//   introVisible: boolean
+//   /** 机构封面地址（本地预览） */
+//   introCover?: string
+// }
 
 /** 机构列表 GET /api/admin/institutions（按类型/状态/关键字(名称、地址)） */
 export function getInstitutions(

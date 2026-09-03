@@ -6,11 +6,11 @@
  */
 import { App, Button, Card, Form } from 'antd'
 import { CheckOutlined } from '@ant-design/icons'
-import type { InstitutionDetail } from '@/api/modules/institution'
+import type { InstitutionItem } from '@/api/modules/institution'
 import InstitutionBaseFields from './InstitutionBaseFields'
 
 interface BaseInfoTabProps {
-  detail: InstitutionDetail
+  detail: InstitutionItem
 }
 
 export default function BaseInfoTab({ detail }: BaseInfoTabProps) {
