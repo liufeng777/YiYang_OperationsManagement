@@ -75,7 +75,6 @@ export default function AgreementEdit() {
       <Form
         form={form}
         layout="vertical"
-        requiredMark={false}
         initialValues={
           hasInitial
             ? {
@@ -99,7 +98,7 @@ export default function AgreementEdit() {
               <div className="edit-field">
                 <Form.Item
                   name="type"
-                  label={<span>协议类型 <i>*</i></span>}
+                  label={<span>协议类型</span>}
                   rules={[{ required: true, message: '请选择协议类型' }]}
                 >
                   <Select
@@ -115,7 +114,7 @@ export default function AgreementEdit() {
               <div className="edit-field">
                 <Form.Item
                   name="name"
-                  label={<span>协议名称 <i>*</i></span>}
+                  label={<span>协议名称</span>}
                   rules={[{ required: true, message: '请输入协议名称' }]}
                 >
                   <Input />
@@ -123,7 +122,7 @@ export default function AgreementEdit() {
               </div>
               <div className="edit-field">
                 <label>
-                  新版本号 <i>*</i>
+                  新版本号
                 </label>
                 <Input value={version} disabled />
               </div>

@@ -1,0 +1,47 @@
+/**
+ * 富文本编辑器 Demo 页样式
+ */
+.rich-demo {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-lg;
+
+  &__card {
+    .card-surface();
+
+    .ant-card-body {
+      padding: @spacing-md @spacing-lg;
+    }
+  }
+
+  &__card-header {
+    display: flex;
+    align-items: baseline;
+    gap: @spacing-sm;
+    margin-bottom: @spacing-md;
+
+    h3 {
+      margin: 0;
+      .text-title-card();
+    }
+
+    span {
+      .text-auxiliary();
+    }
+  }
+
+  &__output {
+    margin: 0;
+    padding: @spacing-md;
+    max-height: 360px;
+    overflow: auto;
+    background: @color-bg-page;
+    border: 1px solid @color-border;
+    border-radius: @radius-sm;
+    font-size: @font-size-auxiliary;
+    line-height: @line-height-auxiliary;
+    color: @color-text-primary;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+}

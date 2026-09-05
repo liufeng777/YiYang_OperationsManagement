@@ -76,7 +76,7 @@ export default function InstitutionCreate() {
         </Button>
       }
     >
-      <Form<InstitutionCreateValues> form={form} layout="vertical" requiredMark={false}>
+      <Form<InstitutionCreateValues> form={form} layout="vertical">
         <div className="institution-create">
           <Card variant="borderless" className="create-card">
             <div className="create-card__header">
@@ -94,7 +94,7 @@ export default function InstitutionCreate() {
             <div className="institution-form institution-form--stack">
               <Form.Item
                 name="brief"
-                label={<span>患者端展示标题 <i>*</i></span>}
+                label={<span>患者端展示标题</span>}
                 rules={[{ required: true, message: '请输入患者端展示标题' }]}
               >
                 <Input

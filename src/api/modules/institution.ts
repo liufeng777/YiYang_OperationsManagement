@@ -76,16 +76,6 @@ export interface InstitutionItem {
 /** 机构新增 / 编辑入参 */
 export type InstitutionSaveBody = Omit<InstitutionItem, 'id' | 'code' | 'created_at'>
 
-/** 机构详情（页面展示，mock）：DTO 字段 + 患者端介绍扩展（无「同步」概念，平台直接维护） */
-// export interface InstitutionDetail extends InstitutionItem {
-//   /** 特色标签（患者端展示，预留字段） */
-//   introTags: string[]
-//   /** 患者端是否展示 */
-//   introVisible: boolean
-//   /** 机构封面地址（本地预览） */
-//   introCover?: string
-// }
-
 /** 机构列表 GET /api/admin/institutions（按类型/状态/关键字(名称、地址)） */
 export function getInstitutions(
   params?: ApiPageParams & { keyword?: string, type?: InstitutionType; status?: InstitutionStatus },

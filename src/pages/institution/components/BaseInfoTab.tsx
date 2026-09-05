@@ -38,7 +38,6 @@ export default function BaseInfoTab({ detail }: BaseInfoTabProps) {
       <Form
         form={form}
         layout="vertical"
-        requiredMark={false}
         initialValues={{
           name: detail.name,
           name_en: detail.name_en ?? undefined,

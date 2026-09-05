@@ -343,7 +343,6 @@ export default function AnnouncementsTab() {
         <Form
           form={form}
           layout="vertical"
-          requiredMark={false}
           initialValues={{ announcement_type: 1, priority: 2, publish_scope: 'patient' }}
         >
           <Form.Item

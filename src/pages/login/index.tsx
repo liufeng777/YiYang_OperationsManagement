@@ -112,7 +112,6 @@ export default function Login() {
           <Form<LoginForm>
             className="login-page__form"
             layout="vertical"
-            requiredMark={false}
             initialValues={{ remember: true }}
             onFinish={onFinish}
           >

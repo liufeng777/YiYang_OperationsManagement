@@ -19,17 +19,17 @@
 
     &__header {
       display: flex;
-      align-items: baseline;
-      gap: @spacing-sm;
-      margin-bottom: @spacing-md;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: @spacing-xs;
 
       h3 {
         margin: 0;
         .text-title-card();
       }
-
-      span {
-        .text-auxiliary();
+      &-action {
+        margin-left: auto;
+        align-self: center;
       }
     }
   }
@@ -84,7 +84,6 @@
   }
 
   .editor-tip {
-    margin-top: 8px;
     padding: 2px 10px;
     color: @color-primary-dark;
     font-size: @font-size-auxiliary;
@@ -135,7 +134,6 @@
       flex-wrap: wrap;
       align-items: center;
       gap: @spacing-sm;
-      margin-top: @spacing-md;
 
       .ant-form-item {
         margin-bottom: 0;
@@ -161,8 +159,6 @@
 
   /* 套餐列表：文本表头 + 圆角边框行 */
   .package-table {
-    margin-top: @spacing-sm;
-
     &__head,
     &__row {
       display: grid;
@@ -212,7 +208,7 @@
   .editor-content {
     display: flex;
     align-items: flex-start;
-    gap: @spacing-md;
+    gap: @spacing-3xl;
 
     .ant-form-item {
       margin-bottom: 0;
@@ -294,18 +290,10 @@
     }
   }
 
-  /* 详情图片：flex 0 1 auto —— 不放大、可收缩、基准为内容宽度
-     - 正常宽度 = 图片网格的实际内容宽度（max-content：全部图块排在同一行）
-     - 最大宽度 = 父容器剩余宽度；图片够多占满剩余宽度后，内部 grid 自动换行 */
-  .editor-upload--detail {
-    flex: 0 1 auto;
+  /* 详情图文（富文本）：占满封面之后的剩余宽度 */
+  .editor-upload--richtext {
+    flex: 1;
     min-width: 0;
-  }
-
-  /* 服务内容：固定宽度、不可伸缩，始终紧跟详情图片区 */
-  .editor-content__textarea {
-    flex-shrink: 0;
-    min-width: 160px;
   }
 
   /* 展示块底部提示（患者端详情按图片顺序展示……） */
@@ -519,9 +507,8 @@
     .editor-content {
       flex-direction: column;
 
-      /* 纵向堆叠时详情图片区与服务内容均占满整行 */
-      .editor-upload--detail,
-      .editor-content__textarea {
+      /* 纵向堆叠时详情图文区占满整行 */
+      .editor-upload--richtext {
         width: 100%;
       }
     }
@@ -533,3 +520,137 @@
     }
   }
 }
+
+/* ===== 详情图文（Drawer 入口） ===== */
+.service-editor .editor-upload--richtext {
+  .richtext-entry {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: @spacing-sm;
+
+    > span {
+      margin-bottom: 0;
+    }
+
+    .richtext-entry__status {
+      margin: 0;
+      .text-auxiliary();
+      color: @color-text-secondary;
+
+      &::before {
+        content: '';
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        margin-right: @spacing-2xs;
+        vertical-align: middle;
+        border-radius: @radius-full;
+        background: @color-primary;
+      }
+    }
+  }
+}
+
+.richtext-drawer-hint {
+  margin-bottom: @spacing-md;
+  padding: @spacing-sm @spacing-md;
+  color: @color-info;
+  background: fade(@color-info, 8%);
+  border-radius: @radius-sm;
+  .text-auxiliary();
+}
+
+/* ===== 服务过程（步骤卡片） ===== */
+.service-editor .process-steps {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-sm;
+  margin-top: @spacing-xs;
+
+  .process-step {
+    display: flex;
+    align-items: center;
+    gap: @spacing-md;
+    padding: @spacing-xs;
+    background: @color-bg-card;
+    border: 1px solid @color-border;
+    border-radius: @radius-sm;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:hover {
+      border-color: @color-primary;
+      box-shadow: 0 2px 6px rgba(24, 93, 76, 0.06);
+    }
+
+    &__badge {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      color: @color-primary;
+      font-weight: @font-weight-body-medium;
+      background: @color-primary-light;
+      border-radius: @radius-full;
+    }
+
+    &__fields {
+      flex: 1;
+      min-width: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: @spacing-sm;
+      align-items: center;
+
+      .ant-input {
+        background: @color-bg-card;
+      }
+    }
+
+    &__actions {
+      flex: none;
+      display: inline-flex;
+      align-items: center;
+      gap: @spacing-2xs;
+
+      .ant-btn-icon-only {
+        width: 26px;
+        height: 26px;
+        color: @color-text-secondary;
+        border-radius: @radius-xs;
+        transition: color 0.2s, background 0.2s;
+
+        &:hover:not(:disabled) {
+          color: @color-primary;
+          background: @color-primary-light;
+        }
+
+        &:disabled {
+          color: fade(@color-text-secondary, 40%);
+        }
+      }
+    }
+  }
+
+  > .ant-btn-dashed {
+    margin-top: @spacing-xs;
+  }
+}
+
+@media (max-width: 760px) {
+  .service-editor .process-steps .process-step {
+    flex-wrap: wrap;
+
+    &__fields {
+      grid-template-columns: 1fr;
+    }
+
+    &__actions {
+      width: 100%;
+      justify-content: flex-end;
+    }
+  }
+}
+

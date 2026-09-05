@@ -5,136 +5,156 @@
  */
 import { useMemo, useState } from 'react'
 import type { Key } from 'react'
-import { App, Button, Card, Input, Modal, Select, Table, Tooltip } from 'antd'
+import { App, Button, Card, Input, Modal, Select, Table, Tag, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import type { ServiceItem, ServiceMode, ServiceStatus } from '@/api/modules/service'
+import type { ServiceItem } from '@/api/modules/service'
 import './list.less'
 
-const statusText: Record<ServiceStatus, string> = {
-  on: '已启用',
-  draft: '草稿',
-  off: '已停用',
+export const statusText: Record<number, string> = {
+  1: '启用',
+  9: '停用'
 }
 
-const modeClass: Record<ServiceMode, string> = {
-  上门: 'home',
-  到店: 'store',
-  陪同: 'accompany',
+export const typeText: Record<number, string> = {
+  1: '上门',
+  2: '到店',
 }
 
-const categories = [
-  { name: '全部服务', count: 128 },
-  { name: '生活照护', count: 38 },
-  { name: '康复护理', count: 30 },
-  { name: '健康管理', count: 24 },
-  { name: '居家安全', count: 16 },
-  { name: '陪诊出行', count: 20 },
+const typeColor = ['', 'geekblue', 'purple']
+
+export const categories = [
+  { name: '全部服务', count: 128, id: 0 },
+  { name: '生活照护', count: 38, id: 1},
+  { name: '康复护理', count: 30, id: 2 },
+  { name: '健康管理', count: 24, id: 3 },
+  { name: '居家安全', count: 16, id: 4 },
+  { name: '陪诊出行', count: 20, id: 5 },
 ]
 
 const mockServices: ServiceItem[] = [
   {
-    id: '1',
+    id: 1,
     code: 'FW0001',
+    category_id: 1,
+    service_type: 1,
     name: '上门助浴服务',
-    categoryId: 'c1',
-    categoryName: '生活照护',
-    mode: '上门',
+    name_en: '',
+    description: '专业护理人员上门提供安全、舒适的助浴服务',
     price: 168,
     unit: '次',
-    institutionCount: 12,
-    orderCount: 326,
-    status: 'on',
-    description: '专业护理人员上门提供安全、舒适的助浴服务',
+    duration: 60,
+    status: 1,
+    vital_sign: [],
+    is_consumable_supported: true,
+    packages: [],
+    service_process: '',
+    cover_url: ''
   },
   {
-    id: '2',
+    id: 2,
     code: 'FW0002',
     name: '居家护理服务',
-    categoryId: 'c1',
-    categoryName: '生活照护',
-    mode: '上门',
-    price: 198,
+    category_id: 1,
+    service_type: 1,
+    name_en: '',
+    description: '专业护理人员上门提供安全、舒适的助浴服务',
+    price: 168,
     unit: '次',
-    institutionCount: 9,
-    orderCount: 156,
-    status: 'on',
+    duration: 60,
+    status: 1,
+    vital_sign: [],
+    is_consumable_supported: true,
+    packages: [],
+    service_process: '',
+    cover_url: ''
   },
   {
-    id: '3',
+    id: 3,
     code: 'FW0003',
     name: '术后康复训练',
-    categoryId: 'c2',
-    categoryName: '康复护理',
-    mode: '到店',
-    price: 128,
+    category_id: 2,
+    service_type: 2,
+    name_en: '',
+    description: '专业护理人员上门提供安全、舒适的助浴服务',
+    price: 168,
     unit: '次',
-    institutionCount: 7,
-    orderCount: 98,
-    status: 'on',
+    duration: 60,
+    service_process: '',
+    cover_url: '',
+    status: 9,
+    vital_sign: [],
+    is_consumable_supported: true,
+    packages: []
   },
   {
-    id: '4',
+    id: 4,
     code: 'FW0004',
     name: '慢病健康随访',
-    categoryId: 'c3',
-    categoryName: '健康管理',
-    mode: '上门',
-    price: 69,
+    category_id: 3,
+    service_type: 1,
+    name_en: '',
+    description: '专业护理人员上门提供安全、舒适的助浴服务',
+    price: 168,
     unit: '次',
-    institutionCount: 15,
-    orderCount: 288,
-    status: 'on',
+    duration: 60,
+    status: 1,
+    vital_sign: [],
+    is_consumable_supported: true,
+    packages: [],
+    service_process: '',
+    cover_url: ''
   },
   {
-    id: '5',
+    id: 5,
     code: 'FW0005',
     name: '居家安全评估',
-    categoryId: 'c4',
-    categoryName: '居家安全',
-    mode: '上门',
-    price: 99,
+    category_id: 4,
+    service_type: 1,
+    name_en: '',
+    description: '专业护理人员上门提供安全、舒适的助浴服务',
+    price: 168,
     unit: '次',
-    institutionCount: 5,
-    orderCount: 36,
-    status: 'draft',
+    duration: 60,
+    status: 9,
+    vital_sign: [],
+    is_consumable_supported: true,
+    packages: [],
+    service_process: '',
+    cover_url: ''
   },
   {
-    id: '6',
+    id: 6,
     code: 'FW0006',
     name: '全程陪诊服务',
-    categoryId: 'c5',
-    categoryName: '陪诊出行',
-    mode: '陪同',
-    price: 268,
+    category_id: 5,
+    service_type: 2,
+    name_en: '',
+    description: '专业护理人员上门提供安全、舒适的助浴服务',
+    price: 168,
     unit: '次',
-    institutionCount: 8,
-    orderCount: 64,
-    status: 'off',
+    duration: 60,
+    status: 1,
+    vital_sign: [],
+    is_consumable_supported: true,
+    packages: [],
+    service_process: '',
+    cover_url: ''
   },
 ]
 
-const updateTimeMap: Record<string, string> = {
-  '1': '08-10 16:20',
-  '2': '08-09 11:05',
-  '3': '08-08 09:30',
-  '4': '08-07 15:42',
-  '5': '08-06 10:18',
-  '6': '08-02 14:36',
-}
-
 interface ServiceFilters {
   keyword: string
-  category: string
-  mode: ServiceMode | 'all'
-  status: ServiceStatus | 'all'
+  category: number
+  type: number | null
+  status: number | null
 }
 
 /** 上停用目标：action=offline 走「停用原因」流程，action=online 走确认启用流程 */
 interface StatusTarget {
-  ids: string[]
+  ids: number[]
   title: string
   code?: string
   action: 'online' | 'offline'
@@ -145,14 +165,14 @@ export default function ServicePoolList() {
   const { message, modal } = App.useApp()
   const [data, setData] = useState(mockServices)
   const [keyword, setKeyword] = useState('')
-  const [category, setCategory] = useState('全部服务')
-  const [mode, setMode] = useState<ServiceMode | 'all'>('all')
-  const [status, setStatus] = useState<ServiceStatus | 'all'>('all')
+  const [category, setCategory] = useState(0)
+  const [type, setType] = useState<number | null>(null)
+  const [status, setStatus] = useState<number | null>(null)
   const [applied, setApplied] = useState<ServiceFilters>({
     keyword: '',
-    category: '全部服务',
-    mode: 'all',
-    status: 'all',
+    category: 0,
+    type: null,
+    status: null,
   })
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
   const [statusTarget, setStatusTarget] = useState<StatusTarget | null>(null)
@@ -166,10 +186,10 @@ export default function ServicePoolList() {
         !applied.keyword ||
         item.name.includes(applied.keyword) ||
         item.code.toLowerCase().includes(applied.keyword.toLowerCase())
-      const categoryHit = applied.category === '全部服务' || item.categoryName === applied.category
-      const modeHit = applied.mode === 'all' || item.mode === applied.mode
-      const statusHit = applied.status === 'all' || item.status === applied.status
-      return keywordHit && categoryHit && modeHit && statusHit
+      const categoryHit = applied.category === 0 || item.category_id === applied.category
+      const typeHit = !applied.type || item.service_type === applied.type
+      const statusHit = !applied.status || item.status === applied.status
+      return keywordHit && categoryHit && typeHit && statusHit
     })
   }, [applied, data])
 
@@ -180,26 +200,30 @@ export default function ServicePoolList() {
     { key: 'off', label: '已停用', value: 7, note: '不可新增使用' },
   ]
 
-  const applyFilters = (next?: Partial<ServiceFilters>) => {
+  /** 应用到过滤：把当前输入的筛选条件一次性生效（重置到第 1 页） */
+  const applyFilters = () => {
+    setPage(1)
     setApplied({
-      keyword: (next?.keyword ?? keyword).trim(),
-      category: next?.category ?? category,
-      mode: next?.mode ?? mode,
-      status: next?.status ?? status,
+      keyword: keyword.trim(),
+      category: category ?? 0,
+      type: type ?? null,
+      status: status ?? null,
     })
   }
 
   const handleReset = () => {
     setKeyword('')
-    setCategory('全部服务')
-    setMode('all')
-    setStatus('all')
-    setApplied({ keyword: '', category: '全部服务', mode: 'all', status: 'all' })
+    setCategory(0)
+    setType(null)
+    setStatus(null)
+    setPage(1)
+    setApplied({ keyword: '', category: 0, type: null, status: null })
   }
 
-  const handleCategoryClick = (name: string) => {
-    setCategory(name)
-    applyFilters({ category: name })
+  /** 点击左侧分类仅更新选中态（与顶部 Select 联动），由「查询」应用过滤 */
+  const handleCategoryClick = (id?: number) => {
+    setCategory(id ?? 0)
+    setPage(1)
   }
 
   /* 勾选服务的 status 一致性：一致才可批量启用/停用 */
@@ -215,7 +239,7 @@ export default function ServicePoolList() {
   const batchEnabled = selectedItems.length > 0 && selectedStatuses.size === 1
   /** 状态一致时的批量方向：已启用 → 批量停用；草稿/已停用 → 批量启用 */
   const batchAction: 'online' | 'offline' =
-    selectedItems[0]?.status === 'on' ? 'offline' : 'online'
+    selectedItems[0]?.status === 1 ? 'offline' : 'online'
   const batchTooltip = !selectedItems.length
     ? '请先勾选服务项目'
     : selectedStatuses.size > 1
@@ -258,7 +282,7 @@ export default function ServicePoolList() {
       cancelText: '取消',
       onOk: () => {
         setData((prev) =>
-          prev.map((item) => (item.id === record.id ? { ...item, status: 'on' } : item)),
+          prev.map((item) => (item.id === record.id ? { ...item, status: 1 } : item)),
         )
         message.success(`${record.name} 已启用`)
       },
@@ -273,12 +297,12 @@ export default function ServicePoolList() {
         return
       }
       setData((prev) =>
-        prev.map((item) => (statusTarget.ids.includes(item.id) ? { ...item, status: 'off' } : item)),
+        prev.map((item) => (statusTarget.ids.includes(item.id) ? { ...item, status: 9 } : item)),
       )
       message.success(`已停用 ${statusTarget.ids.length} 项服务`)
     } else {
       setData((prev) =>
-        prev.map((item) => (statusTarget.ids.includes(item.id) ? { ...item, status: 'on' } : item)),
+        prev.map((item) => (statusTarget.ids.includes(item.id) ? { ...item, status: 1 } : item)),
       )
       message.success(`已启用 ${statusTarget.ids.length} 项服务`)
     }
@@ -296,44 +320,44 @@ export default function ServicePoolList() {
             <i>{record.name.slice(0, 1)}</i>
             <div>
               <strong>{record.name}</strong>
-              <span>{record.categoryName} · {record.code}</span>
+              <span>{categories.find(v => v.id === record.category_id)?.name} · {record.code}</span>
             </div>
           </div>
         ),
       },
       {
         title: '服务方式',
-        dataIndex: 'mode',
-        key: 'mode',
+        dataIndex: 'service_type',
+        key: 'service_type',
         width: 110,
-        render: (value: ServiceMode) => <span className={`mode-pill mode-pill--${modeClass[value]}`}>{value}</span>,
+        render: (value: number) => <Tag variant='outlined' color={typeColor[value]}>{typeText[value]}</Tag>
       },
       {
         title: '集团定价',
         dataIndex: 'price',
         key: 'price',
         width: 110,
-        render: (value: number) => `¥${value} / 次`,
+        render: (value: number, record) => `¥${value} / ${record.unit}`,
       },
-      {
-        title: '使用机构',
-        dataIndex: 'institutionCount',
-        key: 'institutionCount',
-        width: 100,
-        render: (value: number) => `${value} 家`,
-      },
-      {
-        title: '更新时间',
-        key: 'updatedAt',
-        width: 120,
-        render: (_, record) => updateTimeMap[record.id] ?? '08-01 10:00',
-      },
+      // {
+      //   title: '使用机构',
+      //   dataIndex: 'institutionCount',
+      //   key: 'institutionCount',
+      //   width: 100,
+      //   render: (value: number) => `${value} 家`,
+      // },
+      // {
+      //   title: '更新时间',
+      //   key: 'updatedAt',
+      //   width: 120,
+      //   render: (_, record) => updateTimeMap[record.id] ?? '08-01 10:00',
+      // },
       {
         title: '状态',
         dataIndex: 'status',
         key: 'status',
         width: 100,
-        render: (value: ServiceStatus) => <span className={`pool-status pool-status--${value}`}>{statusText[value]}</span>,
+        render: (value: number) => <span className={`status-btn status--${value === 1 ? 'success' : 'danger'}`}>{statusText[value]}</span>,
       },
       {
         title: '操作',
@@ -344,8 +368,8 @@ export default function ServicePoolList() {
             <Button type="link" size="small" onClick={() => navigate(`/service/list/detail/${record.id}`)}>
               编辑
             </Button>
-            {record.status === 'on' ? (
-              <Button type="link" size="small" onClick={() => openOfflineModal(record)}>
+            {record.status === 1 ? (
+              <Button type="link" size="small" danger onClick={() => openOfflineModal(record)}>
                 停用
               </Button>
             ) : (
@@ -402,44 +426,39 @@ export default function ServicePoolList() {
         <Card variant="borderless" className="filter-bar service-pool__filter">
           <Input
             allowClear
-            placeholder="搜索服务名称、项目编码"
+            placeholder="搜索服务名称、编码"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             onPressEnter={() => applyFilters()}
           />
           <Select
+            allowClear
             value={category}
-            onChange={(value) => {
-              setCategory(value)
-              applyFilters({ category: value })
-            }}
-            options={categories.map((item) => ({ label: item.name === '全部服务' ? '全部服务分类' : item.name, value: item.name }))}
+            placeholder="服务类型"
+            onChange={(value) => setCategory(value ?? 0)}
+            options={categories
+              .filter((item) => item.id != null)
+              .map((item) => ({ label: item.name, value: item.id as number }))}
           />
           <Select
-            value={mode}
-            onChange={(value) => {
-              setMode(value)
-              applyFilters({ mode: value })
-            }}
-            options={[
-              { label: '全部服务方式', value: 'all' },
-              { label: '上门', value: '上门' },
-              { label: '到店', value: '到店' },
-              { label: '陪同', value: '陪同' },
-            ]}
+            allowClear
+            value={type}
+            placeholder="服务方式"
+            onChange={(value) => setType(value ?? null)}
+            options={Object.entries(typeText).map(([key, label]) => ({
+              label,
+              value: Number(key),
+            }))}
           />
           <Select
+            allowClear
             value={status}
-            onChange={(value) => {
-              setStatus(value)
-              applyFilters({ status: value })
-            }}
-            options={[
-              { label: '全部定义状态', value: 'all' },
-              { label: '已启用', value: 'on' },
-              { label: '草稿', value: 'draft' },
-              { label: '已停用', value: 'off' },
-            ]}
+            placeholder="服务状态"
+            onChange={(value) => setStatus(value ?? null)}
+            options={Object.entries(statusText).map(([key, label]) => ({
+              label,
+              value: Number(key),
+            }))}
           />
           <Button onClick={handleReset}>重置</Button>
           <Button type="primary" onClick={() => applyFilters()}>查询</Button>
@@ -459,8 +478,8 @@ export default function ServicePoolList() {
                 <button
                   type="button"
                   key={item.name}
-                  className={category === item.name ? 'is-active' : ''}
-                  onClick={() => handleCategoryClick(item.name)}
+                  className={category === item.id ? 'is-active' : ''}
+                  onClick={() => handleCategoryClick(item.id)}
                 >
                   <span>{item.name}</span>
                   <em>{item.count}</em>
@@ -499,7 +518,7 @@ export default function ServicePoolList() {
               size="small"
               rowKey="id"
               columns={columns}
-              dataSource={filteredData}
+              dataSource={filteredData.slice((page - 1) * pageSize, page * pageSize)}
               rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
               pagination={{
                 current: page,

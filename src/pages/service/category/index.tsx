@@ -9,7 +9,7 @@ import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import type { ServiceCategory } from '@/api/modules/service'
-import './category.less'
+import './index.less'
 
 const mockCategories: ServiceCategory[] = [
   { id: 'c1', code: 'FL001', name: '生活照护', serviceCount: 18, sort: 1, status: 'enabled' },

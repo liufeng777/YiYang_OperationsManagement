@@ -65,7 +65,6 @@ export default function ArticleEdit() {
       <Form
         form={form}
         layout="vertical"
-        requiredMark={false}
         initialValues={{
           title: isEdit ? '秋季心脑血管养护：长者要注意这5件事' : '',
           category: '健康科普',
@@ -84,7 +83,7 @@ export default function ArticleEdit() {
             <div className="edit-field">
               <Form.Item
                 name="title"
-                label={<span>文章标题 <i>*</i></span>}
+                label={<span>文章标题</span>}
                 rules={[{ required: true, message: '请输入文章标题' }]}
               >
                 <Input placeholder="请输入科普文章标题，建议不超过30字" />
@@ -94,7 +93,7 @@ export default function ArticleEdit() {
               <div className="edit-field">
                 <Form.Item
                   name="category"
-                  label={<span>内容分类 <i>*</i></span>}
+                  label={<span>内容分类</span>}
                   rules={[{ required: true, message: '请选择内容分类' }]}
                 >
                   <Select
@@ -111,7 +110,7 @@ export default function ArticleEdit() {
               <div className="edit-field">
                 <Form.Item
                   name="source"
-                  label={<span>内容来源 <i>*</i></span>}
+                  label={<span>内容来源</span>}
                   rules={[{ required: true, message: '请输入内容来源' }]}
                 >
                   <Input />
@@ -120,7 +119,7 @@ export default function ArticleEdit() {
               <div className="edit-field">
                 <Form.Item
                   name="author"
-                  label={<span>作者 <i>*</i></span>}
+                  label={<span>作者</span>}
                   rules={[{ required: true, message: '请输入作者' }]}
                 >
                   <Input placeholder="请输入作者" />
@@ -128,7 +127,7 @@ export default function ArticleEdit() {
               </div>
               <div className="edit-field">
                 <label>
-                  列表封面 <i>*</i>
+                  列表封面
                 </label>
                 <Upload accept="image/*" showUploadList={false} beforeUpload={pickImage(setCoverUrl)}>
                   <Button className="edit-upload-btn">
@@ -143,7 +142,7 @@ export default function ArticleEdit() {
             <div className="edit-field">
               <Form.Item
                 name="summary"
-                label={<span>内容摘要 <i>*</i></span>}
+                label={<span>内容摘要</span>}
                 rules={[{ required: true, message: '请输入内容摘要' }]}
               >
                 <Input.TextArea

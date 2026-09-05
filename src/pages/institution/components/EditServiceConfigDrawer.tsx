@@ -95,7 +95,7 @@ export default function EditServiceConfigDrawer({
       }
     >
       {service && (
-        <Form form={form} layout="vertical" requiredMark={false} className="edit-config">
+        <Form form={form} layout="vertical" className="edit-config">
           <div className="edit-config__service">
             <div>
               <strong>{service.name}</strong>

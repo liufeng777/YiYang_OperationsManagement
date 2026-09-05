@@ -11,9 +11,11 @@ import type { ColumnsType } from 'antd/es/table'
 import { ArrowRightOutlined, BankOutlined, SearchOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import type { ServiceMode } from '@/api/modules/service'
-import './list.less'
-import './institution.less'
+import '../list.less'
+import './index.less'
+
+/** 服务方式展示文案（页面本地 mock 类型，DTO 已改为 service_type 数字枚举） */
+type ServiceMode = '上门' | '到店' | '陪同'
 
 /** 预约状态：1 可预约 / 2 待启用 / 3 已停用 */
 type BookingStatus = 1 | 2 | 3

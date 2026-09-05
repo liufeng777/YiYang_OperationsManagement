@@ -279,6 +279,11 @@ export const routes: RouteConfig[] = [
         meta: { title: '新建协议版本', hideInMenu: true },
         component: lazy(() => import('@/pages/system/Agreement/agreement-edit')),
       },
+      {
+        path: 'rich-text-demo',
+        meta: { title: '富文本编辑器 Demo', hideInMenu: true },
+        component: lazy(() => import('@/pages/demo/rich-text/index')),
+      },
     ],
   },
 ]
