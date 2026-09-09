@@ -8,6 +8,7 @@ import { App, Button, Card, Form, Input, Upload } from 'antd'
 import { ArrowLeftOutlined, CheckOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
+import RichDetailEditor from '@/components/RichDetailEditor'
 import ImageSortGrid from '@/components/ImageSortGrid'
 import type { SortableImage } from '@/components/ImageSortGrid'
 import type { InstitutionType } from '@/api/modules/institution'
@@ -37,6 +38,8 @@ export default function InstitutionCreate() {
   const [form] = Form.useForm<InstitutionCreateValues>()
   const [images, setImages] = useState<SortableImage[]>([])
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  /** 图文详情（ProseMirror JSON 字符串），随提交写入 description */
+  const [richDesc, setRichDesc] = useState('')
 
   /** 封面选择：拦截上传，本地预览（接后端后替换为上传接口） */
   const handleCoverUpload = (file: File) => {
@@ -71,7 +74,7 @@ export default function InstitutionCreate() {
       title="新增机构"
       description="登记机构基础信息与患者端展示介绍，保存后进入机构配置页"
       extra={
-        <Button icon={<ArrowLeftOutlined />} onClick={handleCancel}>
+        <Button color="primary" variant='outlined' icon={<ArrowLeftOutlined />} onClick={handleCancel}>
           返回机构列表
         </Button>
       }
@@ -103,16 +106,13 @@ export default function InstitutionCreate() {
                   placeholder="例如：幸福里健康驿站 · 专业照护，安心颐养"
                 />
               </Form.Item>
-              <Form.Item name="description" label="机构介绍">
-                <Input.TextArea
-                  rows={4}
-                  maxLength={255}
-                  showCount
-                  placeholder="介绍机构服务能力、团队与环境，255 字以内"
-                />
-              </Form.Item>
-              <div className="institution-create__images">
-                <span className="institution-create__images-label">机构封面</span>
+              <div className="institution-create__images" style={{marginBottom: 16}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                  <span className="institution-create__images-label">
+                    机构封面
+                  </span>
+                  <p className="institution-create__images-tip">建议尺寸 750×420，展示于患者端机构详情页顶部。</p>
+                </div>
                 <Upload
                   listType="picture-card"
                   accept="image/*"
@@ -132,15 +132,16 @@ export default function InstitutionCreate() {
                     </div>
                   )}
                 </Upload>
-                <p className="institution-create__images-tip">建议尺寸 750×420，展示于患者端机构详情页顶部。</p>
               </div>
-              <div className="institution-create__images">
+              <RichDetailEditor label="图文详情" value={richDesc} onChange={setRichDesc} />
+              
+              {/* <div className="institution-create__images">
                 <span className="institution-create__images-label">患者端图片</span>
                 <ImageSortGrid images={images} onChange={setImages} addText="添加图片" />
                 <p className="institution-create__images-tip">
                   建议尺寸 750×420，可拖拽排序；患者端按图片顺序展示。
                 </p>
-              </div>
+              </div> */}
             </div>
           </Card>
 

@@ -43,12 +43,14 @@ export interface ServiceItem {
 
 /** 服务分类 */
 export interface ServiceCategory {
-  id: string
+  id: number
   code: string
   name: string
-  serviceCount: number
-  sort: number
-  status: 'enabled' | 'disabled'
+  name_en?: string
+  brief: string // 简介
+  brief_en: string
+  sort_order?: number
+  status: number // 1-启用 9-禁用
 }
 
 /** 服务接入机构 */

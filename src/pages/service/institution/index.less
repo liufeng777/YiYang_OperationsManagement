@@ -6,9 +6,6 @@
  */
 
 .inst-service {
-  &__filter {
-    margin-top: @spacing-md;
-  }
 
   &__main {
     display: grid;
@@ -155,22 +152,6 @@
         .text-auxiliary();
       }
     }
-  }
-
-  /* ===== 预约状态胶囊（1 可预约 / 2 待启用 / 3 已停用） ===== */
-  .pool-status--1 {
-    color: @color-primary;
-    background: @color-primary-light;
-  }
-
-  .pool-status--2 {
-    color: @color-text-secondary;
-    background: @color-bg-active;
-  }
-
-  .pool-status--3 {
-    color: @color-danger;
-    background: fade(@color-danger, 12%);
   }
 }
 

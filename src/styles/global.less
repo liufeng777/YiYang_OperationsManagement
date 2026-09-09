@@ -133,3 +133,24 @@ body {
   color: @color-text-secondary;
   background: @color-bg-active;
 }
+
+.ant-form-item {
+  .ant-form-item-label {
+    padding-bottom: @spacing-2xs;
+
+    > label {
+      height: auto;
+      .text-label();
+      color: @color-text-primary;
+    }
+  }
+
+  .ant-form-item-extra {
+    .text-auxiliary();
+  }
+  .ant-form-item-explain-error {
+    margin-top: 2px;
+    font-size: @font-size-auxiliary;
+    line-height: @line-height-auxiliary;
+  }
+}

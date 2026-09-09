@@ -55,7 +55,7 @@ export default function InstitutionBaseFields() {
       <div className="institution-form__grid institution-form__grid--3">
         <Form.Item
           name="name"
-          label={<span>机构名称 <i>*</i></span>}
+          label={<span>机构名称</span>}
           rules={[{ required: true, message: '请输入机构名称' }]}
         >
           <Input maxLength={32} placeholder="例如：幸福里健康驿站" />
@@ -65,7 +65,7 @@ export default function InstitutionBaseFields() {
         </Form.Item>
         <Form.Item
           name="type"
-          label={<span>机构类型 <i>*</i></span>}
+          label={<span>机构类型</span>}
           rules={[{ required: true, message: '请选择机构类型' }]}
         >
           <Select placeholder="请选择机构类型" options={institutionTypeOptions} />
@@ -74,14 +74,14 @@ export default function InstitutionBaseFields() {
       <div className="institution-form__grid institution-form__grid--3">
         <Form.Item
           name="region"
-          label={<span>所在地区 <i>*</i></span>}
+          label={<span>所在地区</span>}
           rules={[{ required: true, message: '请选择省 / 市 / 区' }]}
         >
           <Cascader options={regionOptions} placeholder="省 / 市 / 区" />
         </Form.Item>
         <Form.Item
           name="address"
-          label={<span>详细地址 <i>*</i></span>}
+          label={<span>详细地址</span>}
           rules={[{ required: true, message: '请输入详细地址' }]}
         >
           <Input maxLength={64} placeholder="街道、路名与门牌号" />
@@ -97,7 +97,7 @@ export default function InstitutionBaseFields() {
       <div className="institution-form__grid institution-form__grid--3">
         <Form.Item
           name="contact_phone"
-          label={<span>联系电话 <i>*</i></span>}
+          label={<span>联系电话</span>}
           rules={[{ required: true, message: '请输入联系电话' }]}
         >
           <Input maxLength={20} placeholder="患者咨询使用的联系电话" />

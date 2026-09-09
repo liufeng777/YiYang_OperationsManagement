@@ -424,7 +424,7 @@ export default function ServiceEditorPage() {
       title={pageTitle}
       description="集团统一定义一次，机构选择后继承基础信息与价格；编辑时复用本页面"
       extra={
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/service')}>
+        <Button color="primary" variant="outlined" icon={<ArrowLeftOutlined />} onClick={() => navigate('/service/list')}>
           返回服务池
         </Button>
       }
@@ -703,7 +703,7 @@ export default function ServiceEditorPage() {
                     </Button>
                     <p className="richtext-entry__status">
                       {descriptionInfo.filled
-                        ? `详情图文已填写（${descriptionInfo.blocks} 个内容块），可再次编辑精细排版。`
+                        ? `详情图文已填写，可再次编辑精细排版。`
                         : '尚未填写。点击「编辑详情图文」用富文本编排详情图片与服务内容，完成后随服务保存。'}
                     </p>
                   </div>

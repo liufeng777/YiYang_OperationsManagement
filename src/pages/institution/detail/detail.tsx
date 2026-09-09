@@ -137,7 +137,7 @@ export default function InstitutionDetailPage() {
   const queryTab = searchParams.get('tab')
   const activeTab: DetailTab = detailTabs.some((item) => item.key === queryTab)
     ? (queryTab as DetailTab)
-    : 'services'
+    : 'base'
 
   // 服务列表数据提升到页面层持有，切换 Tab 不丢失；UI 状态在各 Tab 组件内
   const [services, setServices] = useState<InstitutionService[]>(initialServices)
@@ -160,7 +160,7 @@ export default function InstitutionDetailPage() {
       title={detail.name}
       description="编辑机构基础资料、配置服务项目与患者端展示介绍"
       extra={
-        <Button icon={<ArrowLeftOutlined />} onClick={() => {
+        <Button color="primary" variant='outlined' icon={<ArrowLeftOutlined />} onClick={() => {
           navigate(`/institution`)
         }}>
           返回机构列表
@@ -181,12 +181,11 @@ export default function InstitutionDetailPage() {
             <span>联系电话</span>
             <strong>{detail.contact_phone}</strong>
           </div>
-          <Tag
-            className="institution-summary__status"
-            color={detail.status === 1 ? 'green' : 'red'}
+          <span
+            className={`status-btn ${detail.status === 1 ? 'status--success' : 'status--danger'}`}
           >
             {detail.status === 1 ? '启用' : '停用'}
-          </Tag>
+          </span>
         </Card>
 
         <Card variant="borderless" className="detail-tabs-card">

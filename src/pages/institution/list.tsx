@@ -513,7 +513,7 @@ export default function InstitutionList() {
                   <span>{statusTarget.code ?? `${statusTarget.ids.length} 项`}</span>
                 </div>
                 <div className="offline-modal__reason">
-                  <label>停用原因 <i>*</i></label>
+                  <label>停用原因</label>
                   <Input.TextArea
                     rows={4}
                     placeholder="请填写停用原因，至少 5 个字"

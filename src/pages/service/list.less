@@ -74,49 +74,6 @@
       display: flex;
       flex-direction: column;
       gap: @spacing-2xs;
-
-      button {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        height: 38px;
-        padding: 0 @spacing-sm;
-        color: @color-text-secondary;
-        background: transparent;
-        border: 0;
-        border-radius: @radius-sm;
-        cursor: pointer;
-        .text-body();
-
-        em {
-          font-style: normal;
-          .text-auxiliary();
-        }
-
-        &::before {
-          width: 6px;
-          height: 6px;
-          margin-right: @spacing-xs;
-          border-radius: @radius-full;
-          background: @color-border;
-          content: '';
-        }
-
-        span {
-          flex: 1;
-          text-align: left;
-        }
-
-        &.is-active {
-          color: @color-primary;
-          background: @color-primary-light;
-          font-weight: @font-weight-body-medium;
-
-          &::before {
-            background: @color-primary;
-          }
-        }
-      }
     }
 
     &__tip {
@@ -304,6 +261,70 @@
     &__metrics,
     &__main {
       grid-template-columns: 1fr;
+    }
+  }
+}
+
+/* 服务分类行（全部 + 可编辑业务分类，右侧 ⋯ 菜单） */
+.pool-category__list {
+  .pool-category__level,
+  .pool-category__row {
+    display: flex;
+    align-items: center;
+    min-height: 38px;
+    padding: 0 @spacing-sm;
+    color: @color-text-secondary;
+    border: 0;
+    border-radius: @radius-sm;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    .text-body();
+
+    &:hover {
+      color: @color-primary;
+      background: fade(@color-primary, 6%);
+    }
+
+    &.is-active {
+      color: @color-primary;
+      font-weight: @font-weight-body-medium;
+      background: @color-primary-light;
+    }
+  }
+
+  .pool-category__level {
+    justify-content: flex-start;
+  }
+
+  .pool-category__row {
+    justify-content: space-between;
+    gap: @spacing-sm;
+
+    .pool-category__name {
+      display: inline-flex;
+      align-items: center;
+      gap: @spacing-2xs;
+      overflow: hidden;
+      white-space: nowrap;
+
+      .pool-category__disabled {
+        font-style: normal;
+        font-size: @font-size-auxiliary;
+        color: @color-danger;
+      }
+    }
+  }
+
+  .pool-category__more {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    color: @color-text-secondary;
+
+    &:hover,
+    &:focus {
+      color: @color-primary;
+      background: @color-bg-active;
     }
   }
 }

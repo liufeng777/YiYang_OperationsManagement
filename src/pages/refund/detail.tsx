@@ -373,7 +373,7 @@ export default function RefundDetail() {
             驳回后退款申请关闭，工单保持原履约状态；驳回原因将同步给用户。
           </p>
           <label>
-            驳回原因 <i>*</i>
+            驳回原因
           </label>
           <Input.TextArea
             rows={4}

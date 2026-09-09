@@ -13,31 +13,9 @@ import type { ApiPageParams, ApiPageResult, BatchResult, CommonStatus } from '@/
 
 /** 机构已添加服务 */
 export interface InstitutionService {
-  id: string
-  /** 服务编码：FW0001 */
-  code: string
-  name: string
-  category: string
-  /** 服务方式：上门 / 到店 */
-  mode: '上门' | '到店'
-  /** 集团定价（元/次） */
-  price: number
-  /** 配置来源 */
-  configSource: '机构默认' | '单项调整'
-  /** 线上履约范围 */
-  range: string
-  status: '可预约' | '待上架' | '已下架'
-}
-
-/** 集团服务池项目 */
-export interface ServicePoolItem {
-  id: string
-  code: string
-  name: string
-  category: string
-  mode: '上门' | '到店'
-  price: number
-  status: '可预约' | '待上架' | '已下架'
+  institution_id: number
+  service_id: number
+  status: number // 1-上架 9-下架
 }
 
 /* ------------------------------------------------------------------ */
@@ -54,7 +32,7 @@ export interface InstitutionItem {
   code: string
   address: string
   brief: string // 患者端展示标题 varchar(64)，如：幸福颐养护理院 · 专业照护，安心颐养
-  description: string // 机构介绍 varchar(255)
+  description: string // 机构介绍
   name: string
   name_en: string | null
   type: InstitutionType
@@ -64,7 +42,7 @@ export interface InstitutionItem {
   /** 服务半径 km，NULL=不限 */
   service_radius_km: number | null
   cover_image: string; // 封面图片
-  images: string[] // 环境照片
+  // images: string[] // 环境照片
   contact_phone: string
   manager_name: string
   manager_phone: string

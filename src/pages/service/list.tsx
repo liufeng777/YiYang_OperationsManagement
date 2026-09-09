@@ -5,12 +5,15 @@
  */
 import { useMemo, useState } from 'react'
 import type { Key } from 'react'
-import { App, Button, Card, Input, Modal, Select, Table, Tag, Tooltip } from 'antd'
+import { App, Button, Card, Dropdown, Input, Modal, Select, Table, Tag, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { PlusOutlined } from '@ant-design/icons'
+import { DeleteOutlined, EditOutlined, EllipsisOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import type { ServiceItem } from '@/api/modules/service'
+import type { MenuProps } from 'antd'
+import type { ServiceCategory, ServiceItem } from '@/api/modules/service'
+import ServiceCategoryEditor, { type ServiceCategoryFill } from './components/ServiceCategoryEditor';
+import StatusTargetModal from './components/StatusTargetModal'
 import './list.less'
 
 export const statusText: Record<number, string> = {
@@ -23,15 +26,14 @@ export const typeText: Record<number, string> = {
   2: '到店',
 }
 
-const typeColor = ['', 'geekblue', 'purple']
+export const typeColor = ['', 'geekblue', 'purple']
 
-export const categories = [
-  { name: '全部服务', count: 128, id: 0 },
-  { name: '生活照护', count: 38, id: 1},
-  { name: '康复护理', count: 30, id: 2 },
-  { name: '健康管理', count: 24, id: 3 },
-  { name: '居家安全', count: 16, id: 4 },
-  { name: '陪诊出行', count: 20, id: 5 },
+export const categories: ServiceCategory[] = [
+  { id: 1, code: 'life_care', name: '生活照护', name_en: 'Daily Care', brief: '生活起居与日常照护服务', brief_en: '', sort_order: 1, status: 1 },
+  { id: 2, code: 'rehab_nursing', name: '康复护理', brief: '康复训练与术后照护服务', brief_en: '', sort_order: 2, status: 9 },
+  { id: 3, code: 'health_manage', name: '健康管理', brief: '健康评估、随访与慢病管理服务', brief_en: '', sort_order: 3, status: 9 },
+  { id: 4, code: 'home_safety', name: '居家安全', brief: '居家安全评估与适老化环境改造', brief_en: '', sort_order: 4, status: 1 },
+  { id: 5, code: 'companion', name: '陪诊出行', brief: '就医陪诊与出行陪伴服务', brief_en: '', sort_order: 5, status: 9 },
 ]
 
 const mockServices: ServiceItem[] = [
@@ -64,7 +66,7 @@ const mockServices: ServiceItem[] = [
     price: 168,
     unit: '次',
     duration: 60,
-    status: 1,
+    status: 9,
     vital_sign: [],
     is_consumable_supported: true,
     packages: [],
@@ -147,13 +149,13 @@ const mockServices: ServiceItem[] = [
 
 interface ServiceFilters {
   keyword: string
-  category: number
+  category: number | null
   type: number | null
   status: number | null
 }
 
 /** 上停用目标：action=offline 走「停用原因」流程，action=online 走确认启用流程 */
-interface StatusTarget {
+export interface StatusTarget {
   ids: number[]
   title: string
   code?: string
@@ -165,20 +167,23 @@ export default function ServicePoolList() {
   const { message, modal } = App.useApp()
   const [data, setData] = useState(mockServices)
   const [keyword, setKeyword] = useState('')
-  const [category, setCategory] = useState(0)
+  const [category, setCategory] = useState<number | null>(null)
   const [type, setType] = useState<number | null>(null)
   const [status, setStatus] = useState<number | null>(null)
   const [applied, setApplied] = useState<ServiceFilters>({
     keyword: '',
-    category: 0,
+    category: null,
     type: null,
     status: null,
   })
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
   const [statusTarget, setStatusTarget] = useState<StatusTarget | null>(null)
-  const [offlineReason, setOfflineReason] = useState('')
   const [page, setPage] = useState(1)
   const pageSize = 10
+  /** 可编辑的服务分类（本地 mock，CRUD 落在此列表） */
+  const [catList, setCatList] = useState<ServiceCategory[]>(categories)
+  const [categoryEditorOpen, setCategoryEditorOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null)
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
@@ -186,7 +191,7 @@ export default function ServicePoolList() {
         !applied.keyword ||
         item.name.includes(applied.keyword) ||
         item.code.toLowerCase().includes(applied.keyword.toLowerCase())
-      const categoryHit = applied.category === 0 || item.category_id === applied.category
+      const categoryHit = !applied.category || item.category_id === applied.category
       const typeHit = !applied.type || item.service_type === applied.type
       const statusHit = !applied.status || item.status === applied.status
       return keywordHit && categoryHit && typeHit && statusHit
@@ -205,7 +210,7 @@ export default function ServicePoolList() {
     setPage(1)
     setApplied({
       keyword: keyword.trim(),
-      category: category ?? 0,
+      category: category ?? null,
       type: type ?? null,
       status: status ?? null,
     })
@@ -213,18 +218,82 @@ export default function ServicePoolList() {
 
   const handleReset = () => {
     setKeyword('')
-    setCategory(0)
+    setCategory(null)
     setType(null)
     setStatus(null)
     setPage(1)
-    setApplied({ keyword: '', category: 0, type: null, status: null })
+    setApplied({ keyword: '', category: null, type: null, status: null })
   }
 
   /** 点击左侧分类仅更新选中态（与顶部 Select 联动），由「查询」应用过滤 */
-  const handleCategoryClick = (id?: number) => {
-    setCategory(id ?? 0)
+  const handleCategoryClick = (id?: number | null) => {
+    setCategory(id ?? null)
     setPage(1)
   }
+
+  /* ---- 服务分类：新增 / 编辑 / 删除 ---- */
+  const openCategoryCreate = () => {
+    setEditingCategory(null)
+    setCategoryEditorOpen(true)
+  }
+  const openCategoryEdit = (item: ServiceCategory) => {
+    setEditingCategory(item)
+    setCategoryEditorOpen(true)
+  }
+  /** 表单值规范化为 ServiceCategory（可选英文兜底为空串），经 onSaved 上抛 */
+  const handleCategorySaved = (values: ServiceCategoryFill) => {
+    const normalized: ServiceCategory = {
+      id: editingCategory ? editingCategory.id : Date.now(),
+      name: values.name,
+      name_en: values.name_en ?? '',
+      code: values.code,
+      brief: values.brief,
+      brief_en: values.brief_en ?? '',
+      sort_order: values.sort_order,
+      status: values.status,
+    }
+    setCatList((prev) => {
+      if (editingCategory) {
+        return prev.map((c) => (c.id === editingCategory.id ? normalized : c))
+      }
+      return [...prev, normalized]
+    })
+  }
+  const confirmCategoryDelete = (item: ServiceCategory) => {
+    modal.confirm({
+      title: '确认删除分类',
+      content: `确认删除服务分类“${item.name}”？删除仅作用于分类维护，不会删除服务本身。`,
+      okText: '确认删除',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: () => {
+        setCatList((prev) => prev.filter((c) => c.id !== item.id))
+        if (category === item.id) {
+          setCategory(0)
+          setApplied((prev) => ({ ...prev, category: 0 }))
+        }
+        message.success(`已删除分类“${item.name}”（mock）`)
+      },
+    })
+  }
+  const buildCategoryMenu = (item: ServiceCategory): MenuProps => ({
+    items: [
+      {
+        key: 'edit',
+        icon: <EditOutlined />,
+        label: '编辑',
+        onClick: () => openCategoryEdit(item),
+      },
+      { type: 'divider' },
+      {
+        key: 'delete',
+        icon: <DeleteOutlined />,
+        label: '删除',
+        danger: true,
+        onClick: () => confirmCategoryDelete(item),
+      },
+    ],
+  })
 
   /* 勾选服务的 status 一致性：一致才可批量启用/停用 */
   const selectedItems = useMemo(
@@ -247,7 +316,6 @@ export default function ServicePoolList() {
       : ''
 
   const openOfflineModal = (record: ServiceItem) => {
-    setOfflineReason('')
     setStatusTarget({
       ids: [record.id],
       title: `集团服务池 · ${record.name}`,
@@ -266,7 +334,6 @@ export default function ServicePoolList() {
       return
     }
     const ids = selectedItems.map((item) => item.id)
-    setOfflineReason('')
     setStatusTarget(
       batchAction === 'offline'
         ? { ids, title: `批量停用 ${ids.length} 项服务`, action: 'offline' }
@@ -289,13 +356,9 @@ export default function ServicePoolList() {
     })
   }
 
-  const handleConfirmStatusChange = () => {
+  const handleConfirmStatusChange = (reason?: string) => {
     if (!statusTarget) return
     if (statusTarget.action === 'offline') {
-      if (offlineReason.trim().length < 5) {
-        message.warning('请填写停用原因，至少 5 个字')
-        return
-      }
       setData((prev) =>
         prev.map((item) => (statusTarget.ids.includes(item.id) ? { ...item, status: 9 } : item)),
       )
@@ -436,9 +499,10 @@ export default function ServicePoolList() {
             value={category}
             placeholder="服务类型"
             onChange={(value) => setCategory(value ?? 0)}
-            options={categories
-              .filter((item) => item.id != null)
-              .map((item) => ({ label: item.name, value: item.id as number }))}
+            options={catList.map((item) => ({
+              label: item.status === 9 ? `${item.name}（禁用）` : item.name,
+              value: item.id,
+            }))}
           />
           <Select
             allowClear
@@ -469,21 +533,39 @@ export default function ServicePoolList() {
             <div style={{flex: 1}}>
             <div className="pool-category__header">
               <h3>服务分类</h3>
-              <Button size="small" type='primary' icon={<PlusOutlined />} onClick={() => message.info('新增分类开发中')}>
+              <Button size="small" type="primary" icon={<PlusOutlined />} onClick={openCategoryCreate}>
                 新增分类
               </Button>
             </div>
             <div className="pool-category__list">
-              {categories.map((item) => (
-                <button
-                  type="button"
-                  key={item.name}
-                  className={category === item.id ? 'is-active' : ''}
+              <button
+                type="button"
+                className={`pool-category__level${!category ? ' is-active' : ''}`}
+                onClick={() => handleCategoryClick(null)}
+              >
+                <span>全部服务</span>
+              </button>
+              {catList.map((item) => (
+                <div
+                  key={item.id}
+                  className={`pool-category__row${category === item.id ? ' is-active' : ''}`}
                   onClick={() => handleCategoryClick(item.id)}
                 >
-                  <span>{item.name}</span>
-                  <em>{item.count}</em>
-                </button>
+                  <span className="pool-category__name">
+                    {item.brief ? <Tooltip>{item.name}</Tooltip> : <span>{item.name}</span>}
+                  </span>
+                  <Dropdown
+                    menu={buildCategoryMenu(item)}
+                    trigger={['click']}
+                    // placement="bottomRight"
+                  >
+                    <Button
+                      className="pool-category__more"
+                      type="text"
+                      icon={<EllipsisOutlined />}
+                    />
+                  </Dropdown>
+                </div>
               ))}
             </div>
             </div>
@@ -508,7 +590,7 @@ export default function ServicePoolList() {
               <Tooltip title={batchTooltip}>
                 {/* disabled 按钮不触发鼠标事件，需包一层 span 才能展示 Tooltip */}
                 <span>
-                  <Button disabled={!batchEnabled} onClick={openBatchStatusModal}>
+                  <Button color="primary" variant="outlined" disabled={!batchEnabled} onClick={openBatchStatusModal}>
                     批量启用/停用
                   </Button>
                 </span>
@@ -532,62 +614,18 @@ export default function ServicePoolList() {
         </div>
       </div>
 
-      <Modal
-        open={!!statusTarget}
-        title={statusTarget?.action === 'online' ? '启用服务' : '停用服务'}
+      <StatusTargetModal
+        statusTarget={statusTarget}
         onCancel={() => setStatusTarget(null)}
-        footer={
-          <div className="offline-modal__footer">
-            <Button onClick={() => setStatusTarget(null)}>取消</Button>
-            {statusTarget?.action === 'online' ? (
-              <Button type="primary" onClick={handleConfirmStatusChange}>
-                确认启用
-              </Button>
-            ) : (
-              <Button danger type="primary" onClick={handleConfirmStatusChange}>
-                确认停用
-              </Button>
-            )}
-          </div>
-        }
-      >
-        {statusTarget && (
-          <div className="offline-modal">
-            {statusTarget.action === 'offline' ? (
-              <>
-                <div className="offline-modal__warning">
-                  <strong>停用后用户端将立即停止展示和预约</strong>
-                  <p>已产生的预约订单不受影响，仍按原履约流程处理。</p>
-                </div>
-                <div className="offline-modal__service">
-                  <span>{statusTarget.title}</span>
-                  <span>{statusTarget.code ?? `${statusTarget.ids.length} 项`}</span>
-                </div>
-                <div className="offline-modal__reason">
-                  <label>停用原因 <i>*</i></label>
-                  <Input.TextArea
-                    rows={4}
-                    placeholder="请填写停用原因，至少 5 个字"
-                    value={offlineReason}
-                    onChange={(event) => setOfflineReason(event.target.value)}
-                  />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="offline-modal__warning" style={{background: '#e8f4f0'}}>
-                  <strong>启用后机构可选择添加该服务</strong>
-                  <p>机构添加时继承集团基础信息与价格，再配置线上履约规则。</p>
-                </div>
-                <div className="offline-modal__service">
-                  <span>{statusTarget.title}</span>
-                  <span>{statusTarget.code ?? `${statusTarget.ids.length} 项`}</span>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </Modal>
+        onOk={(reason?: string) => handleConfirmStatusChange(reason)}
+      />
+
+      <ServiceCategoryEditor
+        open={categoryEditorOpen}
+        category={editingCategory}
+        onClose={() => setCategoryEditorOpen(false)}
+        onSaved={handleCategorySaved}
+      />
     </PageContainer>
   )
 }

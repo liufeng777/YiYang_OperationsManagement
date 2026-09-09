@@ -6,6 +6,7 @@
  */
 import { useMemo, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
+import { useServiceInstitutionStore } from '@/store/modules/serviceInstitution';
 import {
   App,
   Alert,
@@ -15,30 +16,30 @@ import {
   Drawer,
   Input,
   Modal,
-  Radio,
   Select,
   Table,
   Tag,
 } from 'antd'
+import { useNavigate } from 'react-router-dom'
 import type { ColumnsType } from 'antd/es/table'
 import {
   CheckOutlined,
-  InfoCircleFilled,
+  ArrowRightOutlined,
+  PlusOutlined,
 } from '@ant-design/icons'
 import type {
   InstitutionItem,
-  InstitutionService,
-  ServicePoolItem,
+  InstitutionService
 } from '@/api/modules/institution'
 import EditServiceConfigDrawer from './EditServiceConfigDrawer'
 import type { EditServiceConfigValues } from './EditServiceConfigDrawer'
 
-const servicePoolMocks: ServicePoolItem[] = [
-  { id: 'p1', code: 'FW0001', name: '上门助浴服务', category: '生活照护', mode: '上门', price: 168, status: '可预约' },
-  { id: 'p2', code: 'FW0004', name: '慢病健康随访', category: '健康管理', mode: '上门', price: 69, status: '可预约' },
-  { id: 'p3', code: 'FW0002', name: '居家护理服务', category: '生活照护', mode: '上门', price: 198, status: '可预约' },
-  { id: 'p4', code: 'FW0003', name: '术后康复训练', category: '康复护理', mode: '到店', price: 128, status: '可预约' },
-  { id: 'p5', code: 'FW0008', name: '老年能力评估', category: '健康管理', mode: '到店', price: 199, status: '待上架' },
+const servicePoolMocks: any[] = [
+  { id: 'p1', code: 'FW0001', name: '上门助浴服务', category: '生活照护', mode: '上门', price: 168, status: 1 },
+  { id: 'p2', code: 'FW0004', name: '慢病健康随访', category: '健康管理', mode: '上门', price: 69, status: 1 },
+  { id: 'p3', code: 'FW0002', name: '居家护理服务', category: '生活照护', mode: '上门', price: 198, status: 1 },
+  { id: 'p4', code: 'FW0003', name: '术后康复训练', category: '康复护理', mode: '到店', price: 128, status: 9 },
+  { id: 'p5', code: 'FW0008', name: '老年能力评估', category: '健康管理', mode: '到店', price: 199, status: 9 },
 ]
 
 const serviceCategories = ['全部', '生活照护', '康复护理', '健康管理', '陪诊出行']
@@ -58,6 +59,7 @@ export default function ServicesTab({
   drawerOpen,
   onDrawerOpenChange,
 }: ServicesTabProps) {
+  const navigate = useNavigate()
   const { message } = App.useApp()
 
   const [deleting, setDeleting] = useState<InstitutionService | null>(null)
@@ -158,20 +160,23 @@ export default function ServicesTab({
         dataIndex: 'status',
         key: 'status',
         width: 100,
-        render: (status: InstitutionService['status']) => (
-          <span className={`service-status service-status--${status === '可预约' ? 'on' : 'off'}`}>{status}</span>
+        render: (status: number) => (
+          <span className={`status-btn status--${status === 1 ? 'success' : 'cancel'}`}>{status === 1 ? '可预约' : '已下架'}</span>
         ),
       },
       {
         title: '操作',
         key: 'action',
-        width: 160,
+        width: 100,
         render: (_, record) => (
           <div className="service-actions">
-            <Button type="link" size="small" onClick={() => setEditing(record)}>
+            {/* <Button type="link" size="small" onClick={() => setEditing(record)}>
               编辑配置
+            </Button> */}
+            <Button type="link" size="small" danger onClick={() => setDeleting(record)}>
+              删除
             </Button>
-            {record.status === '可预约' ? (
+            {/* {record.status === '可预约' ? (
               <Button type="link" size="small">
                 下架
               </Button>
@@ -180,11 +185,9 @@ export default function ServicesTab({
                 <Button type="link" size="small">
                   上架
                 </Button>
-                {record.status === '已下架' && <Button type="link" size="small" danger onClick={() => setDeleting(record)}>
-                  删除
-                </Button>}
+                {record.status === '已下架' && }
               </>
-            )}
+            )} */}
           </div>
         ),
       }
@@ -192,7 +195,7 @@ export default function ServicesTab({
     [],
   )
 
-  const poolColumns = useMemo<ColumnsType<ServicePoolItem>>(
+  const poolColumns = useMemo(
     () => [
       {
         title: '',
@@ -235,13 +238,13 @@ export default function ServicesTab({
 
   return (
     <>
-      <Card variant="borderless" className="detail-card">
+      {/* <Card variant="borderless" className="detail-card">
         <div className="detail-card__header">
           <div>
             <h3>机构默认服务配置</h3>
             <p>新添加的服务自动继承；仅有差异的服务再单独调整</p>
           </div>
-          <Button type="primary" onClick={() => message.success('默认配置已保存')}>
+          <Button type="primary" icon={<CheckOutlined />} onClick={() => message.success('默认配置已保存')}>
             保存默认配置
           </Button>
         </div>
@@ -300,17 +303,23 @@ export default function ServicesTab({
             </div>
           </div>
         </div>
-      </Card>
-
+      </Card> */}
       <Card variant="borderless" className="detail-card">
         <div className="detail-card__header">
-          <div>
+          <div style={{display: 'flex', alignItems: 'center'}}>
             <h3>机构已添加服务</h3>
-            <p>
-              共 {services.length} 项 · 上架 {services.filter((item) => item.status === '可预约').length} 项 · 已下架 {services.filter((item) => item.status === '已下架').length} 项 ·
-            </p>
+            <Button type='link' style={{fontSize: 12}} onClick={() => {
+              // 记录到机构选择 store 并持久化：目标页据此定位（不依赖 URL 参数）
+              if (detail?.id != null) {
+                useServiceInstitutionStore.getState().setSelectedServiceInstitutionId(String(detail.id))
+              }
+              navigate('/service/institution')
+            }}>
+              前往服务项目管理上下架服务
+              <ArrowRightOutlined />
+            </Button>
           </div>
-          <Button type="primary" onClick={() => onDrawerOpenChange(true)}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => onDrawerOpenChange(true)}>
             添加服务项目
           </Button>
         </div>

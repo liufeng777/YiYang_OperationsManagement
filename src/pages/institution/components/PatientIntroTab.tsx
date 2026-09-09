@@ -9,6 +9,7 @@ import { App, Button, Card, Image, Input, Upload } from 'antd'
 import type { UploadFile, UploadProps } from 'antd'
 import { PhoneOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import type { InstitutionItem } from '@/api/modules/institution'
+import RichDetailEditor from '@/components/RichDetailEditor'
 
 interface PatientIntroTabProps {
   detail: InstitutionItem
@@ -26,7 +27,8 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
   const { message } = App.useApp()
 
   const [introTitle, setIntroTitle] = useState(detail.brief)
-  const [introDesc, setIntroDesc] = useState(detail.description)
+  /** 机构图文详情（ProseMirror JSON），存储回 description */
+  const [introRich, setIntroRich] = useState<string>(detail.description || '')
   const [coverImg, setCoverImg] = useState<string | null>(null)
   const [envFiles, setEnvFiles] = useState<UploadFile[]>([])
   const [previewOpen, setPreviewOpen] = useState(false)
@@ -74,16 +76,12 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
           <div className="intro-form">
             <label>
               <span>
-                <span className='require-star'>*</span> 患者端展示标题
+                <span className='require-star'>*</span> <span style={{fontWeight: 500}}>患者端展示标题</span>
               </span>
               <Input value={introTitle} onChange={(event) => setIntroTitle(event.target.value)} />
             </label>
             <label>
-              <span>机构介绍</span>
-              <Input.TextArea rows={4} value={introDesc} onChange={(event) => setIntroDesc(event.target.value)} />
-            </label>
-            <label>
-              <span>机构封面图片</span>
+              <span style={{fontWeight: 500}}>机构封面图片</span>
               <Upload
                 listType="picture-card"
                 accept="image/*"
@@ -104,7 +102,8 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
                 )}
               </Upload>
             </label>
-            <label>
+            <RichDetailEditor label="图文详情" value={introRich} onChange={setIntroRich} />
+            {/* <label>
               <span>机构环境图片</span>
               <Upload
                 listType="picture-card"
@@ -127,8 +126,8 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
                   src={previewImage}
                 />
               )}
-            </label>
-            <p className="intro-photos__tip">建议封面尺寸 750×420；环境相册用于患者端了解机构环境与设施。</p>
+            </label> */}
+            {/* <p className="intro-photos__tip">建议封面尺寸 750×420；环境相册用于患者端了解机构环境与设施。</p> */}
           </div>
         </Card>
       </div>
@@ -157,7 +156,7 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
           </div>
           <div className="phone__body">
             <h4>{introTitle || detail.name}</h4>
-            <p>{introDesc}</p>
+            <p>{introRich ? '已配置图文详情（富文本内容见小程序渲染）' : '编辑图文详情后在此展示机构简介'}</p>
             <div className="phone__section">
               <div>
                 <strong>机构环境</strong>
