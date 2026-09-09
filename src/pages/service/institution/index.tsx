@@ -7,13 +7,13 @@
  */
 import { useEffect, useMemo, useState } from 'react'
 import type { Key } from 'react'
-import { App, Button, Card, Input, Modal, Select, Spin, Table, Tag, Tooltip } from 'antd'
+import { App, Button, Card, Input, Select, Spin, Table, Tag, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { ArrowRightOutlined, BankOutlined, SearchOutlined } from '@ant-design/icons'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import { useServiceInstitutionStore } from '@/store/modules/serviceInstitution';
-import { typeText, typeColor } from '../list'
+import { typeText, statusText, typeColor } from '../list'
 import StatusTargetModal from '../components/StatusTargetModal'
 import '../list.less'
 import './index.less'
@@ -28,7 +28,7 @@ interface InstitutionSummary {
   serviceCount: number
   /** 可预约（status=1）服务数 */
   onlineCount: number
-  /** 已停用（status=9）服务数 */
+  /** 已下架（status=9）服务数 */
   offlineCount: number
   /** 近 30 日订单 */
   orderCount30d: number
@@ -45,7 +45,7 @@ interface InstitutionService {
   price: number
   dailyCapacity: string
   orderCount: number
-  /** 预约状态：1 可预约 / 9 已停用 */
+  /** 预约状态：1 可预约 / 9 已下架 */
   status: number
 }
 
@@ -55,7 +55,7 @@ interface ServiceFilters {
   status: number | null
 }
 
-/** 上停用目标：action=offline 走「停用原因」流程，action=online 走确认启用流程 */
+/** 上下架目标：action=offline 走「下架原因」流程，action=online 走确认上架流程 */
 interface StatusTarget {
   ids: number[]
   title: string
@@ -138,7 +138,7 @@ export default function ServiceInstitutionPage() {
   const [applied, setApplied] = useState<ServiceFilters>({ keyword: '', type: null, status: null })
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
   const [statusTarget, setStatusTarget] = useState<StatusTarget | null>(null)
-  
+
   // 接口①：进入页面拉取机构列表；完成后确定初始选中（URL 参数 > store 记忆 > 第一项）
   useEffect(() => {
     let cancelled = false
@@ -273,11 +273,11 @@ export default function ServiceInstitutionPage() {
         width: 110,
       },
       {
-        title: '预约状态',
+        title: '状态',
         dataIndex: 'status',
         key: 'status',
         width: 100,
-        render: (value: number) => <span className={`status-btn status--${value === 1 ? 'success' : 'danger'}`}>{value === 1 ? '可预约' : '已停用'}</span>,
+        render: (value: number) => <span className={`status-btn status--${value === 1 ? 'success' : 'danger'}`}>{statusText[value]}</span>,
       },
       {
         title: '操作',
@@ -294,11 +294,11 @@ export default function ServiceInstitutionPage() {
             </Button>
             {record.status === 1 ? (
               <Button type="link" danger size="small" onClick={() => openOfflineModal(record)}>
-                停用
+                下架
               </Button>
             ) : (
               <Button type="link" size="small" onClick={() => handleEnable(record)}>
-                启用
+                上架
               </Button>
             )}
           </div>
@@ -309,7 +309,7 @@ export default function ServiceInstitutionPage() {
     [selectedId, navigate],
   )
 
-  /* 勾选服务的 status 一致性：一致才可批量启用/停用 */
+  /* 勾选服务的 status 一致性：一致才可批量上架/下架 */
   const selectedItems = useMemo(
     () => services.filter((item) => selectedRowKeys.includes(item.id)),
     [services, selectedRowKeys],
@@ -320,13 +320,13 @@ export default function ServiceInstitutionPage() {
   )
   /** 勾选非空且状态一致时才允许批量操作 */
   const batchEnabled = selectedItems.length > 0 && selectedStatuses.size === 1
-  /** 状态一致时的批量方向：已启用 → 批量停用；草稿/已停用 → 批量启用 */
+  /** 状态一致时的批量方向：已上架 → 批量下架；草稿/已下架 → 批量上架 */
   const batchAction: 'online' | 'offline' =
     selectedItems[0]?.status === 1 ? 'offline' : 'online'
   const batchTooltip = !selectedItems.length
     ? '请先勾选服务项目'
     : selectedStatuses.size > 1
-      ? '所选择的服务状态不一致，无法批量启用/停用'
+      ? '所选择的服务状态不一致，无法批量上架/下架'
       : ''
 
   /** 状态变更统一入口：更新当前机构服务列表，并同步左侧机构聚合统计 */
@@ -366,26 +366,26 @@ export default function ServiceInstitutionPage() {
       return
     }
     if (selectedStatuses.size > 1) {
-      message.warning('所选择的服务状态不一致，无法批量启用/停用')
+      message.warning('所选择的服务状态不一致，无法批量上架/下架')
       return
     }
     const ids = selectedItems.map((item) => item.id)
     setStatusTarget(
       batchAction === 'offline'
-        ? { ids, title: `批量停用 ${ids.length} 项服务`, action: 'offline' }
-        : { ids, title: `批量启用 ${ids.length} 项服务`, action: 'online' },
+        ? { ids, title: `批量下架 ${ids.length} 项服务`, action: 'offline' }
+        : { ids, title: `批量上架 ${ids.length} 项服务`, action: 'online' },
     )
   }
 
   const handleEnable = (record: InstitutionService) => {
     modal.confirm({
-      title: '启用服务',
-      content: `确认启用 “${record.name}” ？启用后用户端可预约该服务。`,
-      okText: '确认启用',
+      title: '上架服务',
+      content: `确认上架 “${record.name}” ？上架后用户端可预约该服务。`,
+      okText: '确认上架',
       cancelText: '取消',
       onOk: () => {
         applyServiceStatus([record.id], 1)
-        message.success(`${record.name} 已启用`)
+        message.success(`${record.name} 已上架`)
       },
     })
   }
@@ -394,10 +394,10 @@ export default function ServiceInstitutionPage() {
     if (!statusTarget) return
     if (statusTarget.action === 'offline') {
       applyServiceStatus(statusTarget.ids, 9)
-      message.success(`已停用 ${statusTarget.ids.length} 项服务`)
+      message.success(`已下架 ${statusTarget.ids.length} 项服务`)
     } else {
       applyServiceStatus(statusTarget.ids, 1)
-      message.success(`已启用 ${statusTarget.ids.length} 项服务`)
+      message.success(`已上架 ${statusTarget.ids.length} 项服务`)
     }
     setStatusTarget(null)
     setSelectedRowKeys([])
@@ -407,7 +407,7 @@ export default function ServiceInstitutionPage() {
   return (
     <PageContainer
       title="机构服务上下架"
-      description="以机构为主体管理已接入的服务项目；选择左侧机构后查看其服务，并进行启用 / 停用运营"
+      description="以机构为主体管理已接入的服务项目；选择左侧机构后查看其服务，并进行上架 / 下架运营"
       // extra={
       //   <Button type="primary" onClick={() => navigate('/service')}>
       //     进入集团服务池
@@ -424,30 +424,24 @@ export default function ServiceInstitutionPage() {
             onPressEnter={() => applyFilters()}
           />
           <Select
+            allowClear
             value={type}
-            onChange={(value) => {
-              setType(value)
-              applyFilters({ type: value })
-            }}
-            options={[
-              { label: '全部服务方式', value: null },
-              ...Object.keys(typeText).map((key) => ({
-                label: typeText[Number(key)],
-                value: Number(key),
-              })),
-            ]}
+            placeholder="服务方式"
+            onChange={(value) => setType(value ?? null)}
+            options={Object.entries(typeText).map(([key, label]) => ({
+              label,
+              value: Number(key),
+            }))}
           />
           <Select
+            allowClear
             value={status}
-            onChange={(value) => {
-              setStatus(value)
-              applyFilters({ status: value })
-            }}
-            options={[
-              { label: '全部预约状态', value: null },
-              { label: '可预约', value: 1 },
-              { label: '已停用', value: 9 },
-            ]}
+            placeholder="服务状态"
+            onChange={(value) => setStatus(value ?? null)}
+            options={Object.entries(statusText).map(([key, label]) => ({
+              label,
+              value: Number(key),
+            }))}
           />
           <Button onClick={handleReset}>重置</Button>
           <Button type="primary" onClick={() => applyFilters()}>查询</Button>
@@ -487,7 +481,7 @@ export default function ServiceInstitutionPage() {
                       <span className="inst-panel__addr">{inst.address}</span>
                       <div className="inst-panel__stats">
                         <span><i className="dot dot--on" />可预约 {inst.onlineCount}</span>
-                        <span>已停用 {inst.offlineCount}</span>
+                        <span>已下架 {inst.offlineCount}</span>
                       </div>
                       <span className="inst-panel__orders">近30日订单 {inst.orderCount30d}</span>
                     </button>
@@ -500,7 +494,7 @@ export default function ServiceInstitutionPage() {
             </div>
             <div className="inst-panel__tip">
               <h4>页面职责说明</h4>
-              <p>服务定义由集团服务池统一维护；机构添加服务在「机构管理」中完成，本页仅负责跨机构的启用 / 停用运营。</p>
+              <p>服务定义由集团服务池统一维护；机构添加服务在「机构管理」中完成，本页仅负责跨机构的上架 / 下架运营。</p>
             </div>
           </Card>
 
@@ -526,7 +520,7 @@ export default function ServiceInstitutionPage() {
                   {/* disabled 按钮不触发鼠标事件，需包一层 span 才能展示 Tooltip */}
                   <span>
                     <Button color="primary" variant="outlined" disabled={!batchEnabled} onClick={openBatchStatusModal}>
-                      批量启用/停用
+                      批量上架/下架
                     </Button>
                   </span>
                 </Tooltip>

@@ -42,7 +42,7 @@ export default function ServiceCategoryPage() {
         width: 110,
         render: (value: ServiceCategory['status']) => (
           <span className={`category-status category-status--${value}`}>
-            {value === 'enabled' ? '启用中' : '已停用'}
+            {value === 'enabled' ? '上架中' : '已下架'}
           </span>
         ),
       },
@@ -62,10 +62,10 @@ export default function ServiceCategoryPage() {
               onClick={() => {
                 const nextStatus = record.status === 'enabled' ? 'disabled' : 'enabled'
                 setData((prev) => prev.map((item) => (item.id === record.id ? { ...item, status: nextStatus } : item)))
-                message.success(`${record.name} 已${nextStatus === 'enabled' ? '启用' : '停用'}`)
+                message.success(`${record.name} 已${nextStatus === 'enabled' ? '上架' : '下架'}`)
               }}
             >
-              {record.status === 'enabled' ? '停用' : '启用'}
+              {record.status === 'enabled' ? '下架' : '上架'}
             </Button>
           </div>
         ),
@@ -77,7 +77,7 @@ export default function ServiceCategoryPage() {
   return (
     <PageContainer
       title="服务分类"
-      description="维护集团服务池分类，停用后新建服务不可再选择该分类"
+      description="维护集团服务池分类，下架后新建服务不可再选择该分类"
       extra={
         <div className="category-page__extra">
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/service')}>

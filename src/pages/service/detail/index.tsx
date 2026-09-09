@@ -122,7 +122,7 @@ interface ServiceFormValues {
   consumable: '1' | '2'
   consumableSpec?: string
   consumableList?: string
-  /** 是否启用多次套餐（关闭后仅保留「单次服务」） */
+  /** 是否上架多次套餐（关闭后仅保留「单次服务」） */
   packageEnabled: boolean
   summary: string
   /** draft → status 9；on → status 1 */
@@ -249,7 +249,7 @@ export default function ServiceEditorPage() {
   const previewPrice = Form.useWatch('price', form)
   const previewUnit = Form.useWatch('unit', form)
   const previewType = Form.useWatch('service_type', form)
-  /** 耗材与套餐联动：是否涉及耗材 / 是否启用套餐 */
+  /** 耗材与套餐联动：是否涉及耗材 / 是否上架套餐 */
   const consumableValue = Form.useWatch('consumable', form) ?? '1'
   const packageEnabled = Form.useWatch('packageEnabled', form) ?? true
 
@@ -324,7 +324,7 @@ export default function ServiceEditorPage() {
       vital_sign: [],
     }
     console.log('[服务保存] payload:', payload)
-    message.success(targetStatus === 'on' ? '服务已保存并启用' : '草稿已保存')
+    message.success(targetStatus === 'on' ? '服务已保存并上架' : '草稿已保存')
     navigate('/service')
   }
 
@@ -507,7 +507,7 @@ export default function ServiceEditorPage() {
                   {/* <Form.Item name="audience" label="适用人群">
                     <Input />
                   </Form.Item>
-                  <Form.Item name="package" label="启用套餐">
+                  <Form.Item name="package" label="上架套餐">
                     <Input placeholder="单次、5次、10次" />
                   </Form.Item> */}
                 </div>
@@ -645,12 +645,12 @@ export default function ServiceEditorPage() {
                 </div> */}
 
                 <div className="editor-spec__package-head">
-                  {/* <span className="editor-spec__label">启用套餐</span>
+                  {/* <span className="editor-spec__label">上架套餐</span>
                   <Form.Item name="packageEnabled" valuePropName="checked" noStyle>
                     <Switch />
                   </Form.Item>
                   <span className="editor-spec__package-status">
-                    {packageEnabled ? '已启用' : '已关闭'}
+                    {packageEnabled ? '已上架' : '已关闭'}
                   </span> */}
                   {/* <span className="editor-spec__package-hint">关闭后仅保留“单次服务”</span> */}
                   
@@ -720,11 +720,11 @@ export default function ServiceEditorPage() {
                   <Radio.Group
                     options={[
                       { label: '草稿', value: 'draft' },
-                      { label: '启用', value: 'on' },
+                      { label: '上架', value: 'on' },
                     ]}
                   />
                 </Form.Item>
-                <span>启用后机构可从服务池选择添加；历史订单保留创建时快照。</span>
+                <span>上架后机构可从服务池选择添加；历史订单保留创建时快照。</span>
               </div>
               <div className="editor-publish editor-publish--switch">
                 <Form.Item name="openAfterSave" valuePropName="checked" noStyle>
@@ -734,11 +734,11 @@ export default function ServiceEditorPage() {
               </div>
             </Card> */}
             <div className="service-editor__footer">
-              <span>启用后机构可从服务池选择添加；历史订单保留创建时快照。</span>
+              <span>上架后机构可从服务池选择添加；历史订单保留创建时快照。</span>
               <div>
                 {/* <Button onClick={() => handleSave('draft')}>保存草稿</Button> */}
                 <Button type="primary" icon={<CheckOutlined />} onClick={() => handleSave('on')}>
-                  保存并启用
+                  保存并上架
                 </Button>
               </div>
             </div>
@@ -792,7 +792,7 @@ export default function ServiceEditorPage() {
           <div>
             <Button onClick={() => handleSave('draft')}>保存草稿</Button>
             <Button type="primary" icon={<CheckOutlined />} onClick={() => handleSave('on')}>
-              保存并启用
+              保存并上架
             </Button>
           </div>
         </div> */}
@@ -849,7 +849,7 @@ export default function ServiceEditorPage() {
       >
         {/* <div className="richtext-drawer-hint">
           用富文本编排「详情图片与服务内容」：支持标题 / 正文 / 列表 / 图片 / 文字颜色等。
-          点击「保存」先暂存到当前服务草稿，随「保存草稿 / 保存并启用」一并写入服务详情（ProseMirror JSON）。
+          点击「保存」先暂存到当前服务草稿，随「保存草稿 / 保存并上架」一并写入服务详情（ProseMirror JSON）。
         </div> */}
         <RichTextEditor
           value={parseRichContent(richDraft)}

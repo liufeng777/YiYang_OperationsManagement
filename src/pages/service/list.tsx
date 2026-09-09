@@ -17,8 +17,8 @@ import StatusTargetModal from './components/StatusTargetModal'
 import './list.less'
 
 export const statusText: Record<number, string> = {
-  1: '启用',
-  9: '停用'
+  1: '已上架',
+  9: '已下架'
 }
 
 export const typeText: Record<number, string> = {
@@ -154,7 +154,7 @@ interface ServiceFilters {
   status: number | null
 }
 
-/** 上停用目标：action=offline 走「停用原因」流程，action=online 走确认启用流程 */
+/** 上下架目标：action=offline 走「下架原因」流程，action=online 走确认上架流程 */
 export interface StatusTarget {
   ids: number[]
   title: string
@@ -200,9 +200,9 @@ export default function ServicePoolList() {
 
   const metrics = [
     { key: 'all', label: '服务项目', value: 128, note: '集团统一定义' },
-    { key: 'on', label: '已启用', value: 112, note: '机构可选择添加' },
+    { key: 'on', label: '已上架', value: 112, note: '机构可选择添加' },
     { key: 'draft', label: '草稿', value: 9, note: '尚未对机构开放' },
-    { key: 'off', label: '已停用', value: 7, note: '不可新增使用' },
+    { key: 'off', label: '已下架', value: 7, note: '不可新增使用' },
   ]
 
   /** 应用到过滤：把当前输入的筛选条件一次性生效（重置到第 1 页） */
@@ -295,7 +295,7 @@ export default function ServicePoolList() {
     ],
   })
 
-  /* 勾选服务的 status 一致性：一致才可批量启用/停用 */
+  /* 勾选服务的 status 一致性：一致才可批量上架/下架 */
   const selectedItems = useMemo(
     () => data.filter((item) => selectedRowKeys.includes(item.id)),
     [data, selectedRowKeys],
@@ -306,13 +306,13 @@ export default function ServicePoolList() {
   )
   /** 勾选非空且状态一致时才允许批量操作 */
   const batchEnabled = selectedItems.length > 0 && selectedStatuses.size === 1
-  /** 状态一致时的批量方向：已启用 → 批量停用；草稿/已停用 → 批量启用 */
+  /** 状态一致时的批量方向：已上架 → 批量下架；草稿/已下架 → 批量上架 */
   const batchAction: 'online' | 'offline' =
     selectedItems[0]?.status === 1 ? 'offline' : 'online'
   const batchTooltip = !selectedItems.length
     ? '请先勾选服务项目'
     : selectedStatuses.size > 1
-      ? '所选择的服务状态不一致，无法批量启用/停用'
+      ? '所选择的服务状态不一致，无法批量上架/下架'
       : ''
 
   const openOfflineModal = (record: ServiceItem) => {
@@ -330,28 +330,28 @@ export default function ServicePoolList() {
       return
     }
     if (selectedStatuses.size > 1) {
-      message.warning('所选择的服务状态不一致，无法批量启用/停用')
+      message.warning('所选择的服务状态不一致，无法批量上架/下架')
       return
     }
     const ids = selectedItems.map((item) => item.id)
     setStatusTarget(
       batchAction === 'offline'
-        ? { ids, title: `批量停用 ${ids.length} 项服务`, action: 'offline' }
-        : { ids, title: `批量启用 ${ids.length} 项服务`, action: 'online' },
+        ? { ids, title: `批量下架 ${ids.length} 项服务`, action: 'offline' }
+        : { ids, title: `批量上架 ${ids.length} 项服务`, action: 'online' },
     )
   }
 
   const handleEnable = (record: ServiceItem) => {
     modal.confirm({
-      title: '启用服务',
-      content: `确认启用 “${record.name}” ？启用后机构可选择添加该服务。`,
-      okText: '确认启用',
+      title: '上架服务',
+      content: `确认上架 “${record.name}” ？上架后机构可选择添加该服务。`,
+      okText: '确认上架',
       cancelText: '取消',
       onOk: () => {
         setData((prev) =>
           prev.map((item) => (item.id === record.id ? { ...item, status: 1 } : item)),
         )
-        message.success(`${record.name} 已启用`)
+        message.success(`${record.name} 已上架`)
       },
     })
   }
@@ -362,12 +362,12 @@ export default function ServicePoolList() {
       setData((prev) =>
         prev.map((item) => (statusTarget.ids.includes(item.id) ? { ...item, status: 9 } : item)),
       )
-      message.success(`已停用 ${statusTarget.ids.length} 项服务`)
+      message.success(`已下架 ${statusTarget.ids.length} 项服务`)
     } else {
       setData((prev) =>
         prev.map((item) => (statusTarget.ids.includes(item.id) ? { ...item, status: 1 } : item)),
       )
-      message.success(`已启用 ${statusTarget.ids.length} 项服务`)
+      message.success(`已上架 ${statusTarget.ids.length} 项服务`)
     }
     setStatusTarget(null)
     setSelectedRowKeys([])
@@ -433,11 +433,11 @@ export default function ServicePoolList() {
             </Button>
             {record.status === 1 ? (
               <Button type="link" size="small" danger onClick={() => openOfflineModal(record)}>
-                停用
+                下架
               </Button>
             ) : (
               <Button type="link" size="small" onClick={() => handleEnable(record)}>
-                启用
+                上架
               </Button>
             )}
             <Button type="link" size="small" danger onClick={() => {
@@ -578,7 +578,7 @@ export default function ServicePoolList() {
                 <li>适用人群、服务时长与须知</li>
               </ul>
               <h4 className="is-danger">不在这里配置</h4>
-              <p>机构服务半径、日容量、接单时间与预约上停用状态。</p>
+              <p>机构服务半径、日容量、接单时间与预约上下架状态。</p>
             </div>
           </Card>
 
@@ -591,7 +591,7 @@ export default function ServicePoolList() {
                 {/* disabled 按钮不触发鼠标事件，需包一层 span 才能展示 Tooltip */}
                 <span>
                   <Button color="primary" variant="outlined" disabled={!batchEnabled} onClick={openBatchStatusModal}>
-                    批量启用/停用
+                    批量上架/下架
                   </Button>
                 </span>
               </Tooltip>

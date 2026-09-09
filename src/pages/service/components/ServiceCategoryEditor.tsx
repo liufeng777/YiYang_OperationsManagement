@@ -113,7 +113,7 @@ export default function ServiceCategoryEditor({
         {/* <Form.Item name="status" label="状态">
           <Radio.Group
             options={[
-              { label: '启用', value: 1 },
+              { label: '上架', value: 1 },
               { label: '禁用', value: 9 },
             ]}
           />
