@@ -82,7 +82,7 @@ export const routes: RouteConfig[] = [
       {
         path: 'detail/:id',
         meta: { title: '机构详情', hideInMenu: true },
-        component: lazy(() => import('@/pages/institution/detail/detail')),
+        component: lazy(() => import('@/pages/institution/detail')),
       },
     ],
   },
@@ -135,7 +135,7 @@ export const routes: RouteConfig[] = [
         // 活动详情（原报名查询页）：从活动列表「查看」进入，不在菜单展示
         path: 'signups/:id',
         meta: { title: '报名查询', hideInMenu: true },
-        component: lazy(() => import('@/pages/activity/signups')),
+        component: lazy(() => import('@/pages/activity/sigunps')),
       },
       {
         // 编辑活动嵌套在详情路径下，面包屑自然形成 活动管理 / 编辑活动

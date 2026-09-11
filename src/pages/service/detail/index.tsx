@@ -5,12 +5,12 @@
  * 当前为 mock 数据，后端就绪后替换为 serviceApi.getServiceItem / saveService
  */
 import { useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Drawer, Form, Input, InputNumber, Modal, Radio, Select, Switch, Table, Upload } from 'antd'
+import { App, Button, Card, Form, Input, InputNumber, Modal, Select, Table, Upload } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { ArrowLeftOutlined, ArrowDownOutlined, ArrowUpOutlined, CheckOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, ArrowDownOutlined, ArrowUpOutlined, CheckOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import RichTextEditor from '@/components/RichTextEditor'
+import RichDetailEditor from '@/components/RichDetailEditor'
 import type { JSONContent } from '@/components/RichTextEditor'
 import { uploadApi } from '@/api'
 import type { ServiceItem, ServiceSaveBody, Package, PriceUnit } from '@/api/modules/service'
@@ -157,16 +157,6 @@ const initialProcessSteps: ProcessStep[] = [
   { id: 'step-3', title: '浴后护理', description: '皮肤护理与居室整理，记录服务结果' },
 ]
 
-/** 富文本字符串解析：JSON 解析失败时按 HTML 兼容返回 */
-const parseRichContent = (raw: string): string | JSONContent => {
-  if (!raw) return ''
-  try {
-    return JSON.parse(raw) as JSONContent
-  } catch {
-    return raw
-  }
-}
-
 export default function ServiceEditorPage() {
   const navigate = useNavigate()
   const params = useParams()
@@ -180,9 +170,6 @@ export default function ServiceEditorPage() {
   const [coverUrl, setCoverUrl] = useState<string>()
   /** 患者端详情（富文本 JSON 字符串）：存储到 ServiceItem.description */
   const [description, setDescription] = useState('')
-  /** 富文本 Drawer：richDraft 为弹窗内草稿（JSON 字符串），确定后写入 description */
-  const [richEditorOpen, setRichEditorOpen] = useState(false)
-  const [richDraft, setRichDraft] = useState('')
   /** 服务过程步骤：序列化存入 ServiceItem.service_process */
   const [processSteps, setProcessSteps] = useState<ProcessStep[]>(initialProcessSteps)
   const [packages, setPackages] = useState<PackageItem[]>(initialPackages)
@@ -205,30 +192,6 @@ export default function ServiceEditorPage() {
     return false
   }
 
-  /** 详情图文填写状态（入口提示用）：是否已填写 + 内容块数量 */
-  const descriptionInfo = useMemo(() => {
-    if (!description) return { filled: false, blocks: 0 }
-    try {
-      const doc = JSON.parse(description) as JSONContent
-      return { filled: true, blocks: doc.content?.length ?? 0 }
-    } catch {
-      return { filled: true, blocks: 0 }
-    }
-  }, [description])
-
-  /** 打开富文本 Drawer：以当前 description 作为草稿初始值 */
-  const openRichEditor = () => {
-    setRichDraft(description)
-    setRichEditorOpen(true)
-  }
-
-  /** 确认富文本：草稿写回 description（JSON 字符串），保存服务时随表单提交 */
-  const confirmRichEditor = () => {
-    setDescription(richDraft)
-    setRichEditorOpen(false)
-    message.success('详情图文已更新')
-  }
-
   /** 服务过程步骤：编辑 / 新增 / 删除 / 上下移动 */
   const updateStep = (id: string, patch: Partial<Omit<ProcessStep, 'id'>>) =>
     setProcessSteps((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
@@ -249,8 +212,7 @@ export default function ServiceEditorPage() {
   const previewPrice = Form.useWatch('price', form)
   const previewUnit = Form.useWatch('unit', form)
   const previewType = Form.useWatch('service_type', form)
-  /** 耗材与套餐联动：是否涉及耗材 / 是否上架套餐 */
-  const consumableValue = Form.useWatch('consumable', form) ?? '1'
+  /** 耗材与套餐联动：是否上架套餐 */
   const packageEnabled = Form.useWatch('packageEnabled', form) ?? true
 
   /** 编辑场景：回填表单、封面、富文本详情与套餐 */
@@ -673,41 +635,35 @@ export default function ServiceEditorPage() {
 
             <Card variant="borderless" className="editor-card">
               <div className="editor-card__header">
-                <h3>患者端展示内容</h3>
+                <h3>患者端展示详情</h3>
               </div>
-              <div className="editor-content">
-                <div className="editor-upload editor-upload--cover">
-                  <span>列表封面</span>
-                  <Upload accept="image/*" showUploadList={false} beforeUpload={handleCoverUpload}>
-                    <button
-                      type="button"
-                      className={`editor-upload__cover-box${coverUrl ? ' has-image' : ''}`}
-                    >
-                      {coverUrl ? (
-                        <img src={coverUrl} alt="列表封面" />
-                      ) : (
-                        <>
-                          <PlusOutlined />
-                          <p>上传封面</p>
-                          <em>建议 1:1</em>
-                        </>
-                      )}
-                    </button>
+              <div className="patient-detail">
+                <div className="patient-detail__field patient-detail__cover">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="patient-detail__label">服务封面</span>
+                    <p className="patient-detail__tip">建议尺寸 1:1，展示于服务列表与患者端服务详情顶部。</p>
+                  </div>
+                  <Upload
+                    listType="picture-card"
+                    accept="image/*"
+                    showUploadList={false}
+                    beforeUpload={handleCoverUpload}
+                  >
+                    {coverUrl ? (
+                      <img
+                        src={coverUrl}
+                        alt="列表封面"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
+                      />
+                    ) : (
+                      <div>
+                        <PlusOutlined />
+                        <div style={{ marginTop: 8 }}>上传封面</div>
+                      </div>
+                    )}
                   </Upload>
                 </div>
-                <div className="editor-upload editor-upload--richtext">
-                  <span>详情图文 {descriptionInfo.filled ? '（已填写）' : '（未填写）'}</span>
-                  <div className="richtext-entry">
-                    <Button icon={<EditOutlined />} color="primary" variant="outlined" onClick={openRichEditor}>
-                      编辑详情图文
-                    </Button>
-                    <p className="richtext-entry__status">
-                      {descriptionInfo.filled
-                        ? `详情图文已填写，可再次编辑精细排版。`
-                        : '尚未填写。点击「编辑详情图文」用富文本编排详情图片与服务内容，完成后随服务保存。'}
-                    </p>
-                  </div>
-                </div>
+                <RichDetailEditor label="图文详情" value={description} onChange={setDescription} />
               </div>
             </Card>
 
@@ -831,32 +787,6 @@ export default function ServiceEditorPage() {
           </Form.Item>
         </Form>
       </Modal>
-
-      <Drawer
-        title="编辑详情图文"
-        width={860}
-        open={richEditorOpen}
-        onClose={() => setRichEditorOpen(false)}
-        destroyOnClose
-        footer={
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-            <Button onClick={() => setRichEditorOpen(false)}>取消</Button>
-            <Button type="primary" onClick={confirmRichEditor}>
-              保存
-            </Button>
-          </div>
-        }
-      >
-        {/* <div className="richtext-drawer-hint">
-          用富文本编排「详情图片与服务内容」：支持标题 / 正文 / 列表 / 图片 / 文字颜色等。
-          点击「保存」先暂存到当前服务草稿，随「保存草稿 / 保存并上架」一并写入服务详情（ProseMirror JSON）。
-        </div> */}
-        <RichTextEditor
-          value={parseRichContent(richDraft)}
-          minHeight={460}
-          onChange={(_, json) => setRichDraft(JSON.stringify(json))}
-        />
-      </Drawer>
     </PageContainer>
   )
 }

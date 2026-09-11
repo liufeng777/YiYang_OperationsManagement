@@ -195,108 +195,7 @@
     }
   }
 
-  /* ============================================================
-     患者端展示内容：列表封面 / 详情图片 / 服务内容 同一行紧邻排布
-     - 三块按 封面(132px) → 详情图片 → 服务内容 顺序排列，间距 @spacing-md
-     - 详情图片区宽度自适应内容，图少时服务内容紧贴其后（不被挤到最右）
-     ============================================================ */
-  .editor-content {
-    display: flex;
-    align-items: flex-start;
-    gap: @spacing-3xl;
-
-    .ant-form-item {
-      margin-bottom: 0;
-    }
-
-    /* 展示块标签（封面 / 详情图片 span 标签 + 服务内容 Form label）统一排布 */
-    .editor-upload > span,
-    .ant-form-item-label > label {
-      display: block;
-      height: auto;
-      margin-bottom: @spacing-xs;
-      padding-bottom: 0;
-      .text-label();
-      color: @color-text-primary;
-
-      i {
-        color: @color-danger;
-        font-style: normal;
-      }
-    }
-
-    .ant-form-item-label {
-      padding-bottom: 0;
-    }
-  }
-
-  /* 列表封面：132px 固定图块（与 ImageSortGrid fixed 变体同尺寸），不参与伸缩 */
-  .editor-upload--cover {
-    flex-shrink: 0;
-
-    .ant-upload-wrapper,
-    .ant-upload-select {
-      display: contents;
-    }
-
-    .editor-upload__cover-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      width: 132px;
-      height: 110px;
-      padding: 0;
-      color: @color-text-secondary;
-      background: @color-bg-page;
-      border: 1px dashed @color-border;
-      border-radius: @radius-sm;
-      cursor: pointer;
-
-      p {
-        margin: @spacing-xs 0 0;
-        .text-auxiliary();
-      }
-
-      em {
-        font-style: normal;
-        .text-auxiliary();
-      }
-
-      &:hover {
-        color: @color-primary;
-        border-color: @color-primary;
-      }
-
-      /* 上传后图片铺满封面框 */
-      &.has-image {
-        position: relative;
-        overflow: hidden;
-        border-style: solid;
-
-        img {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-      }
-    }
-  }
-
-  /* 详情图文（富文本）：占满封面之后的剩余宽度 */
-  .editor-upload--richtext {
-    flex: 1;
-    min-width: 0;
-  }
-
-  /* 展示块底部提示（患者端详情按图片顺序展示……） */
-  .editor-upload__tip {
-    margin: 0;
-    .text-auxiliary();
-    text-align: center;
-  }
+  /* 患者端展示内容（封面 + 图文详情）统一使用公共样式 patient-detail.less */
 
   .editor-publish {
     display: flex;
@@ -499,61 +398,12 @@
       grid-template-columns: 1fr;
     }
 
-    .editor-content {
-      flex-direction: column;
-
-      /* 纵向堆叠时详情图文区占满整行 */
-      .editor-upload--richtext {
-        width: 100%;
-      }
-    }
-
     &__footer {
       align-items: flex-start;
       flex-direction: column;
       gap: @spacing-md;
     }
   }
-}
-
-/* ===== 详情图文（Drawer 入口） ===== */
-.service-editor .editor-upload--richtext {
-  .richtext-entry {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: @spacing-sm;
-
-    > span {
-      margin-bottom: 0;
-    }
-
-    .richtext-entry__status {
-      margin: 0;
-      .text-auxiliary();
-      color: @color-text-secondary;
-
-      &::before {
-        content: '';
-        display: inline-block;
-        width: 6px;
-        height: 6px;
-        margin-right: @spacing-2xs;
-        vertical-align: middle;
-        border-radius: @radius-full;
-        background: @color-primary;
-      }
-    }
-  }
-}
-
-.richtext-drawer-hint {
-  margin-bottom: @spacing-md;
-  padding: @spacing-sm @spacing-md;
-  color: @color-info;
-  background: fade(@color-info, 8%);
-  border-radius: @radius-sm;
-  .text-auxiliary();
 }
 
 /* ===== 服务过程（步骤卡片） ===== */

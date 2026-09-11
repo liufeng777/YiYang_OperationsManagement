@@ -6,11 +6,11 @@
 import { useMemo, useState } from 'react'
 import { App, Button, Card, Col, Input, Modal, Radio, Row, Select, Table, Space } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { ArrowLeftOutlined, BarChartOutlined, SearchOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, BarChartOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import type { ActivitySignup } from '@/api/modules/activity'
-import './signups.less'
+import './index.less'
 
 const activityMeta: Record<string, { name: string; code: string; time: string }> = {
   '1': { name: '秋日康养游园会', code: 'HD20260808001', time: '2026-08-18 09:00–11:30' },
@@ -248,10 +248,12 @@ export default function ActivitySignups() {
       description={`活动编号 ${activity.code} · 免费活动 · ${activity.time} · 用户报名时选择参加机构`}
       extra={
         <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/activity')}>
+          <Button
+            color="primary" variant='outlined'
+            icon={<ArrowLeftOutlined />} onClick={() => navigate('/activity')}>
             返回活动列表
           </Button>
-          <Button type="primary" onClick={() => navigate(`/activity/detail/${activityId}`)}>
+          <Button color="primary" variant='outlined' icon={<EditOutlined />} onClick={() => navigate(`/activity/detail/${activityId}`)}>
             编辑活动
           </Button>
         </Space>

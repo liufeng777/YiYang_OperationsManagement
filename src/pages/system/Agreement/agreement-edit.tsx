@@ -50,7 +50,7 @@ export default function AgreementEdit() {
       description="基于当前生效版本创建草稿，发布后按生效时间切换"
       extra={
         <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => {
+          <Button color="primary" variant='outlined' icon={<ArrowLeftOutlined />} onClick={() => {
             navigate('/system/agreement')
           }}>返回协议与授权</Button>
           <Button

@@ -6,35 +6,34 @@
 import { http } from '@/utils/request'
 import type { ApiPageParams, ApiPageResult, BatchResult } from '@/types/api'
 
-/* ------------------------------------------------------------------ */
-/* 页面展示类型（mock，接后端后逐步切换到下方 DTO）                       */
-/* ------------------------------------------------------------------ */
-
-/** 活动状态 */
-export type ActivityStatus = 'draft' | 'pending' | 'signup' | 'ongoing' | 'full' | 'finished'
 /** 发布状态 */
 export type PublishStatus = 'published' | 'unpublished' | 'pending' | 'offline'
 
-/** 活动状态（共通 §6.12）：1-待发布 2-报名中 3-已结束 9-已取消 */
-export type ActivityStatusCode = 1 | 2 | 3 | 9
+/** 配置参与机构：单家机构的活动时间与承接人数 */
+export interface ActivityInstitutionConfig {
+  institution_id: string
+  max_participants: number // 该机构名额上限
+  start_time: number // UTC秒级
+  end_time: number // UTC秒级
+  contact_name: string
+  contact_phone: string
+}
+
 
 /** 活动列表项 */
 export interface ActivityItem {
   id: string
-  /** 活动编号，如 HD20260807001 */
-  code: string
-  name: string
-  /** 活动类型：社区活动 / 康养旅游 / 健康课堂 / 健康活动 */
-  type: string
-  /** 承接机构数量 */
-  institutionCount: number
-  /** 已报名人数（草稿无报名数据时为 null） */
-  signupCount: number | null
-  /** 承接容量 */
-  capacity: number
-  status: ActivityStatusCode
-  /** 活动时间展示，如 09-20 09:00 */
-  activityTime: string
+  code: string /** 活动编号，如 HD20260807001 */
+  title: string
+  title_en: string
+  type: number   /** 活动类型：1社区活动 / 2康养旅游 / 3健康课堂 / 4健康活动 */
+  status: number  // 1-待发布 2-报名中 3-已开始 9-已取消
+  cover_image: string
+  description: string // 富文本json
+  location: string
+  start_date: number // UTC秒级
+  end_date: number // UTC秒级
+  institutions: ActivityInstitutionConfig[]
 }
 
 /** 活动报名记录 */
@@ -51,17 +50,6 @@ export interface ActivitySignup {
   status: 'signed' | 'cancelled'
   signupTime: string
   remark?: string
-}
-
-/** 配置参与机构：单家机构的活动时间与承接人数 */
-export interface ActivityInstitutionConfig {
-  id: string
-  name: string
-  area: string
-  /** 活动时间展示，如 09-20 09:00 */
-  activityTime: string
-  /** 承接人数 */
-  capacity: number
 }
 
 /* ------------------------------------------------------------------ */

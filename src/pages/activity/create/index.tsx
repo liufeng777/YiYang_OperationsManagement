@@ -31,11 +31,9 @@ import {
 import dayjs, { type Dayjs } from 'dayjs'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import ImageSortGrid from '@/components/ImageSortGrid'
-import type { SortableImage } from '@/components/ImageSortGrid'
-import type { ActivityInstitutionConfig } from '@/api/modules/activity'
+import RichDetailEditor from '@/components/RichDetailEditor'
 import pcaData from 'china-division/dist/pca.json'
-import './create.less'
+import './index.less'
 
 /** 省市区级联选项：{省:{市:[区]}} → Cascader 树 */
 type PcaData = Record<string, Record<string, string[]>>
@@ -50,8 +48,17 @@ const regionOptions = Object.entries(pca).map(([province, cities]) => ({
   })),
 }))
 
-/** 活动参与机构（扩展场次联系信息与时间选择器值） */
-interface InstitutionRow extends ActivityInstitutionConfig {
+/** 活动参与机构（页面展示/编辑用本地模型；提交时映射为 ActivityInstitutionDTO） */
+interface InstitutionRow {
+  /** 机构 id（页面 mock） */
+  id: string
+  name: string
+  /** 机构区域展示，如 拱墅区·申花街道 */
+  area: string
+  /** 场次展示，如 09-20 09:00 */
+  activityTime: string
+  /** 承接人数（提交映射 max_participants） */
+  capacity: number
   contactName?: string
   contactPhone?: string
   /** 场次开始/结束时间（dayjs，提交转 UTC 秒） */
@@ -75,12 +82,6 @@ const mockInstitutionPool: Array<{ id: string; name: string; area: string }> = [
   { id: '6', name: '乐活居家养老站', area: '西湖区·转塘街道' },
   { id: '7', name: '松鹤护理院', area: '滨江区·浦沿街道' },
   { id: '8', name: '幸福家园驿站', area: '余杭区·闲林街道' },
-]
-
-const initialDetailImages: SortableImage[] = [
-  { id: '1', title: '活动亮点', size: '750 × 980px' },
-  { id: '2', title: '活动流程', size: '750 × 1200px' },
-  { id: '3', title: '环境与须知', size: '750 × 960px' },
 ]
 
 /** 预览状态：正常报名 / 报名成功 / 名额已满 */
@@ -114,8 +115,10 @@ export default function ActivityCreate() {
   const [selectedInstitutionId, setSelectedInstitutionId] = useState<string | undefined>()
   // 报名须知编辑入口暂时隐藏（切换按钮被注释），保留状态便于恢复
   const [noticeOpen] = useState(false)
-  const [images, setImages] = useState<SortableImage[]>(initialDetailImages)
+  /** 封面（cover_image）：本地预览 URL，提交存真实地址 */
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  /** 图文详情（description）：富文本 ProseMirror JSON 字符串 */
+  const [description, setDescription] = useState('')
 
   const totalCapacity = institutions.reduce((sum, item) => sum + (item.capacity || 0), 0)
   const feeText = feeType === 'free' ? '免费' : '付费'
@@ -203,21 +206,12 @@ export default function ActivityCreate() {
     message.success(`已添加「${poolItem.name}」`)
   }
 
-  const handleImageUpload = (file: File) => {
-    setImages((prev) => [
-      ...prev,
-      {
-        id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        title: file.name.replace(/\.[^.]+$/, ''),
-        size: '750px 宽',
-        url: URL.createObjectURL(file),
-      },
-    ])
-    message.success('已添加详情图')
-    return false
-  }
-
+  /** 封面（cover_image）：拦截真实上传，本地预览；接后端后替换为 uploadApi.uploadFile */
   const handleCoverUpload = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      message.error('请上传图片文件')
+      return Upload.LIST_IGNORE
+    }
     setCoverUrl(URL.createObjectURL(file))
     message.success('封面已更新')
     return false
@@ -375,6 +369,7 @@ export default function ActivityCreate() {
       description="单页面配置活动信息、参与机构和患者端详情图片"
       extra={
         <Button
+          color="primary" variant='outlined'
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate('/activity')}
         >
@@ -449,11 +444,11 @@ export default function ActivityCreate() {
                     </Form.Item>
                   </div>
                   
-                  <Form.Item name="summary" label="活动摘要">
+                  {/* <Form.Item name="summary" label="活动摘要">
                     <Input placeholder="用于活动列表和详情首屏展示，建议 30 字以内" />
-                  </Form.Item>
+                  </Form.Item> */}
                 </div>
-                <div className='create-card__basicInfo__right'>
+                {/* <div className='create-card__basicInfo__right'>
                   <Form.Item label="活动封面" className="create-cover">
                     <Upload accept="image/*" showUploadList={false} beforeUpload={handleCoverUpload}>
                       <button type="button" className={`create-upload${coverUrl ? ' has-image' : ''}`}>
@@ -468,7 +463,7 @@ export default function ActivityCreate() {
                       </button>
                     </Upload>
                   </Form.Item>
-                </div>
+                </div> */}
               </div>
             </Card>
 
@@ -518,19 +513,35 @@ export default function ActivityCreate() {
             </Card>
 
             <Card variant="borderless" className="create-card">
-              <h3>患者端活动详情<span>多张图片纵向拼接，可拖动调整顺序</span></h3>
-              <Upload accept="image/*" showUploadList={false} multiple beforeUpload={handleImageUpload}>
-                <button type="button" className='create-upload' style={{width: '100%', height: 50}}>
-                  <PlusOutlined />
-                  <span>上传详情图片</span>
-                  <em>统一宽度 750px，建议上传 3-8 张</em>
-                </button>
-              </Upload>
-              <ImageSortGrid
-                images={images}
-                onChange={setImages}
-                addable={false}
-              />
+              <h3>患者端展示详情</h3>
+              <div className="patient-detail">
+                <div className="patient-detail__field patient-detail__cover">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="patient-detail__label">活动封面</span>
+                    <p className="patient-detail__tip">建议尺寸 750×560，展示于患者端活动详情页顶部。</p>
+                  </div>
+                  <Upload
+                    listType="picture-card"
+                    accept="image/*"
+                    showUploadList={false}
+                    beforeUpload={handleCoverUpload}
+                  >
+                    {coverUrl ? (
+                      <img
+                        src={coverUrl}
+                        alt="活动封面"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
+                      />
+                    ) : (
+                      <div>
+                        <PlusOutlined />
+                        <div style={{ marginTop: 8 }}>上传封面</div>
+                      </div>
+                    )}
+                  </Upload>
+                </div>
+                <RichDetailEditor label="图文详情" value={description} onChange={setDescription} />
+              </div>
             </Card>
 
             <Card variant="borderless" className="create-card create-card--footer">
@@ -550,12 +561,26 @@ export default function ActivityCreate() {
                   <Button
                     type="primary"
                     onClick={async () => {
+                      let values: unknown
                       try {
-                        await form.validateFields()
+                        values = await form.validateFields()
                       } catch {
                         message.warning('请先完善必填项：活动名称、活动类型、省市区与详细地址、报名起止日期、收费方式')
                         return
                       }
+                      // TODO: 后端就绪后替换为 activityApi.createActivity / updateActivity，payload 组装：
+                      // {
+                      //   ...values,
+                      //   location: `${values.location?.join(' ')} ${values.addressDetail}`,
+                      //   cover_image: coverUrl ?? '',
+                      //   description, // 富文本 ProseMirror JSON 字符串
+                      //   start_date: values.start_date.valueOf() / 1000, // UTC 秒
+                      //   end_date: values.end_date.valueOf() / 1000,
+                      //   institutions: institutions.map(...),
+                      // }
+                      void values
+                      void coverUrl
+                      void description
                       message.success(isEdit ? '活动已更新并发布' : '活动已发布')
                       navigate(isEdit ? `/activity/detail/${params.id}` : '/activity')
                     }}

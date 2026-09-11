@@ -5,8 +5,8 @@
  * 注：父级通过 key={detail.id} 重挂载本组件以切换机构时重置表单
  */
 import { useState } from 'react'
-import { App, Button, Card, Image, Input, Upload } from 'antd'
-import type { UploadFile, UploadProps } from 'antd'
+import { App, Button, Card, Input, Upload } from 'antd'
+import type { UploadFile } from 'antd'
 import { PhoneOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import type { InstitutionItem } from '@/api/modules/institution'
 import RichDetailEditor from '@/components/RichDetailEditor'
@@ -18,11 +18,6 @@ interface PatientIntroTabProps {
 /** 预览环境照片占位（mock） */
 const previewPhotoPlaceholders = ['接待大厅', '康复空间', '适老房间']
 
-/** mock 上传：阻止真实网络请求，直接标记成功（接后端后删除） */
-const mockCustomRequest: UploadProps['customRequest'] = (options) => {
-  setTimeout(() => options.onSuccess?.({}, new XMLHttpRequest()), 0)
-}
-
 export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
   const { message } = App.useApp()
 
@@ -30,9 +25,7 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
   /** 机构图文详情（ProseMirror JSON），存储回 description */
   const [introRich, setIntroRich] = useState<string>(detail.description || '')
   const [coverImg, setCoverImg] = useState<string | null>(null)
-  const [envFiles, setEnvFiles] = useState<UploadFile[]>([])
-  const [previewOpen, setPreviewOpen] = useState(false)
-  const [previewImage, setPreviewImage] = useState('')
+  const [envFiles] = useState<UploadFile[]>([])
 
   /** 封面选择：拦截真实上传，本地预览（接后端后替换为上传接口） */
   const pickCover = (file: File) => {
@@ -41,37 +34,12 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
     return false
   }
 
-  /** 环境照片：受控 fileList，onChange 时为本地文件生成缩略图 */
-  const handleEnvChange: UploadProps['onChange'] = ({ fileList: newList }) => {
-    const list = newList.map((file) => {
-      if (file.originFileObj && !file.thumbUrl && !file.url && !file.preview) {
-        file.thumbUrl = URL.createObjectURL(file.originFileObj)
-      }
-      return file
-    })
-    setEnvFiles(list)
-  }
-
-  /** 点击缩略图：大图预览 */
-  const handlePreview = async (file: UploadFile) => {
-    const src = file.url || file.preview || file.thumbUrl || ''
-    setPreviewImage(src)
-    setPreviewOpen(true)
-  }
-
-  const envUploadButton = (
-    <div>
-      <PlusOutlined />
-      <div style={{ marginTop: 8 }}>添加环境照片</div>
-    </div>
-  )
-
   return (
     <div className="patient-intro">
       <div className="patient-intro__left">
         <Card variant="borderless" className="detail-card">
           <div className="detail-card__header">
-            <h3>患者端介绍</h3>
+            <h3>患者端展示详情</h3>
           </div>
           <div className="intro-form">
             <label>
@@ -80,29 +48,34 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
               </span>
               <Input value={introTitle} onChange={(event) => setIntroTitle(event.target.value)} />
             </label>
-            <label>
-              <span style={{fontWeight: 500}}>机构封面图片</span>
-              <Upload
-                listType="picture-card"
-                accept="image/*"
-                showUploadList={false}
-                beforeUpload={pickCover}
-              >
-                {coverImg ? (
-                  <img
-                    src={coverImg}
-                    alt="机构封面"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
-                  />
-                ) : (
-                  <div>
-                    <PlusOutlined />
-                    <div style={{ marginTop: 8 }}>上传机构封面</div>
-                  </div>
-                )}
-              </Upload>
-            </label>
-            <RichDetailEditor label="图文详情" value={introRich} onChange={setIntroRich} />
+            <div className="patient-detail">
+              <div className="patient-detail__field patient-detail__cover">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="patient-detail__label">机构封面</span>
+                  <p className="patient-detail__tip">建议尺寸 750×420，展示于患者端机构详情页顶部。</p>
+                </div>
+                <Upload
+                  listType="picture-card"
+                  accept="image/*"
+                  showUploadList={false}
+                  beforeUpload={pickCover}
+                >
+                  {coverImg ? (
+                    <img
+                      src={coverImg}
+                      alt="机构封面"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
+                    />
+                  ) : (
+                    <div>
+                      <PlusOutlined />
+                      <div style={{ marginTop: 8 }}>上传机构封面</div>
+                    </div>
+                  )}
+                </Upload>
+              </div>
+              <RichDetailEditor label="图文详情" value={introRich} onChange={setIntroRich} />
+            </div>
             {/* <label>
               <span>机构环境图片</span>
               <Upload

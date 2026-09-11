@@ -25,7 +25,7 @@ const statusText: Record<InstitutionStatus, string> = {
   9: '停用',
 }
 
-const mockInstitutions: InstitutionItem[] = [
+export const mockInstitutions: InstitutionItem[] = [
   {
     id: 1,
     code: 'JG0001',

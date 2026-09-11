@@ -8,7 +8,6 @@ import { Button, Drawer } from 'antd'
 import { EditOutlined } from '@ant-design/icons'
 import type { JSONContent } from '@/components/RichTextEditor'
 import RichTextEditor from '@/components/RichTextEditor'
-import './RichDetailEditor.less'
 
 interface RichDetailEditorProps {
   /** 字段展示标签 */
@@ -64,17 +63,15 @@ export default function RichDetailEditor({
   }
 
   return (
-    <div className="rich-detail-field">
-      <span className="rich-detail-field__label">
-        {label}
-      </span>
-      <div className="rich-detail-field__entry">
+    <div className="patient-detail__field">
+      <span className="patient-detail__label">{label}</span>
+      <div className="patient-detail__entry">
         <Button icon={<EditOutlined />} color="primary" variant="outlined" onClick={openEditor}>
           编辑图文详情
         </Button>
-        <p className="rich-detail-field__status">
+        <p className="patient-detail__status">
           {meta.filled
-            ? '已使用富文本编排详情内容，可再次编辑精细排版。'
+            ? `已填写（${meta.blocks} 个内容块），可再次编辑精细排版。`
             : '尚未填写。点击「编辑图文详情」，用富文本编排图文内容（含图片），完成后随表单保存。'}
         </p>
       </div>

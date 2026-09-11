@@ -80,10 +80,10 @@ export default function ServiceCategoryPage() {
       description="维护集团服务池分类，下架后新建服务不可再选择该分类"
       extra={
         <div className="category-page__extra">
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/service')}>
+          <Button color="primary" variant='outlined' icon={<ArrowLeftOutlined />} onClick={() => navigate('/service')}>
             返回服务项目
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => message.info('新建分类开发中')}>
+          <Button color="primary" variant='outlined' icon={<PlusOutlined />} onClick={() => message.info('新建分类开发中')}>
             新建分类
           </Button>
         </div>

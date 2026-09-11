@@ -4,28 +4,50 @@
  * 当前为 mock 数据，后端就绪后替换为 activityApi.getActivityList
  */
 import { useMemo, useState } from 'react'
-import { App, Button, Card, Input, Radio, Select, Table, Col, Row, Modal } from 'antd'
+import { App, Button, Card, Dropdown, Input, Select, Table, Col, Row, Tag, Divider } from 'antd'
+import type { MenuProps } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { BarChartOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { BarChartOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import type { ActivityItem } from '@/api/modules/activity'
+import type { ActivityItem } from '@/api/modules/activity';
+import { mockInstitutions } from '@/pages/institution/list'
 import './list.less'
 
+/** 活动类型：1社区活动 / 2康养旅游 / 3健康课堂 / 4健康活动 */
+
 const statusText: Record<number, string> = {
-  0: '全部',
   1: '待发布',
   2: '报名中',
   3: '已结束',
   9: '已取消',
 }
 
-const initialActivities: ActivityItem[] = [
+const typeText: Record<number, {text: string, color: string}> = {
+  1: {
+    text: '社区活动',
+    color: 'geekblue'
+  },
+  2: {
+    text: '康养旅游',
+    color: 'purple'
+  },
+  3: {
+    text: '健康课堂',
+    color: 'cyan'
+  },
+  4: {
+    text: '健康活动',
+    color: 'lime'
+  }
+}
+
+const initialActivities: any[] = [
   {
     id: '1',
     code: 'HD20260807001',
-    name: '秋日康养游园会',
-    type: '社区活动',
+    title: '秋日康养游园会',
+    type: 1,
     institutionCount: 3,
     signupCount: 86,
     capacity: 120,
@@ -35,8 +57,8 @@ const initialActivities: ActivityItem[] = [
   {
     id: '2',
     code: 'HD20260807002',
-    name: '西湖无障碍一日游',
-    type: '康养旅游',
+    title: '西湖无障碍一日游',
+    type: 2,
     institutionCount: 2,
     signupCount: 30,
     capacity: 30,
@@ -46,8 +68,8 @@ const initialActivities: ActivityItem[] = [
   {
     id: '3',
     code: 'HD20260807003',
-    name: '失能长者照护课堂',
-    type: '健康课堂',
+    title: '失能长者照护课堂',
+    type: 3,
     institutionCount: 5,
     signupCount: 42,
     capacity: 80,
@@ -57,8 +79,8 @@ const initialActivities: ActivityItem[] = [
   {
     id: '4',
     code: 'HD20260806018',
-    name: '重阳节健康义诊',
-    type: '健康活动',
+    title: '重阳节健康义诊',
+    type: 4,
     institutionCount: 4,
     signupCount: null,
     capacity: 0,
@@ -68,8 +90,8 @@ const initialActivities: ActivityItem[] = [
   {
     id: '5',
     code: 'HD20260806011',
-    name: '温泉康养两日游',
-    type: '康养旅游',
+    title: '温泉康养两日游',
+    type: 1,
     institutionCount: 2,
     signupCount: 0,
     capacity: 24,
@@ -79,8 +101,8 @@ const initialActivities: ActivityItem[] = [
   {
     id: '6',
     code: 'HD20260805096',
-    name: '夏季防暑讲座',
-    type: '健康课堂',
+    title: '夏季防暑讲座',
+    type: 4,
     institutionCount: 3,
     signupCount: 76,
     capacity: 100,
@@ -89,40 +111,26 @@ const initialActivities: ActivityItem[] = [
   },
 ]
 
-const tabItems = Object.keys(statusText).map((keyStr) => {
-  const key = Number(keyStr)
-  return {
-    key: keyStr,
-    label: `${statusText[key]}${
-      key === 0 ? initialActivities.length : initialActivities.filter((v) => v.status === key).length
-    }`,
-  }
-})
-
 interface ActivityFilters {
   keyword: string
-  type: string
-  institution: string
-  status: number
-  time: string
+  type: number | null
+  institution_id: number | null
+  status: number | null
 }
 
 export default function ActivityList() {
   const navigate = useNavigate()
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
   const [data, setData] = useState(initialActivities)
   const [keyword, setKeyword] = useState('')
-  const [type, setType] = useState('all')
-  const [institution, setInstitution] = useState('all')
-  const [status, setStatus] = useState<number>(0)
-  const [time, setTime] = useState('')
-  const [tab, setTab] = useState('all')
+  const [type, setType] = useState<number | null>(null)
+  const [institution, setInstitution] = useState<number | null>(null)
+  const [status, setStatus] = useState<number | null>(null)
   const [applied, setApplied] = useState<ActivityFilters>({
     keyword: '',
-    type: 'all',
-    institution: 'all',
-    status: 0,
-    time: '',
+    type: null,
+    institution_id: null,
+    status: null,
   })
   const [page, setPage] = useState(1)
   const pageSize = 10
@@ -131,14 +139,14 @@ export default function ActivityList() {
     return data.filter((item) => {
       const keywordHit =
         !applied.keyword ||
-        item.name.includes(applied.keyword) ||
+        item.title.includes(applied.keyword) ||
         item.code.toLowerCase().includes(applied.keyword.toLowerCase())
-      const typeHit = applied.type === 'all' || item.type === applied.type
-      const statusHit = applied.status === 0 || item.status === applied.status
-      // const tabHit = tab === 'all' || item.status === Number(tab)
-      return keywordHit && typeHit && statusHit
+      const typeHit = !applied.type || item.type === applied.type
+      const statusHit = !applied.status || item.status === applied.status
+      const institutionHit = !applied.institution_id || (item.institutions.map(i => i.institution_id)).includes(applied.institution_id)
+      return keywordHit && typeHit && statusHit && institutionHit
     })
-  }, [applied, data, tab])
+  }, [applied, data])
 
   const metrics = [
     { key: 0, label: '全部活动', value: 46, badge: '本月新增 8 个', tone: 'primary' },
@@ -148,16 +156,15 @@ export default function ActivityList() {
   ]
 
   const applyFilters = () => {
-    setApplied({ keyword: keyword.trim(), type, institution, status, time })
+    setApplied({ keyword: keyword.trim(), type, institution_id: institution, status })
   }
 
   const handleReset = () => {
     setKeyword('')
-    setType('all')
-    setInstitution('all')
-    setStatus(0)
-    setTime('')
-    setApplied({ keyword: '', type: 'all', institution: 'all', status: 0, time: '' })
+    setType(null)
+    setInstitution(null)
+    setStatus(null)
+    setApplied({ keyword: '', type: null, institution_id: null, status: null })
   }
 
   const handlePublish = (record: ActivityItem) => {
@@ -166,18 +173,44 @@ export default function ActivityList() {
         item.id === record.id ? { ...item, status: 2 } : item,
       ),
     )
-    message.success(`「${record.name}」已发布`)
+    message.success(`「${record.title}」已发布`)
   }
 
+  /** 取消活动（报名中 → 已取消）：危险操作，二次确认 */
+  const handleCancelActivity = (record: ActivityItem) => {
+    modal.confirm({
+      title: `确认取消活动「${record.title}」？`,
+      content: '取消后用户端将立即停止报名，已报名用户的报名信息保留但活动标记为已取消。',
+      okText: '确认取消',
+      okButtonProps: { danger: true },
+      cancelText: '再想想',
+      onOk: () => {
+        setData((prev) =>
+          prev.map((item) => (item.id === record.id ? { ...item, status: 9 } : item)),
+        )
+        message.success(`「${record.title}」已取消`)
+      },
+    })
+  }
+
+  /** 重新发布（已取消 → 报名中） */
+  const handleRepublish = (record: ActivityItem) => {
+    setData((prev) =>
+      prev.map((item) => (item.id === record.id ? { ...item, status: 2 } : item)),
+    )
+    message.success(`「${record.title}」已重新发布，报名通道已开启`)
+  }
+
+  /** 删除活动：危险操作，二次确认 */
   const handleDelete = (record: ActivityItem) => {
-    Modal.confirm({
-      title: `确认删除活动「${record.name}」？`,
+    modal.confirm({
+      title: `确认删除活动「${record.title}」？`,
       content: '删除后该活动后，所有的报名信息将被清空',
       okText: '确认删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
       onOk: () => {
-        message.success(`已删除「${record.name}」（mock）`)
+        message.success(`已删除「${record.title}」（mock）`)
       },
     })
   }
@@ -186,10 +219,10 @@ export default function ActivityList() {
     () => [
       {
         title: '活动 / 编号',
-        key: 'name',
+        key: 'title',
         render: (_, record) => (
           <div className="activity-name">
-            <strong>{record.name}</strong>
+            <strong>{record.title}</strong>
             <span>{record.code}</span>
           </div>
         ),
@@ -199,6 +232,7 @@ export default function ActivityList() {
         dataIndex: 'type',
         key: 'type',
         width: 110,
+        render: (v) => <Tag color={typeText[v]?.color} variant='outlined'>{typeText[v]?.text}</Tag>
       },
       {
         title: '承接机构',
@@ -241,19 +275,32 @@ export default function ActivityList() {
       {
         title: '操作',
         key: 'action',
-        width: 150,
-        render: (_, record) => (
-          <div className="activity-actions">
-            {(record.status === 2 || record.status === 3) && (
-              <Button
-                type="link"
-                size="small"
-                onClick={() => navigate(`/activity/signups/${record.id}`)}
-              >
-                报名查询
+        width: 190,
+        render: (_, record) => {
+          /* 三段式操作列：状态主操作 + 编辑（恒有）+ 更多（低频/危险操作收拢）
+             - 待发布(1)：发布；报名中(2)/已结束(3)：报名查询；已取消(9)：重新发布
+             - 取消、删除放入「更多」，均需二次确认 */
+          const primary =
+            record.status === 1
+              ? { label: '发布', onClick: () => handlePublish(record) }
+              : record.status === 9
+                ? { label: '重新发布', onClick: () => handleRepublish(record) }
+                : { label: '报名查询', onClick: () => navigate(`/activity/signups/${record.id}`) }
+
+          const moreItems: MenuProps['items'] = [
+            ...(record.status === 2 ? [{ key: 'cancel', label: '取消活动', danger: true }] : []),
+            { key: 'delete', label: '删除', danger: true },
+          ]
+          const onMoreClick: MenuProps['onClick'] = ({ key }) => {
+            if (key === 'cancel') handleCancelActivity(record)
+            if (key === 'delete') handleDelete(record)
+          }
+
+          return (
+            <div className="activity-actions">
+              <Button type="link" size="small" onClick={primary.onClick}>
+                {primary.label}
               </Button>
-            )}
-            {(record.status === 1 || record.status === 2) && (
               <Button
                 type="link"
                 size="small"
@@ -261,17 +308,16 @@ export default function ActivityList() {
               >
                 编辑
               </Button>
-            )}
-            {record.status === 1 && (
-              <Button type="link" size="small" onClick={() => handlePublish(record)}>
-                发布
-              </Button>
-            )}
-            <Button type="link" size="small" danger onClick={() => handleDelete(record)}>
-              删除
-            </Button>
-          </div>
-        ),
+              <Divider vertical />
+              <Dropdown menu={{ items: moreItems, onClick: onMoreClick }} trigger={['click']}>
+                <Button type="link" size="small">
+                  更多
+                  <DownOutlined style={{ fontSize: 10 }} />
+                </Button>
+              </Dropdown>
+            </div>
+          )
+        },
       },
     ],
     [navigate],
@@ -319,40 +365,32 @@ export default function ActivityList() {
           <Select
             value={type}
             onChange={setType}
-            options={[
-              { label: '全部活动类型', value: 'all' },
-              { label: '社区活动', value: '社区活动' },
-              { label: '康养旅游', value: '康养旅游' },
-              { label: '健康课堂', value: '健康课堂' },
-              { label: '健康活动', value: '健康活动' },
-            ]}
+            options={Object.keys(typeText).map(v => ({
+              label: typeText[v].text,
+              value: v
+            }))}
+            allowClear
+            placeholder="活动类型"
           />
           <Select
             value={institution}
             onChange={setInstitution}
-            options={[
-              { label: '全部承接机构', value: 'all' },
-              { label: '幸福里健康驿站', value: '幸福里健康驿站' },
-              { label: '康乐护理院', value: '康乐护理院' },
-            ]}
+            options={mockInstitutions.map(v => ({
+              label: v.name,
+              value: v.id
+            }))}
+            allowClear
+            placeholder="活动承接机构"
           />
           <Select
             value={status}
             onChange={setStatus}
-            options={[
-              { label: '全部活动状态', value: 0 },
-              { label: '待发布', value: 1 },
-              { label: '报名中', value: 2 },
-              { label: '已结束', value: 3 },
-              { label: '已取消', value: 9 },
-            ]}
-          />
-          <Input
+            options={Object.keys(statusText).map(v => ({
+              label: statusText[v],
+              value: v
+            }))}
             allowClear
-            placeholder="活动时间"
-            value={time}
-            onChange={(event) => setTime(event.target.value)}
-            onPressEnter={applyFilters}
+            placeholder="活动状态"
           />
           <Button onClick={handleReset}>重置</Button>
           <Button type="primary" onClick={applyFilters}>

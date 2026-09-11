@@ -148,7 +148,7 @@ export default function OrderDetail() {
       title="订单详情"
       description={`${base.orderNo} · ${base.serviceName} · ${base.institutionName}`}
       extra={
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/order')}>
+        <Button color="primary" variant='outlined' icon={<ArrowLeftOutlined />} onClick={() => navigate('/order')}>
           返回订单列表
         </Button>
       }

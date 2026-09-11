@@ -9,8 +9,6 @@ import { ArrowLeftOutlined, CheckOutlined, PlusOutlined } from '@ant-design/icon
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import RichDetailEditor from '@/components/RichDetailEditor'
-import ImageSortGrid from '@/components/ImageSortGrid'
-import type { SortableImage } from '@/components/ImageSortGrid'
 import type { InstitutionType } from '@/api/modules/institution'
 import InstitutionBaseFields from '../components/InstitutionBaseFields'
 import './index.less'
@@ -36,7 +34,6 @@ export default function InstitutionCreate() {
   const navigate = useNavigate()
   const { message } = App.useApp()
   const [form] = Form.useForm<InstitutionCreateValues>()
-  const [images, setImages] = useState<SortableImage[]>([])
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
   /** 图文详情（ProseMirror JSON 字符串），随提交写入 description */
   const [richDesc, setRichDesc] = useState('')
@@ -91,7 +88,7 @@ export default function InstitutionCreate() {
 
           <Card variant="borderless" className="create-card">
             <div className="create-card__header">
-              <h3>患者端介绍</h3>
+              <h3>患者端展示详情</h3>
               <span>展示标题、机构介绍与环境图片，用于患者端机构详情页</span>
             </div>
             <div className="institution-form institution-form--stack">
@@ -106,34 +103,34 @@ export default function InstitutionCreate() {
                   placeholder="例如：幸福里健康驿站 · 专业照护，安心颐养"
                 />
               </Form.Item>
-              <div className="institution-create__images" style={{marginBottom: 16}}>
-                <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                  <span className="institution-create__images-label">
-                    机构封面
-                  </span>
-                  <p className="institution-create__images-tip">建议尺寸 750×420，展示于患者端机构详情页顶部。</p>
+              <div className="patient-detail">
+                <div className="patient-detail__field patient-detail__cover">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="patient-detail__label">机构封面</span>
+                    <p className="patient-detail__tip">建议尺寸 750×420，展示于患者端机构详情页顶部。</p>
+                  </div>
+                  <Upload
+                    listType="picture-card"
+                    accept="image/*"
+                    showUploadList={false}
+                    beforeUpload={handleCoverUpload}
+                  >
+                    {coverUrl ? (
+                      <img
+                        src={coverUrl}
+                        alt="机构封面"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
+                      />
+                    ) : (
+                      <div>
+                        <PlusOutlined />
+                        <div style={{ marginTop: 8 }}>上传封面</div>
+                      </div>
+                    )}
+                  </Upload>
                 </div>
-                <Upload
-                  listType="picture-card"
-                  accept="image/*"
-                  showUploadList={false}
-                  beforeUpload={handleCoverUpload}
-                >
-                  {coverUrl ? (
-                    <img
-                      src={coverUrl}
-                      alt="机构封面"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
-                    />
-                  ) : (
-                    <div>
-                      <PlusOutlined />
-                      <div style={{ marginTop: 8 }}>上传封面</div>
-                    </div>
-                  )}
-                </Upload>
+                <RichDetailEditor label="图文详情" value={richDesc} onChange={setRichDesc} />
               </div>
-              <RichDetailEditor label="图文详情" value={richDesc} onChange={setRichDesc} />
               
               {/* <div className="institution-create__images">
                 <span className="institution-create__images-label">患者端图片</span>

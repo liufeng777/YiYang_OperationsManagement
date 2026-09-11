@@ -1,0 +1,92 @@
+/**
+ * 患者端展示详情（公共样式）
+ * 统一各业务编辑页「患者端展示」区块：封面（cover_image/picture-card 上传）+ 图文详情（富文本）
+ * - 结构约定：
+ *   <div class="patient-detail">
+ *     <div class="patient-detail__field">            // 封面等单值字段
+ *       <span class="patient-detail__label">列表封面</span>
+ *       ...(Upload picture-card)
+ *       <p class="patient-detail__tip">建议尺寸…</p>
+ *     </div>
+ *     <div class="patient-detail__field">            // 图文详情（RichDetailEditor）
+ *       <span class="patient-detail__label">图文详情</span>
+ *       <div class="patient-detail__entry">
+ *         <button>编辑图文详情</button>
+ *         <p class="patient-detail__status">…</p>
+ *       </div>
+ *     </div>
+ *   </div>
+ */
+
+.patient-detail {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-md;
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-xs;
+
+    .ant-form-item {
+      margin-bottom: 0;
+    }
+  }
+
+  &__label {
+    display: block;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    .text-label();
+    color: @color-text-primary;
+
+    i {
+      color: @color-danger;
+      font-style: normal;
+    }
+  }
+
+  &__tip {
+    margin: 0;
+    .text-auxiliary();
+    color: @color-text-secondary;
+  }
+
+  /* 封面：antd picture-card 上传（图片铺满图块） */
+  &__cover {
+    .ant-upload-wrapper .ant-upload-select {
+      margin: 0;
+    }
+
+    .ant-upload-list-item-thumbnail img,
+    .ant-upload-select img {
+      object-fit: cover;
+    }
+  }
+
+  /* 图文详情入口：按钮 + 状态提示 */
+  &__entry {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: @spacing-xs;
+  }
+
+  &__status {
+    margin: 0;
+    .text-auxiliary();
+    color: @color-text-secondary;
+
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin-right: @spacing-2xs;
+      vertical-align: middle;
+      border-radius: @radius-full;
+      background: @color-primary;
+    }
+  }
+}

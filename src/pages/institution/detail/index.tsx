@@ -14,7 +14,7 @@ import type { InstitutionItem, InstitutionService, InstitutionType } from '@/api
 import BaseInfoTab from '../components/BaseInfoTab'
 import ServicesTab from '../components/ServicesTab'
 import PatientIntroTab from '../components/PatientIntroTab'
-import './detail.less'
+import './index.less'
 
 type DetailTab = 'base' | 'services' | 'patient'
 

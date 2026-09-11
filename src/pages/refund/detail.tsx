@@ -175,7 +175,7 @@ export default function RefundDetail() {
       title="退款审核详情"
       description={`${base.refundNo} · 关联订单 ${base.orderNo} · ${base.userName}`}
       extra={
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/refund')}>
+        <Button color="primary" variant='outlined' icon={<ArrowLeftOutlined />} onClick={() => navigate('/refund')}>
           返回退款列表
         </Button>
       }
