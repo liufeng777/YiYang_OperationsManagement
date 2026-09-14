@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { App, Button, Card, Tabs, Upload } from 'antd'
 import { HolderOutlined, PlusOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
+import { useImageUpload } from '@/hooks'
 import './home.less'
 
 interface BannerRow {
@@ -45,6 +46,7 @@ const initialRecommends: RecommendRow[] = [
 
 export default function ContentHome() {
   const { message } = App.useApp()
+  const { uploading, upload } = useImageUpload()
   const [banners, setBanners] = useState(initialBanners)
   const [recommends, setRecommends] = useState(initialRecommends)
   const [recommendTab, setRecommendTab] = useState('service')
@@ -98,23 +100,35 @@ export default function ContentHome() {
               <Upload
                 accept="image/*"
                 showUploadList={false}
-                beforeUpload={(file) => {
+                disabled={uploading}
+                beforeUpload={async (file) => {
+                  const id = `b-${Date.now()}`
+                  // 先落一条本地预览占位，上传成功后替换为服务器地址
                   setBanners((prev) => [
                     ...prev,
                     {
-                      id: `b-${Date.now()}`,
+                      id,
                       tag: '轮播图',
                       title: file.name.replace(/\.[^.]+$/, ''),
                       linkTarget: '待配置跳转',
                       url: URL.createObjectURL(file),
                     },
                   ])
-                  message.success('轮播图已添加（本地预览）')
-                  return false
+                  await upload(file, {
+                    onUploaded: (url) =>
+                      setBanners((prev) =>
+                        prev.map((item) => (item.id === id ? { ...item, url } : item)),
+                      ),
+                    onError: () => {
+                      // 上传失败移除该占位项
+                      setBanners((prev) => prev.filter((item) => item.id !== id))
+                    },
+                  })
+                  return Upload.LIST_IGNORE
                 }}
               >
                 <Button icon={<PlusOutlined />} className='common-btn'>
-                  添加轮播图
+                  {uploading ? '上传中…' : '添加轮播图'}
                 </Button>
               </Upload>
             </div>

@@ -17,25 +17,42 @@ import {
 } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
+import { useImageUpload } from '@/hooks'
 import './article-edit.less'
 
 export default function ArticleEdit() {
   const navigate = useNavigate()
   const { message } = App.useApp()
+  const { uploading, upload } = useImageUpload()
   const params = useParams<{ id: string }>()
   const isEdit = !!params.id && params.id !== 'new'
 
   const [form] = Form.useForm()
   const watchTitle = Form.useWatch('title', form)
+  /** 封面预览地址（本地 objectURL 或服务器地址） */
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  /** 封面服务器地址（上传成功后写入） */
+  const [coverServerUrl, setCoverServerUrl] = useState('')
+  /** 正文图预览地址 */
   const [bodyImageUrl, setBodyImageUrl] = useState<string | null>(null)
+  /** 正文图服务器地址 */
+  const [bodyImageServerUrl, setBodyImageServerUrl] = useState('')
 
-  /** 本地图片选择：拦截真实上传，生成预览地址（接后端后替换为上传接口） */
-  const pickImage = (setter: (url: string) => void) => (file: File) => {
-    setter(URL.createObjectURL(file))
-    message.success('图片已上传（本地预览）')
-    return false
-  }
+  /** 图片选择：本地预览 + 后台上传，成功后返回服务器地址 */
+  const pickImage =
+    (setPreview: (url: string) => void, setServerUrl: (url: string) => void) =>
+    async (file: File) => {
+      await upload(file, {
+        onLocalPreview: (localUrl) => setPreview(localUrl),
+        onUploaded: (url) => {
+          setServerUrl(url)
+          setPreview(url)
+          message.success('图片已上传')
+        },
+        onError: () => setServerUrl(''),
+      })
+      return Upload.LIST_IGNORE
+    }
 
   const displayTitle = watchTitle || '秋季心脑血管养护：长者要注意这5件事'
 
@@ -129,13 +146,23 @@ export default function ArticleEdit() {
                 <label>
                   列表封面
                 </label>
-                <Upload accept="image/*" showUploadList={false} beforeUpload={pickImage(setCoverUrl)}>
+                <Upload
+                  accept="image/*"
+                  showUploadList={false}
+                  disabled={uploading}
+                  beforeUpload={pickImage(setCoverUrl, setCoverServerUrl)}
+                >
                   <Button className="edit-upload-btn">
                     {coverUrl ? '重新上传封面' : '上传封面'}
                   </Button>
                 </Upload>
                 {coverUrl && (
                   <img className="edit-upload-preview" src={coverUrl} alt="列表封面" />
+                )}
+                {coverServerUrl && (
+                  <p className="edit-upload-tip" style={{ fontSize: 12, color: '#8c8c8c', margin: '4px 0 0' }}>
+                    已上传：{coverServerUrl}
+                  </p>
                 )}
               </div>
             </div>
@@ -175,13 +202,23 @@ export default function ArticleEdit() {
                 进入秋季后，昼夜温差增大，心脑血管疾病容易出现波动。长者及家属可以从日常监测、饮食和活动三个方面做好预防。
               </p>
               <h5>一、坚持记录血压变化</h5>
-              <Upload accept="image/*" showUploadList={false} beforeUpload={pickImage(setBodyImageUrl)}>
+              <Upload
+                accept="image/*"
+                showUploadList={false}
+                disabled={uploading}
+                beforeUpload={pickImage(setBodyImageUrl, setBodyImageServerUrl)}
+              >
                 <button type="button" className="editor-image-upload">
                   <PlusOutlined /> 点击上传护理示意图片
                 </button>
               </Upload>
               {bodyImageUrl && (
                 <img className="editor-image-preview" src={bodyImageUrl} alt="护理示意图片" />
+              )}
+              {bodyImageServerUrl && (
+                <p style={{ fontSize: 12, color: '#8c8c8c', margin: '4px 0 0' }}>
+                  已上传：{bodyImageServerUrl}
+                </p>
               )}
               <p>
                 建议每天固定时间测量并记录，如出现持续异常或伴随胸闷、头晕等症状，应及时联系医护人员。

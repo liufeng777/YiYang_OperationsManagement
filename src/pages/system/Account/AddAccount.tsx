@@ -2,12 +2,13 @@
  * 新增用户 Drawer（账号 / 角色 / 头像 / 表单校验）
  * - 受控组件：open / onClose 由父组件 AccountList 管理
  * - 提交通过 onCreated 回调将新建的 AccountItem 上抛给父组件
- * - 头像当前为本地预览，后端就绪后接入 uploadApi.uploadFile
+ * - 头像通过共通上传接口（uploadApi.uploadFile）上传，成功后的服务器地址写入 avatar_url
  */
 import { useEffect, useState } from 'react'
 import { App, Button, Drawer, Form, Input, Select, Switch, Upload } from 'antd'
 import type { UploadFile } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
+import { useImageUpload } from '@/hooks'
 import type { AccountItem } from '@/api/modules/system'
 import './account.less'
 
@@ -59,6 +60,7 @@ interface AddAccountProps {
 
 export default function AddAccount({ open, initial = null, onClose, onSaved }: AddAccountProps) {
   const { message } = App.useApp()
+  const { uploading, upload } = useImageUpload()
   const isEdit = !!initial
   const [avatarUrl, setAvatarUrl] = useState<string>()
   const [avatarList, setAvatarList] = useState<UploadFile[]>([])
@@ -86,21 +88,26 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
     setAvatarList([])
   }, [open, isEdit, initial, form])
 
-  /** 头像上传：本地预览，后端就绪后接入 uploadApi.uploadFile */
-  const handleAvatarChange = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      message.error('仅支持上传图片')
-      return Upload.LIST_IGNORE
-    }
-    const reader = new FileReader()
-    reader.onload = () => {
-      const url = reader.result as string
-      setAvatarUrl(url)
-      setAvatarList([{ uid: '-1', name: file.name, status: 'done', url }])
-      form.setFieldValue('avatar_url', url)
-    }
-    reader.readAsDataURL(file)
-    return false
+  /** 头像上传：本地预览 + 后台上传，成功后把服务器地址写入 avatar_url */
+  const handleAvatarChange = async (file: File) => {
+    await upload(file, {
+      onLocalPreview: (localUrl) => {
+        setAvatarUrl(localUrl)
+        setAvatarList([{ uid: '-1', name: file.name, status: 'uploading', url: localUrl }])
+      },
+      onUploaded: (url) => {
+        setAvatarUrl(url)
+        setAvatarList([{ uid: '-1', name: file.name, status: 'done', url }])
+        form.setFieldValue('avatar_url', url)
+        message.success('头像已上传')
+      },
+      onError: () => {
+        setAvatarUrl(undefined)
+        setAvatarList([])
+        form.setFieldValue('avatar_url', '')
+      },
+    })
+    return Upload.LIST_IGNORE
   }
 
   const handleRemoveAvatar = () => {
@@ -257,6 +264,7 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
               maxCount={1}
               accept="image/*"
               fileList={avatarList}
+              disabled={uploading}
               beforeUpload={handleAvatarChange}
               onRemove={handleRemoveAvatar}
             >

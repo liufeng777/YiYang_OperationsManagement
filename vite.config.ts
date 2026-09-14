@@ -34,10 +34,15 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       open: false,
       proxy: {
-        // 开发环境代理：/api -> 后端服务
+        // 开发环境代理：/api -> 后端服务（测试环境 http://121.40.29.162:9090）
+        // 前端契约端点写作 /api/admin/xxx，后端实际挂在 /api/v1/admin/xxx（全模块一致，
+        // 已验证 auth/institutions/services/activities），故在此统一补 /v1 前缀。
+        // 注意：仅 dev 生效，生产部署需由网关 / Nginx 做同样的前缀映射。
         [env.VITE_API_BASE_URL || '/api']: {
-          target: 'http://localhost:8080',
+          target: 'http://121.40.29.162:9090',
           changeOrigin: true,
+          rewrite: (path) =>
+            path.startsWith('/api/v1/') ? path : path.replace(/^\/api\//, '/api/v1/'),
         },
       },
     },

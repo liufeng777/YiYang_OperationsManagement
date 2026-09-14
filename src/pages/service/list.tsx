@@ -1,16 +1,18 @@
 /**
  * 服务项目 - 集团服务池
  * 视觉对齐设计稿：顶部统计 + 筛选 + 左侧服务分类 + 右侧服务项目表格
- * 当前为 mock 数据，后端就绪后替换为 serviceApi.getServiceList
+ * 数据来源：serviceApi.getServices / getServiceCategories / updateServiceStatus / batchUpdateServiceStatus / deleteService
  */
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Key } from 'react'
-import { App, Button, Card, Dropdown, Input, Modal, Select, Table, Tag, Tooltip } from 'antd'
+import { App, Button, Card, Dropdown, Input, Select, Table, Tag, Tooltip } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { DeleteOutlined, EditOutlined, EllipsisOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import type { MenuProps } from 'antd'
+import { serviceApi } from '@/api'
+import type { CommonStatus } from '@/types/api'
 import type { ServiceCategory, ServiceItem } from '@/api/modules/service'
 import ServiceCategoryEditor, { type ServiceCategoryFill } from './components/ServiceCategoryEditor';
 import StatusTargetModal from './components/StatusTargetModal'
@@ -18,6 +20,7 @@ import './list.less'
 
 export const statusText: Record<number, string> = {
   1: '已上架',
+  2: '草稿',
   9: '已下架'
 }
 
@@ -28,124 +31,6 @@ export const typeText: Record<number, string> = {
 
 export const typeColor = ['', 'geekblue', 'purple']
 
-export const categories: ServiceCategory[] = [
-  { id: 1, code: 'life_care', name: '生活照护', name_en: 'Daily Care', brief: '生活起居与日常照护服务', brief_en: '', sort_order: 1, status: 1 },
-  { id: 2, code: 'rehab_nursing', name: '康复护理', brief: '康复训练与术后照护服务', brief_en: '', sort_order: 2, status: 9 },
-  { id: 3, code: 'health_manage', name: '健康管理', brief: '健康评估、随访与慢病管理服务', brief_en: '', sort_order: 3, status: 9 },
-  { id: 4, code: 'home_safety', name: '居家安全', brief: '居家安全评估与适老化环境改造', brief_en: '', sort_order: 4, status: 1 },
-  { id: 5, code: 'companion', name: '陪诊出行', brief: '就医陪诊与出行陪伴服务', brief_en: '', sort_order: 5, status: 9 },
-]
-
-const mockServices: ServiceItem[] = [
-  {
-    id: 1,
-    code: 'FW0001',
-    category_id: 1,
-    service_type: 1,
-    name: '上门助浴服务',
-    name_en: '',
-    description: '专业护理人员上门提供安全、舒适的助浴服务',
-    price: 168,
-    unit: '次',
-    duration: 60,
-    status: 1,
-    vital_sign: [],
-    is_consumable_supported: true,
-    packages: [],
-    service_process: '',
-    cover_url: ''
-  },
-  {
-    id: 2,
-    code: 'FW0002',
-    name: '居家护理服务',
-    category_id: 1,
-    service_type: 1,
-    name_en: '',
-    description: '专业护理人员上门提供安全、舒适的助浴服务',
-    price: 168,
-    unit: '次',
-    duration: 60,
-    status: 9,
-    vital_sign: [],
-    is_consumable_supported: true,
-    packages: [],
-    service_process: '',
-    cover_url: ''
-  },
-  {
-    id: 3,
-    code: 'FW0003',
-    name: '术后康复训练',
-    category_id: 2,
-    service_type: 2,
-    name_en: '',
-    description: '专业护理人员上门提供安全、舒适的助浴服务',
-    price: 168,
-    unit: '次',
-    duration: 60,
-    service_process: '',
-    cover_url: '',
-    status: 9,
-    vital_sign: [],
-    is_consumable_supported: true,
-    packages: []
-  },
-  {
-    id: 4,
-    code: 'FW0004',
-    name: '慢病健康随访',
-    category_id: 3,
-    service_type: 1,
-    name_en: '',
-    description: '专业护理人员上门提供安全、舒适的助浴服务',
-    price: 168,
-    unit: '次',
-    duration: 60,
-    status: 1,
-    vital_sign: [],
-    is_consumable_supported: true,
-    packages: [],
-    service_process: '',
-    cover_url: ''
-  },
-  {
-    id: 5,
-    code: 'FW0005',
-    name: '居家安全评估',
-    category_id: 4,
-    service_type: 1,
-    name_en: '',
-    description: '专业护理人员上门提供安全、舒适的助浴服务',
-    price: 168,
-    unit: '次',
-    duration: 60,
-    status: 9,
-    vital_sign: [],
-    is_consumable_supported: true,
-    packages: [],
-    service_process: '',
-    cover_url: ''
-  },
-  {
-    id: 6,
-    code: 'FW0006',
-    name: '全程陪诊服务',
-    category_id: 5,
-    service_type: 2,
-    name_en: '',
-    description: '专业护理人员上门提供安全、舒适的助浴服务',
-    price: 168,
-    unit: '次',
-    duration: 60,
-    status: 1,
-    vital_sign: [],
-    is_consumable_supported: true,
-    packages: [],
-    service_process: '',
-    cover_url: ''
-  },
-]
 
 interface ServiceFilters {
   keyword: string
@@ -165,7 +50,9 @@ export interface StatusTarget {
 export default function ServicePoolList() {
   const navigate = useNavigate()
   const { message, modal } = App.useApp()
-  const [data, setData] = useState(mockServices)
+  const [data, setData] = useState<ServiceItem[]>([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [category, setCategory] = useState<number | null>(null)
   const [type, setType] = useState<number | null>(null)
@@ -180,30 +67,70 @@ export default function ServicePoolList() {
   const [statusTarget, setStatusTarget] = useState<StatusTarget | null>(null)
   const [page, setPage] = useState(1)
   const pageSize = 10
-  /** 可编辑的服务分类（本地 mock，CRUD 落在此列表） */
-  const [catList, setCatList] = useState<ServiceCategory[]>(categories)
+  /** 服务分类（来自后端 /admin/service-categories） */
+  const [catList, setCatList] = useState<ServiceCategory[]>([])
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null)
 
-  const filteredData = useMemo(() => {
-    return data.filter((item) => {
-      const keywordHit =
-        !applied.keyword ||
-        item.name.includes(applied.keyword) ||
-        item.code.toLowerCase().includes(applied.keyword.toLowerCase())
-      const categoryHit = !applied.category || item.category_id === applied.category
-      const typeHit = !applied.type || item.service_type === applied.type
-      const statusHit = !applied.status || item.status === applied.status
-      return keywordHit && categoryHit && typeHit && statusHit
-    })
-  }, [applied, data])
+  /** 拉取服务列表（keyword/category/status 由后端筛选） */
+  const fetchList = useCallback(
+    async (targetPage = page) => {
+      setLoading(true)
+      try {
+        const result = await serviceApi.getServices({
+          page: targetPage,
+          page_size: pageSize,
+          keyword: applied.keyword || undefined,
+          category: applied.category ?? undefined,
+          status: (applied.status ?? undefined) as CommonStatus | undefined,
+        })
+        setData(result.list ?? [])
+        setTotal(result.total ?? 0)
+      } catch {
+        /* 错误提示由 request 拦截器统一处理 */
+        setData([])
+        setTotal(0)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [applied, page],
+  )
 
-  const metrics = [
-    { key: 'all', label: '服务项目', value: 128, note: '集团统一定义' },
-    { key: 'on', label: '已上架', value: 112, note: '机构可选择添加' },
-    { key: 'draft', label: '草稿', value: 9, note: '尚未对机构开放' },
-    { key: 'off', label: '已下架', value: 7, note: '不可新增使用' },
-  ]
+  /** 拉取服务分类（左侧分类列表与筛选项） */
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await serviceApi.getServiceCategories({ page: 1, page_size: 100 })
+      setCatList(res.list ?? [])
+    } catch {
+      setCatList([])
+    }
+  }, [])
+
+  useEffect(() => {
+    void fetchList(page)
+  }, [fetchList, page])
+
+  useEffect(() => {
+    void fetchCategories()
+  }, [fetchCategories])
+
+  /** 服务方式（type）后端不支持筛选，仅对当前页做过滤 */
+  const filteredData = useMemo(() => {
+    if (!applied.type) return data
+    return data.filter((item) => item.service_type === applied.type)
+  }, [applied.type, data])
+
+  /** 顶部统计：服务总数取自后端 total，其余按当前页分布统计 */
+  const metrics = useMemo(() => {
+    const countBy = (target: number) => data.filter((item) => item.status === target).length
+    return [
+      { key: 'all', label: '服务项目', value: total, note: '集团统一定义' },
+      { key: 'on', label: '已上架', value: countBy(1), note: '机构可选择添加' },
+      { key: 'draft', label: '草稿', value: countBy(2), note: '尚未对机构开放' },
+      { key: 'off', label: '已下架', value: countBy(9), note: '不可新增使用' },
+    ]
+  }, [data, total])
 
   /** 应用到过滤：把当前输入的筛选条件一次性生效（重置到第 1 页） */
   const applyFilters = () => {
@@ -231,7 +158,7 @@ export default function ServicePoolList() {
     setPage(1)
   }
 
-  /* ---- 服务分类：新增 / 编辑 / 删除 ---- */
+  /* ---- 服务分类：新增 / 编辑 / 停用 ---- */
   const openCategoryCreate = () => {
     setEditingCategory(null)
     setCategoryEditorOpen(true)
@@ -240,10 +167,9 @@ export default function ServicePoolList() {
     setEditingCategory(item)
     setCategoryEditorOpen(true)
   }
-  /** 表单值规范化为 ServiceCategory（可选英文兜底为空串），经 onSaved 上抛 */
-  const handleCategorySaved = (values: ServiceCategoryFill) => {
-    const normalized: ServiceCategory = {
-      id: editingCategory ? editingCategory.id : Date.now(),
+  /** 保存分类：新增 / 编辑（后端 PUT 为全量覆盖，需带全部字段） */
+  const handleCategorySaved = async (values: ServiceCategoryFill) => {
+    const payload = {
       name: values.name,
       name_en: values.name_en ?? '',
       code: values.code,
@@ -252,27 +178,39 @@ export default function ServicePoolList() {
       sort_order: values.sort_order,
       status: values.status,
     }
-    setCatList((prev) => {
+    try {
       if (editingCategory) {
-        return prev.map((c) => (c.id === editingCategory.id ? normalized : c))
+        await serviceApi.updateServiceCategory(editingCategory.id, payload)
+        message.success('服务分类已更新')
+      } else {
+        await serviceApi.createServiceCategory(payload)
+        message.success('服务分类已创建')
       }
-      return [...prev, normalized]
-    })
+      void fetchCategories()
+    } catch {
+      /* 错误提示由 request 拦截器统一提示 */
+    }
   }
+  /** 停用分类：后端无删除端点，改为禁用（status=9） */
   const confirmCategoryDelete = (item: ServiceCategory) => {
     modal.confirm({
-      title: '确认删除分类',
-      content: `确认删除服务分类“${item.name}”？删除仅作用于分类维护，不会删除服务本身。`,
-      okText: '确认删除',
+      title: '确认停用分类',
+      content: `确认停用服务分类“${item.name}”？停用后不影响已有服务，仅在新建服务时不再可选。`,
+      okText: '确认停用',
       okButtonProps: { danger: true },
       cancelText: '取消',
-      onOk: () => {
-        setCatList((prev) => prev.filter((c) => c.id !== item.id))
-        if (category === item.id) {
-          setCategory(0)
-          setApplied((prev) => ({ ...prev, category: 0 }))
+      onOk: async () => {
+        try {
+          await serviceApi.updateServiceCategoryStatus(item.id, 9)
+          message.success(`已停用分类“${item.name}”`)
+        } catch {
+          /* 错误提示由 request 拦截器统一提示 */
         }
-        message.success(`已删除分类“${item.name}”（mock）`)
+        if (category === item.id) {
+          setCategory(null)
+          setApplied((prev) => ({ ...prev, category: null }))
+        }
+        void fetchCategories()
       },
     })
   }
@@ -288,7 +226,7 @@ export default function ServicePoolList() {
       {
         key: 'delete',
         icon: <DeleteOutlined />,
-        label: '删除',
+        label: '停用',
         danger: true,
         onClick: () => confirmCategoryDelete(item),
       },
@@ -319,7 +257,7 @@ export default function ServicePoolList() {
     setStatusTarget({
       ids: [record.id],
       title: `集团服务池 · ${record.name}`,
-      code: record.code,
+      code: `${typeText[record.service_type] ?? ''} · ${catList.find((v) => v.id === record.category_id)?.name ?? '未分类'}`,
       action: 'offline',
     })
   }
@@ -347,30 +285,59 @@ export default function ServicePoolList() {
       content: `确认上架 “${record.name}” ？上架后机构可选择添加该服务。`,
       okText: '确认上架',
       cancelText: '取消',
-      onOk: () => {
-        setData((prev) =>
-          prev.map((item) => (item.id === record.id ? { ...item, status: 1 } : item)),
-        )
-        message.success(`${record.name} 已上架`)
+      onOk: async () => {
+        try {
+          await serviceApi.updateServiceStatus(record.id, 1)
+          message.success(`${record.name} 已上架`)
+        } catch {
+          /* 错误提示由 request 拦截器统一提示 */
+        }
+        void fetchList(page)
       },
     })
   }
 
-  const handleConfirmStatusChange = (reason?: string) => {
+  /** 单条/批量 上下架（批量走后端 batch-status） */
+  const handleConfirmStatusChange = async () => {
     if (!statusTarget) return
-    if (statusTarget.action === 'offline') {
-      setData((prev) =>
-        prev.map((item) => (statusTarget.ids.includes(item.id) ? { ...item, status: 9 } : item)),
+    const nextStatus: CommonStatus = statusTarget.action === 'offline' ? 9 : 1
+    try {
+      if (statusTarget.ids.length === 1) {
+        await serviceApi.updateServiceStatus(statusTarget.ids[0], nextStatus)
+      } else {
+        await serviceApi.batchUpdateServiceStatus(statusTarget.ids, nextStatus)
+      }
+      message.success(
+        statusTarget.action === 'offline'
+          ? `已下架 ${statusTarget.ids.length} 项服务`
+          : `已上架 ${statusTarget.ids.length} 项服务`,
       )
-      message.success(`已下架 ${statusTarget.ids.length} 项服务`)
-    } else {
-      setData((prev) =>
-        prev.map((item) => (statusTarget.ids.includes(item.id) ? { ...item, status: 1 } : item)),
-      )
-      message.success(`已上架 ${statusTarget.ids.length} 项服务`)
+    } catch {
+      /* 错误提示由 request 拦截器统一提示 */
     }
     setStatusTarget(null)
     setSelectedRowKeys([])
+    void fetchList(page)
+  }
+
+  /** 删除服务（软删，后端校验无在途订单引用） */
+  const handleDeleteService = (record: ServiceItem) => {
+    modal.confirm({
+      title: '确认删除',
+      content: `确认删除 “${record.name}” ？删除后机构端将不可再使用该服务。`,
+      okText: '确认删除',
+      cancelText: '取消',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          await serviceApi.deleteService(record.id)
+          message.success(`已删除 “${record.name}”`)
+        } catch {
+          /* 错误提示由 request 拦截器统一提示 */
+        }
+        void fetchList(page)
+      },
+    })
   }
 
   const columns = useMemo<ColumnsType<ServiceItem>>(
@@ -383,7 +350,10 @@ export default function ServicePoolList() {
             <i>{record.name.slice(0, 1)}</i>
             <div>
               <strong>{record.name}</strong>
-              <span>{categories.find(v => v.id === record.category_id)?.name} · {record.code}</span>
+              <span>
+                {catList.find((v) => v.id === record.category_id)?.name ?? '—'}
+                {record.name_en ? ` · ${record.name_en}` : ''}
+              </span>
             </div>
           </div>
         ),
@@ -440,27 +410,15 @@ export default function ServicePoolList() {
                 上架
               </Button>
             )}
-            <Button type="link" size="small" danger onClick={() => {
-              modal.confirm({
-                title: '确认删除',
-                content: `确认删除 “${record.name}” ？`,
-                okText: '确认删除',
-                cancelText: '取消',
-                onOk: () => {
-                  message.success('已确认删除（mock）')
-                },
-                okButtonProps: {
-                  danger: true
-                }
-              })
-            }}>
+            <Button type="link" size="small" danger onClick={() => handleDeleteService(record)}>
               删除
             </Button>
           </div>
         ),
       },
     ],
-    [message, navigate],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [navigate, catList, page, fetchList],
   )
 
   return (
@@ -599,13 +557,14 @@ export default function ServicePoolList() {
             <Table<ServiceItem>
               size="small"
               rowKey="id"
+              loading={loading}
               columns={columns}
-              dataSource={filteredData.slice((page - 1) * pageSize, page * pageSize)}
+              dataSource={filteredData}
               rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
               pagination={{
                 current: page,
                 pageSize,
-                total: filteredData.length,
+                total: applied.type ? filteredData.length : total,
                 onChange: setPage,
                 showTotal: (total) => `共 ${total} 条`
               }}
@@ -617,7 +576,7 @@ export default function ServicePoolList() {
       <StatusTargetModal
         statusTarget={statusTarget}
         onCancel={() => setStatusTarget(null)}
-        onOk={(reason?: string) => handleConfirmStatusChange(reason)}
+        onOk={() => handleConfirmStatusChange()}
       />
 
       <ServiceCategoryEditor

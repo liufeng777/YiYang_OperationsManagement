@@ -1,15 +1,16 @@
 /**
  * 机构管理 - 机构列表
  * 视觉对齐设计稿：统计卡 + 筛选区 + 机构列表表格
- * 当前为 mock 数据，后端就绪后替换为 institutionApi.getInstitutionList
+ * 数据来源：institutionApi.getInstitutions（分页 + 类型/状态/关键字筛选）
  */
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Key } from 'react'
 import { App, Button, Card, Col, Input, Row, Select, Table, Tag, Space, Tooltip, Modal } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
+import { institutionApi } from '@/api'
 import type { InstitutionItem, InstitutionType, InstitutionStatus } from '@/api/modules/institution'
 import './list.less'
 
@@ -25,6 +26,7 @@ const statusText: Record<InstitutionStatus, string> = {
   9: '停用',
 }
 
+/** 示例机构数据（仅供应未接入接口的页面/组件作占位，列表页已改为真实接口） */
 export const mockInstitutions: InstitutionItem[] = [
   {
     id: 1,
@@ -39,8 +41,7 @@ export const mockInstitutions: InstitutionItem[] = [
     contact_phone: '0571-8876 1028',
     brief: '专业照护，安心颐养',
     description: '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。院内配备专业医护团队和适老化环境，为长者提供安全、温暖、有尊严的照护体验。',
-    cover_image: '',
-    images: [],
+    cover_url: '',
     manager_name: '',
     manager_phone: '',
     service_radius_km: 10,
@@ -60,8 +61,7 @@ export const mockInstitutions: InstitutionItem[] = [
     contact_phone: '0571-8899 2631',
     brief: '专业照护，安心颐养',
     description: '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。院内配备专业医护团队和适老化环境，为长者提供安全、温暖、有尊严的照护体验。',
-    cover_image: '',
-    images: [],
+    cover_url: '',
     manager_name: '',
     manager_phone: '',
     service_radius_km: 10,
@@ -81,8 +81,7 @@ export const mockInstitutions: InstitutionItem[] = [
     contact_phone: '0571-8899 2631',
     brief: '专业照护，安心颐养',
     description: '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。院内配备专业医护团队和适老化环境，为长者提供安全、温暖、有尊严的照护体验。',
-    cover_image: '',
-    images: [],
+    cover_url: '',
     manager_name: '',
     manager_phone: '',
     service_radius_km: 10,
@@ -102,8 +101,7 @@ export const mockInstitutions: InstitutionItem[] = [
     contact_phone: '0571-8899 2631',
     brief: '专业照护，安心颐养',
     description: '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。院内配备专业医护团队和适老化环境，为长者提供安全、温暖、有尊严的照护体验。',
-    cover_image: '',
-    images: [],
+    cover_url: '',
     manager_name: '',
     manager_phone: '',
     service_radius_km: 10,
@@ -123,8 +121,7 @@ export const mockInstitutions: InstitutionItem[] = [
     contact_phone: '0571-8899 2631',
     brief: '专业照护，安心颐养',
     description: '面向长者提供专业护理、康复训练、慢病管理与健康咨询服务。院内配备专业医护团队和适老化环境，为长者提供安全、温暖、有尊严的照护体验。',
-    cover_image: '',
-    images: [],
+    cover_url: '',
     manager_name: '',
     manager_phone: '',
     service_radius_km: 10,
@@ -151,22 +148,53 @@ interface StatusTarget {
 
 export default function InstitutionList() {
   const navigate = useNavigate()
-  const { message } = App.useApp()
-  const [data, setData] = useState(mockInstitutions)
+  const { message, modal } = App.useApp()
+  const [data, setData] = useState<InstitutionItem[]>([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [type, setType] = useState<InstitutionType | null>(null)
   const [status, setStatus] = useState<InstitutionStatus | null>(null)
-  const [applied, setApplied] = useState({
-    keyword: '',
-    status,
-    type
-  })
+  const [applied, setApplied] = useState<{
+    keyword: string
+    type: InstitutionType | null
+    status: InstitutionStatus | null
+  }>({ keyword: '', type: null, status: null })
   const [page, setPage] = useState(1)
   const pageSize = 10
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
   const [statusTarget, setStatusTarget] = useState<StatusTarget | null>(null)
   const [offlineReason, setOfflineReason] = useState('')
+
+  /** 拉取机构列表（筛选条件由后端处理） */
+  const fetchList = useCallback(
+    async (targetPage = page) => {
+      setLoading(true)
+      try {
+        const result = await institutionApi.getInstitutions({
+          page: targetPage,
+          page_size: pageSize,
+          keyword: applied.keyword || undefined,
+          type: applied.type ?? undefined,
+          status: applied.status ?? undefined,
+        })
+        setData(result.list ?? [])
+        setTotal(result.total ?? 0)
+      } catch {
+        /* 错误提示由 request 拦截器统一处理 */
+        setData([])
+        setTotal(0)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [applied, page],
+  )
+
+  useEffect(() => {
+    void fetchList(page)
+  }, [fetchList, page])
 
   const selectedItems = useMemo(
     () => data.filter((item) => selectedRowKeys.includes(item.id)),
@@ -190,32 +218,22 @@ export default function InstitutionList() {
       ? '所选择的机构状态不一致，无法批量启用/停用'
       : ''
 
-  const filteredData = useMemo(() => {
-    return data.filter((item) => {
-      const keywordHit =
-        !applied.keyword ||
-        item.name.includes(applied.keyword) ||
-        item.code.toLowerCase().includes(applied.keyword.toLowerCase())
-      const type = !applied.type|| item.type === applied.type
-      const status = !applied.status || item.status === applied.status
-      return keywordHit && type && status
-    })
-  }, [applied, data])
-
+  /** 顶部统计：按当前筛选条件下的机构总数分布（基于后端 total 与本页数据汇总） */
   const metrics: MetricCard[] = useMemo(() => {
     const normal = data.filter((item) => item.status === 1).length
     const paused = data.filter((item) => item.status === 9).length
     const nursingHome = data.filter((item) => item.type === 1).length
     const postStation = data.filter((item) => item.type === 2).length
     return [
-      { key: 'nursingHome', label: '护理院', value: nursingHome, badge: '护理院文案', tone: 'info' },
-      { key: 'postStation', label: '驿站', value: postStation, badge: '驿站文案', tone: 'info' },
-      { key: 'normal', label: '正常经营', value: normal, badge: '覆盖 8 个服务区域', tone: 'success' },
+      { key: 'nursingHome', label: '护理院', value: nursingHome, badge: '本页护理院数量', tone: 'info' },
+      { key: 'postStation', label: '驿站', value: postStation, badge: '本页驿站数量', tone: 'info' },
+      { key: 'normal', label: '正常经营', value: normal, badge: `当前筛选共 ${total} 家`, tone: 'success' },
       { key: 'paused', label: '暂停经营', value: paused, badge: '用户端已停止展示', tone: 'danger' },
     ]
-  }, [data])
+  }, [data, total])
 
   const handleQuery = () => {
+    setPage(1)
     setApplied({ keyword: keyword.trim(), type, status })
   }
 
@@ -223,34 +241,43 @@ export default function InstitutionList() {
     setKeyword('')
     setType(null)
     setStatus(null)
-    setApplied({ keyword: '', type: null, status: null})
+    setPage(1)
+    setApplied({ keyword: '', type: null, status: null })
   }
 
   const handleEnable = (record: InstitutionItem) => {
-    Modal.confirm({
+    modal.confirm({
       title: '启用机构',
       content: `确认启用 “${record.name}” ？`,
       okText: '确认启用',
       cancelText: '取消',
-      onOk: () => {
-        setData((prev) =>
-          prev.map((item) => (item.id === record.id ? { ...item, status: 1 } : item)),
-        )
-        message.success(`${record.name} 已启用`)
+      onOk: async () => {
+        try {
+          await institutionApi.updateInstitutionStatus(record.id, 1)
+          message.success(`${record.name} 已启用`)
+        } catch {
+          /* 拦截器已提示 */
+        }
+        void fetchList(page)
       },
     })
   }
 
   const handleDelete = (record: InstitutionItem) => {
-    Modal.confirm({
+    modal.confirm({
       title: `确认删除机构「${record.name}」？`,
       content: '移除后机构的所有信息将被清空，用户端不可查看和预约',
       okText: '确认删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
-      onOk: () => {
-        setData((prev) => prev.filter((item) => item.id !== record.id))
-        message.success(`已删除「${record.name}」（mock）`)
+      onOk: async () => {
+        try {
+          await institutionApi.deleteInstitution(record.id)
+          message.success(`已删除「${record.name}」`)
+        } catch {
+          /* 拦截器已提示 */
+        }
+        void fetchList(page)
       },
     })
   }
@@ -263,7 +290,7 @@ export default function InstitutionList() {
         render: (_, record) => (
           <div className="institution-cell">
             <strong>{record.name}</strong>
-            <span>机构编码：{record.code}</span>
+            <span>{record.name_en || '—'}</span>
           </div>
         ),
       },
@@ -345,7 +372,7 @@ export default function InstitutionList() {
     setStatusTarget({
       ids: [record.id],
       title: `机构 · ${record.name}`,
-      code: record.code,
+      code: typeText[record.type],
       action: 'offline',
     })
   }
@@ -369,25 +396,30 @@ export default function InstitutionList() {
     )
   }
 
-  const handleConfirmStatusChange = () => {
+  const handleConfirmStatusChange = async () => {
     if (!statusTarget) return
-    if (statusTarget.action === 'offline') {
-      if (offlineReason.trim().length < 5) {
-        message.warning('请填写停用原因，至少 5 个字')
-        return
+    const nextStatus: InstitutionStatus = statusTarget.action === 'offline' ? 9 : 1
+    if (statusTarget.action === 'offline' && offlineReason.trim().length < 5) {
+      message.warning('请填写停用原因，至少 5 个字')
+      return
+    }
+    try {
+      if (statusTarget.ids.length === 1) {
+        await institutionApi.updateInstitutionStatus(statusTarget.ids[0], nextStatus)
+      } else {
+        await institutionApi.batchUpdateInstitutionStatus(statusTarget.ids, nextStatus)
       }
-      setData((prev) =>
-        prev.map((item) => (statusTarget.ids.includes(item.id) ? { ...item, status: 9 } : item)),
+      message.success(
+        statusTarget.action === 'offline'
+          ? `已停用 ${statusTarget.ids.length} 个机构`
+          : `已启用 ${statusTarget.ids.length} 个机构`,
       )
-      message.success(`已停用 ${statusTarget.ids.length} 个机构`)
-    } else {
-      setData((prev) =>
-        prev.map((item) => (statusTarget.ids.includes(item.id) ? { ...item, status: 1 } : item)),
-      )
-      message.success(`已启用 ${statusTarget.ids.length} 个机构`)
+    } catch {
+      /* 拦截器已提示 */
     }
     setStatusTarget(null)
     setSelectedRowKeys([])
+    void fetchList(page)
   }
 
   return (
@@ -467,13 +499,14 @@ export default function InstitutionList() {
           <Table<InstitutionItem>
             rowKey="id"
             size='small'
+            loading={loading}
             columns={columns}
-            dataSource={filteredData}
+            dataSource={data}
             rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }}
             pagination={{
               current: page,
               pageSize,
-              total: filteredData.length,
+              total,
               onChange: setPage,
               showTotal: (total) => `共 ${total} 条`
             }}

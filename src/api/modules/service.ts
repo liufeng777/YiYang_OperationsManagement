@@ -20,25 +20,37 @@ export interface Package {
   price_with_consum: number
 }
 
-/** 服务项目 */
+/** 服务项目（字段名以后端实际返回为准） */
 export interface ServiceItem {
   id: number
-  /** 服务编码：FW0001 */
-  code: string
-  category_id: number // 服务类型
+  /** 服务编码：FW0001（后端暂未返回，保留兼容） */
+  code?: string
+  category_id: number // 服务分类 id
   name: string
   name_en?: string // 英文名
   description?: string // 富文本编辑
   duration?: number // 单次服务时长
-  is_consumable_supported: boolean // 是否可选配耗材
+  /** 是否可选配耗材：后端字段名为 support_consum（0-否 1-是） */
+  support_consum: number
   price: number // 单价
   unit: string // 计价单位
-  service_process: string // JSON 服务流程
+  /** 服务流程（后端为 JSON 数组） */
+  service_process?: ServiceProcessStep[]
   status: number // 1-上架 9-下架
-  vital_sign?: number[] // 生命体征 -监测项ID 数组
   service_type: number // 1'上门' | 2'到店'
   packages?: Package[] // 套餐
   cover_url: string // 封面图片
+  /** 可选配耗材 id 列表（后端返回） */
+  consumable_ids?: number[]
+  /** 已开通该服务的机构 id 列表（后端返回） */
+  institution_ids?: number[]
+  created_at?: number
+}
+
+/** 服务流程步骤（service_process 数组元素） */
+export interface ServiceProcessStep {
+  title?: string
+  description?: string
 }
 
 /** 服务分类 */
@@ -72,9 +84,10 @@ export type ServiceCategoryCode = 1 | 2 | 3 | 4 | 9
 /** 服务新增 / 编辑入参 */
 export type ServiceSaveBody = Omit<ServiceItem, 'id' | 'code'>
 
-/** 服务列表 GET /api/admin/services（按分类/状态/关键字） */
+/** 服务列表 GET /api/admin/services（按分类/状态/关键字）
+ *  注：category 为服务分类 id（后端分类表主键，非固定枚举），status 为 1-上架 / 9-下架 */
 export function getServices(
-  params?: ApiPageParams & { category?: ServiceCategoryCode; status?: CommonStatus },
+  params?: ApiPageParams & { category?: number; status?: CommonStatus },
 ) {
   return http.get<ApiPageResult<ServiceItem>>('/admin/services', { ...params })
 }
@@ -103,7 +116,7 @@ export function updateServiceStatus(id: number, status: CommonStatus) {
 export function batchUpdateServiceStatus(
   ids: number[],
   status: CommonStatus,
-  category?: ServiceCategoryCode,
+  category?: number,
 ) {
   return http.post<BatchResult>('/admin/services/batch-status', { ids, status, category })
 }
@@ -111,6 +124,35 @@ export function batchUpdateServiceStatus(
 /** 删除服务 DELETE /api/admin/services/:id */
 export function deleteService(id: number) {
   return http.delete<null>(`/admin/services/${id}`)
+}
+
+/* ------------------------------------------------------------------ */
+/* 服务分类（后端 /admin/service-categories，契约未含，按实测补充）        */
+/* ------------------------------------------------------------------ */
+
+/** 服务分类列表 GET /api/admin/service-categories */
+export function getServiceCategories(params?: ApiPageParams & { status?: CommonStatus }) {
+  return http.get<ApiPageResult<ServiceCategory>>('/admin/service-categories', { ...params })
+}
+
+/** 服务分类详情 GET /api/admin/service-categories/:id */
+export function getServiceCategory(id: number) {
+  return http.get<ServiceCategory>(`/admin/service-categories/${id}`)
+}
+
+/** 新增服务分类 POST /api/admin/service-categories */
+export function createServiceCategory(data: Omit<ServiceCategory, 'id'>) {
+  return http.post<{ id: number }>('/admin/service-categories', data)
+}
+
+/** 编辑服务分类 PUT /api/admin/service-categories/:id（全量覆盖：code 等必填需带） */
+export function updateServiceCategory(id: number, data: Omit<ServiceCategory, 'id'>) {
+  return http.put<null>(`/admin/service-categories/${id}`, data)
+}
+
+/** 启用/禁用服务分类 POST /api/admin/service-categories/:id/status */
+export function updateServiceCategoryStatus(id: number, status: CommonStatus) {
+  return http.post<null>(`/admin/service-categories/${id}/status`, { status })
 }
 
 /* ------------------------------------------------------------------ */

@@ -3,20 +3,23 @@
  * 用于活动详情图、服务详情图等患者端图片编排场景，保持全站交互一致：
  * - 拖动排序：整卡可拖，拖起半透明、落点品牌色描边
  * - 操作按钮（拖动 / 替换 / 删除）图标化悬浮在图片底部，半透明深色背景
- * - 添加 / 替换通过 antd Upload 选择本地图片，URL.createObjectURL 本地预览
- *   （beforeUpload 返回 false 拦截真实上传，接入后端后替换为上传接口）
+ * - 添加 / 替换通过 antd Upload 选择图片：先本地预览，再走共通上传接口，
+ *   成功后把服务器地址写入 serverUrl（提交业务字段时使用 url ?? serverUrl 即可）
  */
 import { useState } from 'react'
 import { App, Tooltip, Upload } from 'antd'
 import { DeleteOutlined, DragOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { useImageUpload } from '@/hooks'
 import './index.less'
 
 export interface SortableImage {
   id: string
   title: string
   size?: string
-  /** 本地预览地址（URL.createObjectURL）；有值时缩略区直接展示图片 */
+  /** 展示地址（本地 objectURL 或服务器地址） */
   url?: string
+  /** 上传成功后由后端返回的图片地址（提交业务字段时使用） */
+  serverUrl?: string
   /** 缩略区色调（无图片时的占位底色）：green 品牌浅底 / blue 信息浅底 / warm 暖色浅底 */
   tone?: 'green' | 'blue' | 'warm'
 }
@@ -31,7 +34,7 @@ interface ImageSortGridProps {
   variant?: 'fluid' | 'fixed'
 }
 
-/** 本地图片选择统一样式：拦截上传、生成预览地址 */
+/** 图片选择统一样式：上传由上层的 useImageUpload 处理 */
 const uploadProps = {
   accept: 'image/*',
   showUploadList: false,
@@ -45,6 +48,7 @@ export default function ImageSortGrid({
   variant = 'fluid',
 }: ImageSortGridProps) {
   const { message } = App.useApp()
+  const { uploading, upload } = useImageUpload()
   const [dragId, setDragId] = useState<string | null>(null)
   const [dragOverId, setDragOverId] = useState<string | null>(null)
 
@@ -72,29 +76,40 @@ export default function ImageSortGrid({
     message.success('已删除图片')
   }
 
-  /** 添加：支持多选，逐个追加到末尾 */
-  const handleAddFile = (file: File) => {
-    const image: SortableImage = {
-      id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+  /** 添加：本地预览占位 → 上传成功后写入服务器地址（失败则移除占位） */
+  const handleAddFile = async (file: File) => {
+    const id = `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+    const nextImage: SortableImage = {
+      id,
       title: file.name.replace(/\.[^.]+$/, ''),
       url: URL.createObjectURL(file),
     }
-    onChange([...images, image])
-    message.success('已添加图片')
-    return false
+    onChange([...images, nextImage])
+    await upload(file, {
+      onUploaded: (url) =>
+        onChange(images.concat(nextImage).map((item) => (item.id === id ? { ...item, url, serverUrl: url } : item))),
+      onError: () => onChange(images.filter((item) => item.id !== id)),
+    })
+    return Upload.LIST_IGNORE
   }
 
-  /** 替换：保留 id 与位置，更新图片与标题 */
-  const handleReplaceFile = (target: SortableImage, file: File) => {
-    onChange(
-      images.map((item) =>
-        item.id === target.id
-          ? { ...item, title: file.name.replace(/\.[^.]+$/, ''), url: URL.createObjectURL(file) }
-          : item,
-      ),
-    )
-    message.success('已替换图片')
-    return false
+  /** 替换：保留 id 与位置，本地预览后上传，成功写入服务器地址 */
+  const handleReplaceFile = async (target: SortableImage, file: File) => {
+    await upload(file, {
+      onLocalPreview: (localUrl) =>
+        onChange(
+          images.map((item) =>
+            item.id === target.id
+              ? { ...item, title: file.name.replace(/\.[^.]+$/, ''), url: localUrl, serverUrl: undefined }
+              : item,
+          ),
+        ),
+      onUploaded: (url) =>
+        onChange(
+          images.map((item) => (item.id === target.id ? { ...item, url, serverUrl: url } : item)),
+        ),
+    })
+    return Upload.LIST_IGNORE
   }
 
   return (
@@ -139,7 +154,11 @@ export default function ImageSortGrid({
               </button>
             </Tooltip>
             <Tooltip title="替换">
-              <Upload {...uploadProps} beforeUpload={(file) => handleReplaceFile(image, file)}>
+              <Upload
+                {...uploadProps}
+                disabled={uploading}
+                beforeUpload={(file) => handleReplaceFile(image, file)}
+              >
                 <button type="button" aria-label="替换">
                   <ReloadOutlined />
                 </button>
@@ -154,10 +173,15 @@ export default function ImageSortGrid({
         </div>
       ))}
       {addable && (
-        <Upload {...uploadProps} multiple beforeUpload={handleAddFile}>
+        <Upload
+          {...uploadProps}
+          multiple
+          disabled={uploading}
+          beforeUpload={handleAddFile}
+        >
           <button type="button" className="image-sort-grid__add">
             <PlusOutlined />
-            {addText}
+            {uploading ? '上传中…' : addText}
           </button>
         </Upload>
       )}

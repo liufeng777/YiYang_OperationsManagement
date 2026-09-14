@@ -1,20 +1,23 @@
 /**
  * 活动管理 - 活动列表
  * 视觉对齐设计稿：顶部统计 + 筛选 + 状态 Tabs + 活动表格
- * 当前为 mock 数据，后端就绪后替换为 activityApi.getActivityList
+ * 数据来源：activityApi.getActivities（分页 + 类型/机构/状态/关键字筛选）
+ * 字段以后端实际契约为准：类型出参 activity_type、筛选入参 type、时间 start_date/end_date、机构 institutions[]
  */
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { App, Button, Card, Dropdown, Input, Select, Table, Col, Row, Tag, Divider } from 'antd'
 import type { MenuProps } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import type { ActivityItem } from '@/api/modules/activity';
+import { activityApi } from '@/api'
+import type { ActivityItem } from '@/api/modules/activity'
 import { mockInstitutions } from '@/pages/institution/list'
+import { formatDateTime } from '@/utils'
 import './list.less'
 
-/** 活动类型：1社区活动 / 2康养旅游 / 3健康课堂 / 4健康活动 */
+/** 活动类型：1社区活动 / 2康养旅游 / 3健康课堂 / 4健康活动 / 5其他 */
 
 const statusText: Record<number, string> = {
   1: '待发布',
@@ -39,77 +42,12 @@ const typeText: Record<number, {text: string, color: string}> = {
   4: {
     text: '健康活动',
     color: 'lime'
+  },
+  5: {
+    text: '其他',
+    color: 'default'
   }
 }
-
-const initialActivities: any[] = [
-  {
-    id: '1',
-    code: 'HD20260807001',
-    title: '秋日康养游园会',
-    type: 1,
-    institutionCount: 3,
-    signupCount: 86,
-    capacity: 120,
-    status: 1,
-    activityTime: '09-20 09:00',
-  },
-  {
-    id: '2',
-    code: 'HD20260807002',
-    title: '西湖无障碍一日游',
-    type: 2,
-    institutionCount: 2,
-    signupCount: 30,
-    capacity: 30,
-    status: 2,
-    activityTime: '08-18 08:00',
-  },
-  {
-    id: '3',
-    code: 'HD20260807003',
-    title: '失能长者照护课堂',
-    type: 3,
-    institutionCount: 5,
-    signupCount: 42,
-    capacity: 80,
-    status: 3,
-    activityTime: '08-25 14:00',
-  },
-  {
-    id: '4',
-    code: 'HD20260806018',
-    title: '重阳节健康义诊',
-    type: 4,
-    institutionCount: 4,
-    signupCount: null,
-    capacity: 0,
-    status: 9,
-    activityTime: '10-08 09:00',
-  },
-  {
-    id: '5',
-    code: 'HD20260806011',
-    title: '温泉康养两日游',
-    type: 1,
-    institutionCount: 2,
-    signupCount: 0,
-    capacity: 24,
-    status: 1,
-    activityTime: '09-12 07:30',
-  },
-  {
-    id: '6',
-    code: 'HD20260805096',
-    title: '夏季防暑讲座',
-    type: 4,
-    institutionCount: 3,
-    signupCount: 76,
-    capacity: 100,
-    status: 2,
-    activityTime: '07-15 14:00',
-  },
-]
 
 interface ActivityFilters {
   keyword: string
@@ -118,44 +56,71 @@ interface ActivityFilters {
   status: number | null
 }
 
+const emptyFilters: ActivityFilters = {
+  keyword: '',
+  type: null,
+  institution_id: null,
+  status: null,
+}
+
 export default function ActivityList() {
   const navigate = useNavigate()
   const { message, modal } = App.useApp()
-  const [data, setData] = useState(initialActivities)
+  const [data, setData] = useState<ActivityItem[]>([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [type, setType] = useState<number | null>(null)
   const [institution, setInstitution] = useState<number | null>(null)
   const [status, setStatus] = useState<number | null>(null)
-  const [applied, setApplied] = useState<ActivityFilters>({
-    keyword: '',
-    type: null,
-    institution_id: null,
-    status: null,
-  })
+  const [applied, setApplied] = useState<ActivityFilters>(emptyFilters)
   const [page, setPage] = useState(1)
   const pageSize = 10
 
-  const filteredData = useMemo(() => {
-    return data.filter((item) => {
-      const keywordHit =
-        !applied.keyword ||
-        item.title.includes(applied.keyword) ||
-        item.code.toLowerCase().includes(applied.keyword.toLowerCase())
-      const typeHit = !applied.type || item.type === applied.type
-      const statusHit = !applied.status || item.status === applied.status
-      const institutionHit = !applied.institution_id || (item.institutions.map(i => i.institution_id)).includes(applied.institution_id)
-      return keywordHit && typeHit && statusHit && institutionHit
-    })
-  }, [applied, data])
+  /** 拉取活动列表（筛选条件以后端查询参数下发） */
+  const fetchList = useCallback(
+    async (targetPage = page) => {
+      setLoading(true)
+      try {
+        const result = await activityApi.getActivities({
+          page: targetPage,
+          page_size: pageSize,
+          keyword: applied.keyword || undefined,
+          // 筛选入参名为 type（后端约定），非 activity_type
+          type: applied.type ?? undefined,
+          institution_id: applied.institution_id ?? undefined,
+          status: applied.status ?? undefined,
+        })
+        setData(result.list ?? [])
+        setTotal(result.total ?? 0)
+      } catch {
+        // 错误提示由 request 拦截器统一处理
+        setData([])
+        setTotal(0)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [applied, page],
+  )
 
-  const metrics = [
-    { key: 0, label: '全部活动', value: 46, badge: '本月新增 8 个', tone: 'primary' },
-    { key: 2, label: '报名中', value: 12, badge: '今日新增报名 36 人', tone: 'info' },
-    { key: 1, label: '待发布', value: 3, badge: '1 个待完善承接机构',tone: 'danger' },
-    { key: 3, label: '已结束', value: 5, badge: '3 个活动已经结束', tone: 'warning' },
-  ]
+  useEffect(() => {
+    void fetchList(page)
+  }, [fetchList, page])
+
+  /** 顶部统计：活动总数与各状态数量（基于当前列表数据汇总） */
+  const metrics = useMemo(() => {
+    const countBy = (target: number) => data.filter((item) => item.status === target).length
+    return [
+      { key: 0, label: '全部活动', value: total, badge: '按当前筛选条件统计', tone: 'primary' },
+      { key: 2, label: '报名中', value: countBy(2), badge: '本页报名中活动', tone: 'info' },
+      { key: 1, label: '待发布', value: countBy(1), badge: '本页待发布活动', tone: 'danger' },
+      { key: 3, label: '已结束', value: countBy(3), badge: '本页已结束活动', tone: 'warning' },
+    ]
+  }, [data, total])
 
   const applyFilters = () => {
+    setPage(1)
     setApplied({ keyword: keyword.trim(), type, institution_id: institution, status })
   }
 
@@ -164,16 +129,19 @@ export default function ActivityList() {
     setType(null)
     setInstitution(null)
     setStatus(null)
-    setApplied({ keyword: '', type: null, institution_id: null, status: null })
+    setPage(1)
+    setApplied(emptyFilters)
   }
 
-  const handlePublish = (record: ActivityItem) => {
-    setData((prev) =>
-      prev.map((item) =>
-        item.id === record.id ? { ...item, status: 2 } : item,
-      ),
-    )
-    message.success(`「${record.title}」已发布`)
+  /** 发布活动（待发布 → 报名中） */
+  const handlePublish = async (record: ActivityItem) => {
+    try {
+      await activityApi.updateActivityStatus(Number(record.id), 2)
+      message.success(`「${record.title}」已发布`)
+      void fetchList(page)
+    } catch {
+      /* 拦截器已提示 */
+    }
   }
 
   /** 取消活动（报名中 → 已取消）：危险操作，二次确认 */
@@ -184,21 +152,27 @@ export default function ActivityList() {
       okText: '确认取消',
       okButtonProps: { danger: true },
       cancelText: '再想想',
-      onOk: () => {
-        setData((prev) =>
-          prev.map((item) => (item.id === record.id ? { ...item, status: 9 } : item)),
-        )
-        message.success(`「${record.title}」已取消`)
+      onOk: async () => {
+        try {
+          await activityApi.updateActivityStatus(Number(record.id), 9)
+          message.success(`「${record.title}」已取消`)
+        } catch {
+          /* 拦截器已提示 */
+        }
+        void fetchList(page)
       },
     })
   }
 
   /** 重新发布（已取消 → 报名中） */
-  const handleRepublish = (record: ActivityItem) => {
-    setData((prev) =>
-      prev.map((item) => (item.id === record.id ? { ...item, status: 2 } : item)),
-    )
-    message.success(`「${record.title}」已重新发布，报名通道已开启`)
+  const handleRepublish = async (record: ActivityItem) => {
+    try {
+      await activityApi.updateActivityStatus(Number(record.id), 2)
+      message.success(`「${record.title}」已重新发布，报名通道已开启`)
+      void fetchList(page)
+    } catch {
+      /* 拦截器已提示 */
+    }
   }
 
   /** 删除活动：危险操作，二次确认 */
@@ -209,8 +183,14 @@ export default function ActivityList() {
       okText: '确认删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
-      onOk: () => {
-        message.success(`已删除「${record.title}」（mock）`)
+      onOk: async () => {
+        try {
+          await activityApi.deleteActivity(Number(record.id))
+          message.success(`已删除「${record.title}」`)
+        } catch {
+          /* 拦截器已提示 */
+        }
+        void fetchList(page)
       },
     })
   }
@@ -218,7 +198,7 @@ export default function ActivityList() {
   const columns = useMemo<ColumnsType<ActivityItem>>(
     () => [
       {
-        title: '活动 / 编号',
+        title: '活动名称',
         key: 'title',
         render: (_, record) => (
           <div className="activity-name">
@@ -229,24 +209,24 @@ export default function ActivityList() {
       },
       {
         title: '活动类型',
-        dataIndex: 'type',
-        key: 'type',
+        dataIndex: 'activity_type',
+        key: 'activity_type',
         width: 110,
-        render: (v) => <Tag color={typeText[v]?.color} variant='outlined'>{typeText[v]?.text}</Tag>
+        render: (v: number) => <Tag color={typeText[v]?.color} variant='outlined'>{typeText[v]?.text ?? '—'}</Tag>
       },
       {
         title: '承接机构',
-        dataIndex: 'institutionCount',
-        key: 'institutionCount',
-        width: 100,
-        render: (value: number) => `${value} 家机构`,
+        key: 'institutions',
+        width: 120,
+        render: (_, record) => `${record.institutions?.length ?? 0} 家机构`,
       },
       {
-        title: '报名情况',
-        key: 'signup',
+        title: '承接名额',
+        key: 'capacity',
         width: 120,
+        // 总名额由各参与机构名额上限汇总
         render: (_, record) =>
-          record.signupCount === null ? '—' : `${record.signupCount} / ${record.capacity} 人`,
+          `${(record.institutions ?? []).reduce((sum, item) => sum + (item.max_participants || 0), 0)} 人`,
       },
       {
         title: '活动状态',
@@ -254,7 +234,7 @@ export default function ActivityList() {
         key: 'status',
         width: 100,
         render: (value: number) => (
-          <span className={`activity-status activity-status--${value}`}>{statusText[value]}</span>
+          <span className={`activity-status activity-status--${value}`}>{statusText[value] ?? '—'}</span>
         ),
       },
       // {
@@ -268,9 +248,10 @@ export default function ActivityList() {
       // },
       {
         title: '活动时间',
-        dataIndex: 'activityTime',
         key: 'activityTime',
-        width: 120,
+        width: 140,
+        // 后端返回 UTC 秒，需 ×1000 交给 dayjs
+        render: (_, record) => formatDateTime(record.start_date && record.start_date * 1000, 'MM-DD HH:mm'),
       },
       {
         title: '操作',
@@ -282,14 +263,14 @@ export default function ActivityList() {
              - 取消、删除放入「更多」，均需二次确认 */
           const primary =
             record.status === 1
-              ? { label: '发布', onClick: () => handlePublish(record) }
+              ? { label: '发布活动', onClick: () => handlePublish(record) }
               : record.status === 9
                 ? { label: '重新发布', onClick: () => handleRepublish(record) }
                 : { label: '报名查询', onClick: () => navigate(`/activity/signups/${record.id}`) }
 
           const moreItems: MenuProps['items'] = [
             ...(record.status === 2 ? [{ key: 'cancel', label: '取消活动', danger: true }] : []),
-            { key: 'delete', label: '删除', danger: true },
+            { key: 'delete', label: '删除活动', danger: true },
           ]
           const onMoreClick: MenuProps['onClick'] = ({ key }) => {
             if (key === 'cancel') handleCancelActivity(record)
@@ -306,7 +287,7 @@ export default function ActivityList() {
                 size="small"
                 onClick={() => navigate(`/activity/detail/${record.id}`)}
               >
-                编辑
+                编辑活动
               </Button>
               <Divider vertical />
               <Dropdown menu={{ items: moreItems, onClick: onMoreClick }} trigger={['click']}>
@@ -320,7 +301,8 @@ export default function ActivityList() {
         },
       },
     ],
-    [navigate],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [navigate, page, fetchList],
   )
 
   return (
@@ -365,9 +347,9 @@ export default function ActivityList() {
           <Select
             value={type}
             onChange={setType}
-            options={Object.keys(typeText).map(v => ({
-              label: typeText[v].text,
-              value: v
+            options={Object.entries(typeText).map(([key, item]) => ({
+              label: item.text,
+              value: Number(key)
             }))}
             allowClear
             placeholder="活动类型"
@@ -385,9 +367,9 @@ export default function ActivityList() {
           <Select
             value={status}
             onChange={setStatus}
-            options={Object.keys(statusText).map(v => ({
-              label: statusText[v],
-              value: v
+            options={Object.entries(statusText).map(([key, label]) => ({
+              label,
+              value: Number(key)
             }))}
             allowClear
             placeholder="活动状态"
@@ -415,12 +397,13 @@ export default function ActivityList() {
           <Table<ActivityItem>
             rowKey="id"
             size="small"
+            loading={loading}
             columns={columns}
-            dataSource={filteredData}
+            dataSource={data}
             pagination={{
               current: page,
               pageSize,
-              total: filteredData.length,
+              total,
               onChange: setPage,
               showTotal: (total) => `共 ${total} 条`
             }}

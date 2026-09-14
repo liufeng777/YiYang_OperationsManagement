@@ -2,9 +2,9 @@
  * 活动管理 - 新建 / 编辑活动
  * 视觉对齐设计稿：左侧表单（基础信息两列 + 报名设置三列 + 详情图网格 + 底部操作条）
  * 右侧患者端实时预览；参与机构配置 Drawer；患者端活动预览弹窗（状态切换 + 预览范围）
- * 当前为 mock 数据，后端就绪后替换为 activityApi.saveActivity
+ * 数据来源：GET/POST/PUT /v1/admin/activities（编辑 PUT 为全量覆盖）
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   App,
   Button,
@@ -32,6 +32,9 @@ import dayjs, { type Dayjs } from 'dayjs'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import RichDetailEditor from '@/components/RichDetailEditor'
+import { activityApi } from '@/api'
+import { useImageUpload } from '@/hooks'
+import type { ActivityInstitutionConfig, ActivitySaveBody } from '@/api/modules/activity'
 import pcaData from 'china-division/dist/pca.json'
 import './index.less'
 
@@ -72,7 +75,10 @@ const initialInstitutions: InstitutionRow[] = [
   { id: '3', name: '长青健康驿站', area: '滨江区·长河街道', activityTime: '09-20 14:00', capacity: 30, contactName: '张站长', contactPhone: '137****0000', startTime: dayjs('2026-09-20 14:00'), endTime: dayjs('2026-09-20 18:00') },
 ]
 
-/** 全部机构池（mock）：供可搜索 Select 选择；已添加的机构 disabled 并标识（已添加） */
+/**
+ * 全部机构池（mock）：供可搜索 Select 选择；已添加的机构 disabled 并标识（已添加）
+ * TODO: 后端 /v1/admin/institutions 就绪后替换为 institutionApi.getInstitutions
+ */
 const mockInstitutionPool: Array<{ id: string; name: string; area: string }> = [
   { id: '1', name: '幸福里健康驿站', area: '拱墅区·申花街道' },
   { id: '2', name: '康乐护理院', area: '西湖区·古荡街道' },
@@ -93,13 +99,35 @@ const previewStatusOptions = [
 
 const previewScopes = ['活动封面与基础信息', '多张详情长图及排序效果', '底部费用与报名操作栏']
 
+/** 活动类型：后端数值 ↔ 表单中文标签（表单沿用了设计稿的中文选项） */
+const activityTypeOptions = [
+  { label: '社区活动', value: 1 },
+  { label: '康养旅游', value: 2 },
+  { label: '健康课堂', value: 3 },
+  { label: '健康活动', value: 4 },
+  { label: '其他', value: 5 },
+] as const
+
+/** 后端数值 → 表单标签 */
+const typeValueToLabel = (value?: number) =>
+  activityTypeOptions.find((item) => item.value === value)?.label ?? ''
+
+/** 表单标签 → 后端数值（取不到时回退 1，调用处已由必填校验兜底） */
+const labelToTypeValue = (label?: unknown) =>
+  activityTypeOptions.find((item) => item.label === label)?.value ?? 1
+
 export default function ActivityCreate() {
   const navigate = useNavigate()
   const { message, modal } = App.useApp()
+  const { uploading, upload } = useImageUpload()
   const params = useParams<{ id: string }>()
   const isEdit = !!params.id && params.id !== 'new'
 
   const [form] = Form.useForm()
+  /** 编辑态详情加载中 */
+  const [detailLoading, setDetailLoading] = useState(false)
+  /** 提交中 */
+  const [submitting, setSubmitting] = useState(false)
   const name = Form.useWatch('name', form) ?? ''
   const summary = Form.useWatch('summary', form) ?? ''
   const audience = Form.useWatch('audience', form) ?? ''
@@ -115,8 +143,23 @@ export default function ActivityCreate() {
   const [selectedInstitutionId, setSelectedInstitutionId] = useState<string | undefined>()
   // 报名须知编辑入口暂时隐藏（切换按钮被注释），保留状态便于恢复
   const [noticeOpen] = useState(false)
-  /** 封面（cover_image）：本地预览 URL，提交存真实地址 */
+  /** 封面预览地址（本地 objectURL 或服务器地址） */
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  /** 封面服务器地址（上传成功后写入 cover_url） */
+  const [coverServerUrl, setCoverServerUrl] = useState('')
+  /** 编辑态原始数据：PUT 为全量覆盖，未在表单暴露的字段需原值回写 */
+  const [originTitleEn, setOriginTitleEn] = useState('')
+  const [originCode, setOriginCode] = useState('')
+  const [originCoverUrl, setOriginCoverUrl] = useState('')
+  /** 编辑态原始时间：用户清空日期时回退原值，避免被 0 覆盖 */
+  const [originMeta, setOriginMeta] = useState<{ start: number; end: number }>({
+    start: 0,
+    end: 0,
+  })
+  /** 编辑态原始参与机构：PUT 全量覆盖下，表格里的场次时间/名额被清空时回退原值 */
+  const [originInstitutions, setOriginInstitutions] = useState<
+    ActivityInstitutionConfig[]
+  >([])
   /** 图文详情（description）：富文本 ProseMirror JSON 字符串 */
   const [description, setDescription] = useState('')
 
@@ -206,15 +249,135 @@ export default function ActivityCreate() {
     message.success(`已添加「${poolItem.name}」`)
   }
 
-  /** 封面（cover_image）：拦截真实上传，本地预览；接后端后替换为 uploadApi.uploadFile */
-  const handleCoverUpload = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      message.error('请上传图片文件')
-      return Upload.LIST_IGNORE
+  /** 封面（cover_url）：本地预览 + 后台上传，成功后保存服务器地址 */
+  const handleCoverUpload = async (file: File) => {
+    await upload(file, {
+      onLocalPreview: (localUrl) => setCoverUrl(localUrl),
+      onUploaded: (url) => {
+        setCoverServerUrl(url)
+        setCoverUrl(url)
+        message.success('封面已上传')
+      },
+      onError: () => setCoverServerUrl(originCoverUrl),
+    })
+    return Upload.LIST_IGNORE
+  }
+
+  /** 编辑态：拉取活动详情回填表单、封面、图文详情与承接机构 */
+  useEffect(() => {
+    if (!isEdit || !params.id) return
+    let cancelled = false
+    setDetailLoading(true)
+    activityApi
+      .getActivity(Number(params.id))
+      .then((detail) => {
+        if (cancelled) return
+        form.setFieldsValue({
+          name: detail.title,
+          type: typeValueToLabel(detail.activity_type),
+          // location 为「省市区 + 详细地址」拼接串，无法可靠拆分：
+          // 整串回填到详细地址，省市区留空（避免 Cascader 显示错乱）
+          location: undefined,
+          addressDetail: detail.location ?? '',
+          start_date: detail.start_date ? dayjs(detail.start_date * 1000) : undefined,
+          end_date: detail.end_date ? dayjs(detail.end_date * 1000) : undefined,
+          notice: '',
+        })
+        // 出参为 cover_url，入参为 cover_image（后端入参/出参字段名不同）
+        setCoverUrl(detail.cover_url || null)
+        setCoverServerUrl(detail.cover_url ?? '')
+        setOriginCoverUrl(detail.cover_url ?? '')
+        setOriginTitleEn(detail.title_en ?? '')
+        setOriginCode(detail.code ?? '')
+        setOriginMeta({
+          start: detail.start_date ?? 0,
+          end: detail.end_date ?? 0,
+        })
+        setDescription(detail.description ?? '')
+        // 记录原始机构，供 PUT 全量覆盖时对空值回退
+        setOriginInstitutions(detail.institutions ?? [])
+        // 参与机构回填（契约 institutions[] 为多机构，页面表格原样恢复）
+        setInstitutions(
+          (detail.institutions ?? []).map((item) => ({
+            id: String(item.institution_id),
+            name: `机构 ${item.institution_id}`,
+            area: '',
+            activityTime: item.start_time ? dayjs(item.start_time * 1000).format('MM-DD HH:mm') : '',
+            capacity: item.max_participants ?? 0,
+            contactName: item.contact_name ?? '',
+            contactPhone: item.contact_phone ?? '',
+            startTime: item.start_time ? dayjs(item.start_time * 1000) : null,
+            endTime: item.end_time ? dayjs(item.end_time * 1000) : null,
+          })),
+        )
+      })
+      .catch(() => {
+        /* 拦截器已统一提示 */
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false)
+      })
+    return () => {
+      cancelled = true
     }
-    setCoverUrl(URL.createObjectURL(file))
-    message.success('封面已更新')
-    return false
+  }, [isEdit, params.id, form])
+
+  /**
+   * 提交：组装 ActivitySaveBody（契约见 api/modules/activity.ts）
+   * 注意 PUT 为全量覆盖：表单未暴露的字段（title_en / code）与原封面需原值回写，避免清空后端数据
+   */
+  const buildPayload = (
+    values: Record<string, unknown>,
+    descriptionValue: string,
+  ): ActivitySaveBody => {
+    const region = Array.isArray(values.location) ? (values.location as string[]) : []
+    const addressDetail = String(values.addressDetail ?? '').trim()
+    // location = 省市区 + 详细地址
+    // 编辑态回填时整串会落在 addressDetail（含原省市区），若再次前置会重复，故做去重判断
+    const regionText = region.join(' ')
+    const location =
+      regionText && addressDetail.startsWith(regionText)
+        ? addressDetail
+        : [regionText, addressDetail].filter(Boolean).join(' ')
+    // 本地上传接口未就绪：仅提交真实 URL，否则保留原值（防止写入 blob: 失效地址）
+    // 封面：使用上传接口返回的服务器地址（无新上传时沿用编辑态原值）
+    const cover = coverServerUrl || originCoverUrl
+    const toSeconds = (value: unknown, fallback: number) =>
+      value ? Math.floor((value as Dayjs).valueOf() / 1000) : fallback
+    // 参与机构：页面表格多行 → 契约 institutions[]
+    // 注意：契约里 institution_id 声明为 string，但后端要求 int（实测传字符串报
+    // "cannot unmarshal string into Go struct field ... of type int"），故提交数字。
+    // 另：PUT 为全量覆盖，表格里的名额/场次被清空时回退编辑态原值，避免清写机构数据。
+    const institutionItems = institutions
+      .filter((item) => item.id)
+      .map((item) => {
+        const origin = originInstitutions.find(
+          (origin) => Number(origin.institution_id) === Number(item.id),
+        )
+        return {
+          institution_id: Number(item.id) as unknown as string,
+          max_participants: item.capacity > 0 ? item.capacity : (origin?.max_participants ?? 0),
+          start_time: toSeconds(item.startTime, origin?.start_time ?? 0),
+          end_time: toSeconds(item.endTime, origin?.end_time ?? 0),
+          contact_name: item.contactName?.trim() ? item.contactName : (origin?.contact_name ?? ''),
+          contact_phone: item.contactPhone?.trim()
+            ? item.contactPhone
+            : (origin?.contact_phone ?? ''),
+        }
+      })
+    return {
+      title: String(values.name ?? ''),
+      // 表单未提供英文标题输入：原值回写，避免全量覆盖清空
+      title_en: originTitleEn,
+      code: originCode,
+      activity_type: labelToTypeValue(values.type),
+      description: descriptionValue,
+      cover_image: cover,
+      location,
+      start_date: toSeconds(values.start_date, originMeta.start),
+      end_date: toSeconds(values.end_date, originMeta.end),
+      institutions: institutionItems,
+    }
   }
 
   const institutionColumns: ColumnsType<InstitutionRow> = [
@@ -413,12 +576,10 @@ export default function ActivityCreate() {
                       rules={[{ required: true, message: '请选择活动类型' }]}
                     >
                       <Select
-                        options={[
-                          { label: '社区活动', value: '社区活动' },
-                          { label: '康养旅游', value: '康养旅游' },
-                          { label: '健康课堂', value: '健康课堂' },
-                          { label: '健康活动', value: '健康活动' },
-                        ]}
+                        options={activityTypeOptions.map((item) => ({
+                          label: item.label,
+                          value: item.label,
+                        }))}
                       />
                     </Form.Item>
                   </div>
@@ -427,11 +588,15 @@ export default function ActivityCreate() {
                     <Form.Item
                       name="location"
                       label={<span>活动地址</span>}
-                      rules={[{ required: true, message: '请选择省 / 市 / 区' }]}
+                      rules={
+                        isEdit
+                          ? []
+                          : [{ required: true, message: '请选择省 / 市 / 区' }]
+                      }
                     >
                       <Cascader
                         options={regionOptions}
-                        placeholder="请选择省 / 市 / 区"
+                        placeholder={isEdit ? '留空则沿用原有地址' : '请选择省 / 市 / 区'}
                         showSearch
                       />
                     </Form.Item>
@@ -524,6 +689,7 @@ export default function ActivityCreate() {
                     listType="picture-card"
                     accept="image/*"
                     showUploadList={false}
+                    disabled={uploading}
                     beforeUpload={handleCoverUpload}
                   >
                     {coverUrl ? (
@@ -560,32 +726,38 @@ export default function ActivityCreate() {
                   <Button onClick={() => setPreviewOpen(true)}>手机预览</Button>
                   <Button
                     type="primary"
+                    loading={submitting || detailLoading}
                     onClick={async () => {
-                      let values: unknown
+                      let values: Record<string, unknown>
                       try {
-                        values = await form.validateFields()
+                        values = (await form.validateFields()) as Record<string, unknown>
                       } catch {
                         message.warning('请先完善必填项：活动名称、活动类型、省市区与详细地址、报名起止日期、收费方式')
                         return
                       }
-                      // TODO: 后端就绪后替换为 activityApi.createActivity / updateActivity，payload 组装：
-                      // {
-                      //   ...values,
-                      //   location: `${values.location?.join(' ')} ${values.addressDetail}`,
-                      //   cover_image: coverUrl ?? '',
-                      //   description, // 富文本 ProseMirror JSON 字符串
-                      //   start_date: values.start_date.valueOf() / 1000, // UTC 秒
-                      //   end_date: values.end_date.valueOf() / 1000,
-                      //   institutions: institutions.map(...),
-                      // }
-                      void values
-                      void coverUrl
-                      void description
-                      message.success(isEdit ? '活动已更新并发布' : '活动已发布')
-                      navigate(isEdit ? `/activity/detail/${params.id}` : '/activity')
+                      if (institutions.length === 0) {
+                        message.warning('请先配置参与机构：后端活动与机构为一对一，需至少配置一家')
+                        return
+                      }
+                      const payload = buildPayload(values, description)
+                      setSubmitting(true)
+                      try {
+                        if (isEdit && params.id) {
+                          await activityApi.updateActivity(Number(params.id), payload)
+                          message.success('活动已更新')
+                        } else {
+                          await activityApi.createActivity(payload)
+                          message.success('活动已发布')
+                        }
+                        navigate('/activity')
+                      } catch {
+                        /* 错误提示由 request 拦截器统一处理 */
+                      } finally {
+                        setSubmitting(false)
+                      }
                     }}
                   >
-                    发布活动
+                    {isEdit ? '保存活动' : '发布活动'}
                   </Button>
                 </div>
               </div>

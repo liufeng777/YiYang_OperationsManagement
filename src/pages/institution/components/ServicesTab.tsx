@@ -1,198 +1,248 @@
 /**
  * 机构详情 - 服务项目 Tab
- * 机构默认服务配置 + 已添加服务 + 添加服务项目 Drawer + 删除确认
- * 服务列表数据由 detail.tsx 持有（切 Tab 不丢失），本组件管理 UI 状态
- * 当前为 mock 数据，后端就绪后替换为 institutionApi 对应接口
+ * 机构已添加服务 + 添加服务项目 Drawer（从集团服务池勾选）+ 删除确认
+ * 数据来源：institutionApi.getInstitutionServiceList / createInstitutionService / deleteInstitutionService
+ *           serviceApi.getServices / getServiceCategories（服务池与分类）
+ * 说明：后端活动与机构服务为「关联表」模型（institution_service），
+ *       添加 = 新增关联，删除 = 删除关联（不删除集团服务定义）
  */
-import { useMemo, useState } from 'react'
-import type { Dispatch, SetStateAction } from 'react'
-import { useServiceInstitutionStore } from '@/store/modules/serviceInstitution';
-import {
-  App,
-  Alert,
-  Button,
-  Card,
-  Checkbox,
-  Drawer,
-  Input,
-  Modal,
-  Select,
-  Table,
-  Tag,
-} from 'antd'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useServiceInstitutionStore } from '@/store/modules/serviceInstitution'
+import { App, Alert, Button, Card, Checkbox, Drawer, Input, Modal, Select, Table, Tag } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import type { ColumnsType } from 'antd/es/table'
-import {
-  CheckOutlined,
-  ArrowRightOutlined,
-  PlusOutlined,
-} from '@ant-design/icons'
-import type {
-  InstitutionItem,
-  InstitutionService
-} from '@/api/modules/institution'
-import EditServiceConfigDrawer from './EditServiceConfigDrawer'
-import type { EditServiceConfigValues } from './EditServiceConfigDrawer'
-
-const servicePoolMocks: any[] = [
-  { id: 'p1', code: 'FW0001', name: '上门助浴服务', category: '生活照护', mode: '上门', price: 168, status: 1 },
-  { id: 'p2', code: 'FW0004', name: '慢病健康随访', category: '健康管理', mode: '上门', price: 69, status: 1 },
-  { id: 'p3', code: 'FW0002', name: '居家护理服务', category: '生活照护', mode: '上门', price: 198, status: 1 },
-  { id: 'p4', code: 'FW0003', name: '术后康复训练', category: '康复护理', mode: '到店', price: 128, status: 9 },
-  { id: 'p5', code: 'FW0008', name: '老年能力评估', category: '健康管理', mode: '到店', price: 199, status: 9 },
-]
-
-const serviceCategories = ['全部', '生活照护', '康复护理', '健康管理', '陪诊出行']
+import { CheckOutlined, ArrowRightOutlined, PlusOutlined } from '@ant-design/icons'
+import { institutionApi, serviceApi } from '@/api'
+import type { InstitutionItem, InstitutionServiceDTO } from '@/api/modules/institution'
+import type { ServiceCategory, ServiceItem } from '@/api/modules/service'
 
 interface ServicesTabProps {
   detail: InstitutionItem
-  services: InstitutionService[]
-  onServicesChange: Dispatch<SetStateAction<InstitutionService[]>>
-  drawerOpen: boolean
-  onDrawerOpenChange: (open: boolean) => void
+  /** 服务项目数量回传给父级（Tab 角标） */
+  onCountChange?: (count: number) => void
 }
 
-export default function ServicesTab({
-  detail,
-  services,
-  onServicesChange,
-  drawerOpen,
-  onDrawerOpenChange,
-}: ServicesTabProps) {
+/** 表格行：关联记录 + 平铺服务信息 */
+interface ServiceRow extends InstitutionServiceDTO {
+  service_name: string
+  service_code: string
+  category_name: string
+  price: number
+  unit: string
+  service_type: number
+}
+
+export default function ServicesTab({ detail, onCountChange }: ServicesTabProps) {
   const navigate = useNavigate()
-  const { message } = App.useApp()
+  const { message, modal } = App.useApp()
 
-  const [deleting, setDeleting] = useState<InstitutionService | null>(null)
-  const [editing, setEditing] = useState<InstitutionService | null>(null)
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>(['p1', 'p2'])
+  const [rows, setRows] = useState<ServiceRow[]>([])
+  const [loading, setLoading] = useState(false)
+  const [deleting, setDeleting] = useState<ServiceRow | null>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
+  /** 服务池（Drawer 内） */
+  const [pool, setPool] = useState<ServiceItem[]>([])
+  const [poolLoading, setPoolLoading] = useState(false)
   const [poolKeyword, setPoolKeyword] = useState('')
-  const [poolCategory, setPoolCategory] = useState('全部')
-  const [rangeType, setRangeType] = useState<'street' | 'fence'>('street')
+  const [poolCategory, setPoolCategory] = useState<number | 'all'>('all')
+  const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([])
+  const [categories, setCategories] = useState<ServiceCategory[]>([])
 
-  const filteredPool = useMemo(() => {
-    return servicePoolMocks.filter((item) => {
-      const keywordHit =
-        !poolKeyword.trim() ||
-        item.name.includes(poolKeyword.trim()) ||
-        item.code.toLowerCase().includes(poolKeyword.trim().toLowerCase())
-      const categoryHit = poolCategory === '全部' || item.category === poolCategory
-      return keywordHit && categoryHit
-    })
-  }, [poolCategory, poolKeyword])
+  /** 已添加服务：关联记录 + 服务池明细拼装为可读行 */
+  const fetchRows = useCallback(async () => {
+    if (!detail?.id) return
+    setLoading(true)
+    try {
+      const link = await institutionApi.getInstitutionServiceList(detail.id, { page: 1, page_size: 100 })
+      const linkList = link.list ?? []
+      // 服务池明细用于补全名称/编码/分类（关联接口只返回 service_id）
+      const poolRes = await serviceApi.getServices({ page: 1, page_size: 100 })
+      const poolList = poolRes.list ?? []
+      const catRes = await serviceApi.getServiceCategories({ page: 1, page_size: 100 })
+      const catList = catRes.list ?? []
+      setCategories(catList)
 
-  const togglePoolService = (id: string, checked: boolean) => {
-    setSelectedServiceIds((prev) => (checked ? [...new Set([...prev, id])] : prev.filter((item) => item !== id)))
-  }
+      const poolMap = new Map(poolList.map((item) => [item.id, item]))
+      const catMap = new Map(catList.map((item) => [item.id, item.name]))
+      const merged: ServiceRow[] = linkList.map((item) => {
+        const svc = poolMap.get(item.service_id)
+        return {
+          ...item,
+          service_name: svc?.name ?? `服务 ${item.service_id}`,
+          service_code: svc?.code ?? '',
+          category_name: svc ? (catMap.get(svc.category_id) ?? '—') : '—',
+          price: item.price_override || svc?.price || 0,
+          unit: svc?.unit ?? '次',
+          service_type: svc?.service_type ?? 1,
+        }
+      })
+      setRows(merged)
+      onCountChange?.(merged.length)
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+      setRows([])
+      onCountChange?.(0)
+    } finally {
+      setLoading(false)
+    }
+  }, [detail?.id, onCountChange])
 
-  const handleAddServices = () => {
-    const exists = new Set(services.map((item) => item.code))
-    const adding = servicePoolMocks
-      .filter((item) => selectedServiceIds.includes(item.id) && !exists.has(item.code))
-      .map<InstitutionService>((item) => ({
-        id: `s-${item.id}`,
-        code: item.code,
-        name: item.name,
-        category: item.category,
-        mode: item.mode,
-        price: item.price,
-        configSource: '机构默认',
-        range: '按机构默认配置',
-        status: '待上架',
-      }))
-    onServicesChange((prev) => [...prev, ...adding])
-    onDrawerOpenChange(false)
-    message.success(`已添加 ${adding.length} 项服务`)
-  }
+  useEffect(() => {
+    void fetchRows()
+  }, [fetchRows])
 
-  const handleDeleteService = () => {
-    if (!deleting) return
-    onServicesChange((prev) => prev.filter((item) => item.id !== deleting.id))
-    message.success(`已删除 ${deleting.name}`)
-    setDeleting(null)
-  }
+  /** 拉取服务池（打开 Drawer 时按关键字/分类筛选） */
+  const fetchPool = useCallback(async () => {
+    setPoolLoading(true)
+    try {
+      const res = await serviceApi.getServices({
+        page: 1,
+        page_size: 100,
+        keyword: poolKeyword.trim() || undefined,
+        category: poolCategory === 'all' ? undefined : (poolCategory as never),
+      })
+      setPool(res.list ?? [])
+    } catch {
+      setPool([])
+    } finally {
+      setPoolLoading(false)
+    }
+  }, [poolKeyword, poolCategory])
 
-  /** 保存单项服务配置：更新配置来源与线上履约范围展示 */
-  const handleSaveConfig = (serviceId: string, values: EditServiceConfigValues) => {
-    onServicesChange((prev) =>
-      prev.map((item) =>
-        item.id === serviceId
-          ? {
-              ...item,
-              configSource: values.configMode === 'custom' ? '单项调整' : '机构默认',
-              range:
-                values.configMode === 'custom' && values.rangeType === 'street' && values.streets
-                  ? `按街道：${values.streets}`
-                  : values.configMode === 'custom' && values.rangeType === 'fence'
-                    ? `电子围栏：${values.fence ?? ''}`
-                    : '按机构默认配置',
-            }
-          : item,
-      ),
+  useEffect(() => {
+    if (!drawerOpen) return
+    void fetchPool()
+  }, [drawerOpen, fetchPool])
+
+  const existingServiceIds = useMemo(() => new Set(rows.map((item) => item.service_id)), [rows])
+
+  const togglePoolService = (id: number, checked: boolean) => {
+    setSelectedServiceIds((prev) =>
+      checked ? [...new Set([...prev, id])] : prev.filter((item) => item !== id),
     )
-    message.success('服务配置已保存')
-    setEditing(null)
   }
 
-  const serviceColumns = useMemo<ColumnsType<InstitutionService>>(
+  /** 添加服务：为每个选中服务新增一条机构服务关联 */
+  const handleAddServices = async () => {
+    const targets = selectedServiceIds.filter((id) => !existingServiceIds.has(id))
+    if (!targets.length) {
+      message.warning('所选服务均已添加，请选择其他服务')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const items = targets.map((serviceId, index) => ({
+        service_id: serviceId,
+        institution_id: detail.id,
+      }))
+      await institutionApi.batchCreateInstitutionService({
+        institution_id: detail.id,
+        items,
+      })
+      message.success(`已添加 ${targets.length} 项服务`)
+      setDrawerOpen(false)
+      setSelectedServiceIds([])
+      void fetchRows()
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  /** 删除服务关联 */
+  const handleDeleteService = async () => {
+    if (!deleting) return
+    try {
+      await institutionApi.deleteInstitutionService(deleting.id)
+      message.success(`已删除 ${deleting.service_name}`)
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    }
+    setDeleting(null)
+    void fetchRows()
+  }
+
+  /** 上架/下架机构服务（关联维度） */
+  const handleToggleStatus = (record: ServiceRow) => {
+    const nextStatus = record.status === 1 ? 9 : 1
+    modal.confirm({
+      title: nextStatus === 9 ? '下架服务' : '上架服务',
+      content: `确认${nextStatus === 9 ? '下架' : '上架'}「${record.service_name}」？`,
+      okText: `确认${nextStatus === 9 ? '下架' : '上架'}`,
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await institutionApi.updateInstitutionServiceStatus(record.id, nextStatus)
+          message.success(`已${nextStatus === 9 ? '下架' : '上架'}「${record.service_name}」`)
+        } catch {
+          /* 错误提示由 request 拦截器统一处理 */
+        }
+        void fetchRows()
+      },
+    })
+  }
+
+  const serviceColumns = useMemo<ColumnsType<ServiceRow>>(
     () => [
       {
         title: '服务项目',
         key: 'name',
         render: (_, record) => (
           <div className="service-cell">
-            <strong>{record.name}</strong>
-            <span>{record.code}</span>
+            <strong>{record.service_name}</strong>
+            <span>{record.category_name}</span>
           </div>
         ),
       },
-      { title: '服务方式', dataIndex: 'mode', key: 'mode', width: 90 },
       {
-        title: '集团定价',
-        dataIndex: 'price',
-        key: 'price',
-        width: 110,
-        render: (value: number) => `¥${value} / 次`,
+        title: '服务方式',
+        key: 'mode',
+        width: 90,
+        render: (_, record) => (record.service_type === 2 ? '到店' : '上门'),
       },
-      { title: '配置来源', dataIndex: 'configSource', key: 'configSource', width: 110 },
-      { title: '线上履约范围', dataIndex: 'range', key: 'range' },
+      {
+        title: '定价',
+        key: 'price',
+        width: 120,
+        render: (_, record) => `¥${record.price} / ${record.unit}`,
+      },
+      {
+        title: '配置来源',
+        key: 'configSource',
+        width: 110,
+        render: (_, record) => (record.price_override ? '单项调整' : '机构默认'),
+      },
       {
         title: '状态',
-        dataIndex: 'status',
         key: 'status',
         width: 100,
-        render: (status: number) => (
-          <span className={`status-btn status--${status === 1 ? 'success' : 'cancel'}`}>{status === 1 ? '可预约' : '已下架'}</span>
+        render: (_, record) => (
+          <span className={`status-btn status--${record.status === 1 ? 'success' : 'cancel'}`}>
+            {record.status === 1 ? '可预约' : '已下架'}
+          </span>
         ),
       },
       {
         title: '操作',
         key: 'action',
-        width: 100,
+        width: 140,
         render: (_, record) => (
           <div className="service-actions">
-            {/* <Button type="link" size="small" onClick={() => setEditing(record)}>
-              编辑配置
-            </Button> */}
+            <Button type="link" size="small" onClick={() => handleToggleStatus(record)}>
+              {record.status === 1 ? '下架' : '上架'}
+            </Button>
             <Button type="link" size="small" danger onClick={() => setDeleting(record)}>
               删除
             </Button>
-            {/* {record.status === '可预约' ? (
-              <Button type="link" size="small">
-                下架
-              </Button>
-            ) : (
-              <>
-                <Button type="link" size="small">
-                  上架
-                </Button>
-                {record.status === '已下架' && }
-              </>
-            )} */}
           </div>
         ),
-      }
+      },
     ],
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rows],
   )
 
   const poolColumns = useMemo(
@@ -201,133 +251,85 @@ export default function ServicesTab({
         title: '',
         key: 'checked',
         width: 44,
-        render: (_, record) => (
-          <Checkbox
-            checked={selectedServiceIds.includes(record.id)}
-            onChange={(event) => togglePoolService(record.id, event.target.checked)}
-          />
-        ),
+        render: (_: unknown, record: ServiceItem) => {
+          const added = existingServiceIds.has(record.id)
+          return (
+            <Checkbox
+              disabled={added}
+              checked={added || selectedServiceIds.includes(record.id)}
+              onChange={(event) => togglePoolService(record.id, event.target.checked)}
+            />
+          )
+        },
       },
       {
         title: '服务项目',
         key: 'name',
-        render: (_, record) => (
+        render: (_: unknown, record: ServiceItem) => (
           <div className="service-cell">
             <strong>{record.name}</strong>
-            <span>{record.category} · {record.code}</span>
+            <span>
+              {categories.find((item) => item.id === record.category_id)?.name ?? '—'}
+              {record.name_en ? ` · ${record.name_en}` : ''}
+            </span>
           </div>
         ),
       },
-      { title: '服务方式', dataIndex: 'mode', key: 'mode', width: 100 },
+      {
+        title: '服务方式',
+        key: 'mode',
+        width: 100,
+        render: (_: unknown, record: ServiceItem) => (record.service_type === 2 ? '到店' : '上门'),
+      },
       {
         title: '集团定价',
-        dataIndex: 'price',
         key: 'price',
         width: 120,
-        render: (value: number) => `¥${value} / 次`,
+        render: (_: unknown, record: ServiceItem) => `¥${record.price} / ${record.unit}`,
       },
       {
         title: '选择状态',
         key: 'selected',
         width: 100,
-        render: (_, record) => (selectedServiceIds.includes(record.id) ? '已选择' : '未选择'),
-      }
+        render: (_: unknown, record: ServiceItem) =>
+          existingServiceIds.has(record.id) ? '已添加' : selectedServiceIds.includes(record.id) ? '已选择' : '未选择',
+      },
     ],
-    [selectedServiceIds],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedServiceIds, existingServiceIds, categories],
   )
 
   return (
     <>
-      {/* <Card variant="borderless" className="detail-card">
-        <div className="detail-card__header">
-          <div>
-            <h3>机构默认服务配置</h3>
-            <p>新添加的服务自动继承；仅有差异的服务再单独调整</p>
-          </div>
-          <Button type="primary" icon={<CheckOutlined />} onClick={() => message.success('默认配置已保存')}>
-            保存默认配置
-          </Button>
-        </div>
-        <Alert
-          className="detail-card__alert"
-          type="info"
-          showIcon
-          icon={<InfoCircleFilled />}
-          message="服务范围仅作用于线上/上门服务；到店服务无需配置，医养服务工作台不维护此项。"
-        />
-        <div className="service-config">
-          <div className="service-config__panel">
-            <div className="service-config__title">
-              线上服务覆盖范围
-              <Radio.Group
-                value={rangeType}
-                onChange={(event) => setRangeType(event.target.value)}
-                options={[
-                  { label: '按街道', value: 'street' },
-                  { label: '电子围栏', value: 'fence' },
-                ]}
-                optionType="button"
-                buttonStyle="solid"
-              />
-            </div>
-            <div className="service-config__grid">
-              <label>
-                <span>已选街道</span>
-                <Input value="申花街道、祥符街道" readOnly />
-              </label>
-              <label>
-                <span>电子围栏</span>
-                <Input value="以机构地址为圆心 5 公里" readOnly={rangeType === 'street'} />
-              </label>
-            </div>
-          </div>
-          <div className="service-config__panel">
-            <div className="service-config__title">预约默认规则</div>
-            <div className="service-config__grid service-config__grid--four">
-              <label>
-                <span>日容量</span>
-                <Input value="8 单 / 日" readOnly />
-              </label>
-              <label>
-                <span>提前预约</span>
-                <Input value="至少提前 2 小时" readOnly />
-              </label>
-              <label>
-                <span>接单时段</span>
-                <Input value="08:00—18:00" readOnly />
-              </label>
-              <label>
-                <span>取消规则</span>
-                <Input value="服务前 2 小时" readOnly />
-              </label>
-            </div>
-          </div>
-        </div>
-      </Card> */}
       <Card variant="borderless" className="detail-card">
         <div className="detail-card__header">
-          <div style={{display: 'flex', alignItems: 'center'}}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
             <h3>机构已添加服务</h3>
-            <Button type='link' style={{fontSize: 12}} onClick={() => {
-              // 记录到机构选择 store 并持久化：目标页据此定位（不依赖 URL 参数）
-              if (detail?.id != null) {
-                useServiceInstitutionStore.getState().setSelectedServiceInstitutionId(String(detail.id))
-              }
-              navigate('/service/institution')
-            }}>
+            <Button
+              type="link"
+              style={{ fontSize: 12 }}
+              onClick={() => {
+                // 记录到机构选择 store 并持久化：目标页据此定位（不依赖 URL 参数）
+                if (detail?.id != null) {
+                  useServiceInstitutionStore.getState().setSelectedServiceInstitutionId(String(detail.id))
+                }
+                navigate('/service/institution')
+              }}
+            >
               前往服务项目管理上下架服务
               <ArrowRightOutlined />
             </Button>
           </div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => onDrawerOpenChange(true)}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => setDrawerOpen(true)}>
             添加服务项目
           </Button>
         </div>
-        <Table<InstitutionService>
+        <Table<ServiceRow>
           rowKey="id"
           size="small"
+          loading={loading}
           columns={serviceColumns}
-          dataSource={services}
+          dataSource={rows}
           pagination={false}
         />
       </Card>
@@ -335,7 +337,7 @@ export default function ServicesTab({
       <Drawer
         width={720}
         open={drawerOpen}
-        onClose={() => onDrawerOpenChange(false)}
+        onClose={() => setDrawerOpen(false)}
         title={
           <div className="service-drawer__title">
             <h3>添加服务项目</h3>
@@ -346,8 +348,13 @@ export default function ServicesTab({
           <div className="service-drawer__footer">
             <span>已选择 {selectedServiceIds.length} 项服务</span>
             <div>
-              <Button onClick={() => onDrawerOpenChange(false)}>取消</Button>
-              <Button type="primary" icon={<CheckOutlined />} onClick={handleAddServices}>
+              <Button onClick={() => setDrawerOpen(false)}>取消</Button>
+              <Button
+                type="primary"
+                icon={<CheckOutlined />}
+                loading={submitting}
+                onClick={handleAddServices}
+              >
                 确认添加 {selectedServiceIds.length} 项
               </Button>
             </div>
@@ -367,43 +374,48 @@ export default function ServicesTab({
         <div className="service-drawer__search">
           <Input
             allowClear
-            placeholder="搜索服务名称、项目编码（共 58 项）"
+            placeholder="搜索服务名称、项目编码"
             value={poolKeyword}
             onChange={(event) => setPoolKeyword(event.target.value)}
+            onPressEnter={() => void fetchPool()}
           />
           <Select
             value={poolCategory}
             onChange={setPoolCategory}
-            options={serviceCategories.map((item) => ({ label: item === '全部' ? '全部分类' : item, value: item }))}
+            options={[
+              { label: '全部分类', value: 'all' as const },
+              ...categories.map((item) => ({ label: item.name, value: item.id })),
+            ]}
           />
         </div>
         <div className="service-drawer__categories">
-          {serviceCategories.map((item) => (
+          <button
+            type="button"
+            className={poolCategory === 'all' ? 'is-active' : ''}
+            onClick={() => setPoolCategory('all')}
+          >
+            全部
+          </button>
+          {categories.map((item) => (
             <button
               type="button"
-              key={item}
-              className={poolCategory === item ? 'is-active' : ''}
-              onClick={() => setPoolCategory(item)}
+              key={item.id}
+              className={poolCategory === item.id ? 'is-active' : ''}
+              onClick={() => setPoolCategory(item.id)}
             >
-              {item}
+              {item.name}
             </button>
           ))}
         </div>
-        <Table<ServicePoolItem>
+        <Table<ServiceItem>
           rowKey="id"
           size="small"
+          loading={poolLoading}
           columns={poolColumns}
-          dataSource={filteredPool}
+          dataSource={pool}
           pagination={false}
         />
       </Drawer>
-
-      <EditServiceConfigDrawer
-        open={!!editing}
-        service={editing}
-        onClose={() => setEditing(null)}
-        onSave={handleSaveConfig}
-      />
 
       <Modal
         open={!!deleting}
@@ -425,14 +437,24 @@ export default function ServicesTab({
               <p>删除仅解除机构关联，不删除集团服务定义；历史订单仍可查询。</p>
             </div>
             <div className="delete-modal__service">
-              <span>{detail.name} · {deleting.name}</span>
-              <span>{deleting.code}</span>
+              <span>
+                {detail.name} · {deleting.service_name}
+              </span>
+              <span>
+                {deleting.category_name} · 关联 #{deleting.id}
+              </span>
             </div>
             <div className="delete-modal__conditions">
-              <p>删除条件 <Tag color="green">已满足</Tag></p>
+              <p>
+                删除条件 <Tag color="green">已满足</Tag>
+              </p>
               <div>
-                <span><CheckOutlined /> 服务状态为已下架</span>
-                <span><CheckOutlined /> 当前机构无待履约订单</span>
+                <span>
+                  <CheckOutlined /> 删除前请确认服务已下架
+                </span>
+                <span>
+                  <CheckOutlined /> 当前机构无待履约订单
+                </span>
               </div>
             </div>
           </div>

@@ -1,37 +1,91 @@
 /**
  * 机构详情 - 患者端介绍 Tab
  * 患者端介绍表单 + 患者端实时预览（机构信息由平台直接维护，无「同步」概念）
- * 当前为 mock 数据，后端就绪后替换为 institutionApi 对应接口
+ * 数据来源：institutionApi.updateInstitution
+ * 注意：后端 PUT 为全量覆盖，本表单只编辑 brief/description/cover_url，
+ *       基础信息字段需原值回传，避免被清空
  * 注：父级通过 key={detail.id} 重挂载本组件以切换机构时重置表单
  */
 import { useState } from 'react'
 import { App, Button, Card, Input, Upload } from 'antd'
 import type { UploadFile } from 'antd'
-import { PhoneOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { CheckOutlined, PhoneOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
+import { institutionApi } from '@/api'
+import { useImageUpload } from '@/hooks'
 import type { InstitutionItem } from '@/api/modules/institution'
 import RichDetailEditor from '@/components/RichDetailEditor'
 
 interface PatientIntroTabProps {
   detail: InstitutionItem
+  /** 保存成功后的回调（父级重新拉取详情） */
+  onSaved?: () => void
 }
 
 /** 预览环境照片占位（mock） */
 const previewPhotoPlaceholders = ['接待大厅', '康复空间', '适老房间']
 
-export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
+export default function PatientIntroTab({ detail, onSaved }: PatientIntroTabProps) {
   const { message } = App.useApp()
+  const { uploading, upload } = useImageUpload()
 
   const [introTitle, setIntroTitle] = useState(detail.brief)
   /** 机构图文详情（ProseMirror JSON），存储回 description */
   const [introRich, setIntroRich] = useState<string>(detail.description || '')
-  const [coverImg, setCoverImg] = useState<string | null>(null)
+  /** 封面预览地址（本地 objectURL 或服务器地址） */
+  const [coverImg, setCoverImg] = useState<string | null>(detail.cover_url || null)
+  /** 封面服务器地址（上传成功后写入 cover_url） */
+  const [coverServerUrl, setCoverServerUrl] = useState(detail.cover_url || '')
   const [envFiles] = useState<UploadFile[]>([])
+  const [saving, setSaving] = useState(false)
 
-  /** 封面选择：拦截真实上传，本地预览（接后端后替换为上传接口） */
-  const pickCover = (file: File) => {
-    setCoverImg(URL.createObjectURL(file))
-    message.success('机构封面已上传（本地预览）')
+  /** 封面选择：本地预览 + 后台上传，成功后保存服务器地址 */
+  const pickCover = async (file: File) => {
+    await upload(file, {
+      onLocalPreview: (localUrl) => setCoverImg(localUrl),
+      onUploaded: (url) => {
+        setCoverServerUrl(url)
+        setCoverImg(url)
+        message.success('机构封面已上传')
+      },
+      onError: () => setCoverServerUrl(detail.cover_url || ''),
+    })
     return false
+  }
+
+  /** 保存患者端介绍（全量覆盖：基础信息字段原值回传） */
+  const handleSave = async () => {
+    if (!introTitle.trim()) {
+      message.warning('请输入患者端展示标题')
+      return
+    }
+    setSaving(true)
+    try {
+      await institutionApi.updateInstitution(detail.id, {
+        brief: introTitle.trim(),
+        description: introRich,
+        // 封面使用上传接口返回的服务器地址
+        cover_url: coverServerUrl,
+        // 以下为基础信息，PUT 全量覆盖需原值回传
+        name: detail.name,
+        name_en: detail.name_en ?? '',
+        type: detail.type,
+        province: detail.province,
+        city: detail.city,
+        district: detail.district,
+        address: detail.address,
+        contact_phone: detail.contact_phone,
+        manager_name: detail.manager_name,
+        manager_phone: detail.manager_phone,
+        service_radius_km: detail.service_radius_km,
+        status: detail.status,
+      })
+      message.success('患者端介绍已保存')
+      onSaved?.()
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -40,6 +94,9 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
         <Card variant="borderless" className="detail-card">
           <div className="detail-card__header">
             <h3>患者端展示详情</h3>
+            <Button type="primary" icon={<CheckOutlined />} loading={saving} onClick={handleSave}>
+              保存修改
+            </Button>
           </div>
           <div className="intro-form">
             <label>
@@ -58,6 +115,7 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
                   listType="picture-card"
                   accept="image/*"
                   showUploadList={false}
+                  disabled={uploading}
                   beforeUpload={pickCover}
                 >
                   {coverImg ? (
@@ -69,7 +127,7 @@ export default function PatientIntroTab({ detail }: PatientIntroTabProps) {
                   ) : (
                     <div>
                       <PlusOutlined />
-                      <div style={{ marginTop: 8 }}>上传机构封面</div>
+                      <div style={{ marginTop: 8 }}>{uploading ? '上传中…' : '上传机构封面'}</div>
                     </div>
                   )}
                 </Upload>

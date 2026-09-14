@@ -3,7 +3,8 @@
  * 以机构为主体的主从视图：左侧选择机构，右侧维护该机构已接入服务的预约状态
  * 与集团服务池（服务定义视角）区分：本页不维护服务定义与分类，仅做跨机构状态运营
  * 接口逻辑：① 进入页面先拉机构列表渲染左侧；② 切换机构时携带机构 id 拉取其服务列表
- * 当前为 mock（fetchInstitutions / fetchInstitutionServices），后端就绪后替换为 institutionApi / serviceApi
+ * 数据来源：institutionApi.getInstitutions / getInstitutionServiceList / updateInstitutionServiceStatus
+ *           serviceApi.getServices / getServiceCategories（拼装服务名称与分类）
  */
 import { useEffect, useMemo, useState } from 'react'
 import type { Key } from 'react'
@@ -12,14 +13,16 @@ import type { ColumnsType } from 'antd/es/table'
 import { ArrowRightOutlined, BankOutlined, SearchOutlined } from '@ant-design/icons'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import { useServiceInstitutionStore } from '@/store/modules/serviceInstitution';
-import { typeText, statusText, typeColor } from '../list'
+import { useServiceInstitutionStore } from '@/store/modules/serviceInstitution'
+import { institutionApi, serviceApi } from '@/api'
+import type { CommonStatus } from '@/types/api'
+import { typeText, typeColor } from '../list'
 import StatusTargetModal from '../components/StatusTargetModal'
 import '../list.less'
 import './index.less'
 
 
-/** 机构列表项：GET /admin/institutions 返回（含服务聚合统计，用于左侧列表展示） */
+/** 机构列表项：GET /admin/institutions 返回（聚合统计在服务拉取后回填） */
 interface InstitutionSummary {
   id: number
   name: string
@@ -30,21 +33,21 @@ interface InstitutionSummary {
   onlineCount: number
   /** 已下架（status=9）服务数 */
   offlineCount: number
-  /** 近 30 日订单 */
-  orderCount30d: number
 }
 
-/** 机构已接入服务：GET /admin/institutions/:id/services 返回 */
+/** 机构已接入服务：机构服务关联 + 服务池明细拼装 */
 interface InstitutionService {
+  /** 关联记录 id（上下架/删除以此为准） */
   id: number
+  service_id: number
   code: string
   name: string
   categoryName: string
   /** 服务方式：1 上门 / 2 到店 */
   type: number
+  /** 机构价（price_override 为空时取集团价） */
   price: number
-  dailyCapacity: string
-  orderCount: number
+  unit: string
   /** 预约状态：1 可预约 / 9 已下架 */
   status: number
 }
@@ -55,6 +58,12 @@ interface ServiceFilters {
   status: number | null
 }
 
+/** 机构服务预约状态（关联维度）：1-可预约 9-已下架 */
+const instServiceStatusText: Record<number, string> = {
+  1: '可预约',
+  9: '已下架',
+}
+
 /** 上下架目标：action=offline 走「下架原因」流程，action=online 走确认上架流程 */
 interface StatusTarget {
   ids: number[]
@@ -62,59 +71,6 @@ interface StatusTarget {
   code?: string
   action: 'online' | 'offline'
 }
-
-/* ------------------------------------------------------------------ */
-/* mock 数据：机构列表与「按机构 id 的服务列表」两张表分离，模拟真实接口形态  */
-/* ------------------------------------------------------------------ */
-
-const mockInstitutionList: InstitutionSummary[] = [
-  { id: 1, name: '幸福里健康驿站', address: '拱墅区 · 申花街道', serviceCount: 3, onlineCount: 2, offlineCount: 1, orderCount30d: 198 },
-  { id: 2, name: '康乐护理院', address: '西湖区 · 古荡街道', serviceCount: 2, onlineCount: 2, offlineCount: 0, orderCount30d: 120 },
-  { id: 3, name: '怡康护理院', address: '上城区 · 笕桥街道', serviceCount: 2, onlineCount: 1, offlineCount: 1, orderCount30d: 117 },
-  { id: 4, name: '长青健康驿站', address: '滨江区 · 长河街道', serviceCount: 2, onlineCount: 1, offlineCount: 1, orderCount30d: 84 },
-  { id: 5, name: '和悦护理院', address: '萧山区 · 北干街道', serviceCount: 1, onlineCount: 0, offlineCount: 1, orderCount30d: 42 },
-  { id: 6, name: '新赏护理院', address: '萧山区 · 新街街道', serviceCount: 2, onlineCount: 1, offlineCount: 1, orderCount30d: 47 },
-]
-
-const mockServiceMap: Record<number, InstitutionService[]> = {
-  1: [
-    { id: 101, code: 'FW0001', name: '上门助浴服务', categoryName: '生活照护', type: 1, price: 168, dailyCapacity: '8 单/日', orderCount: 126, status: 1 },
-    { id: 102, code: 'FW0004', name: '慢病健康随访', categoryName: '健康管理', type: 1, price: 69, dailyCapacity: '12 单/日', orderCount: 54, status: 1 },
-    { id: 103, code: 'FW0007', name: '康复评定', categoryName: '康复护理', type: 2, price: 120, dailyCapacity: '6 单/日', orderCount: 18, status: 9 },
-  ],
-  2: [
-    { id: 201, code: 'FW0002', name: '居家护理服务', categoryName: '生活照护', type: 1, price: 198, dailyCapacity: '10 单/日', orderCount: 98, status: 1 },
-    { id: 202, code: 'FW0008', name: '压疮护理', categoryName: '康复护理', type: 1, price: 150, dailyCapacity: '4 单/日', orderCount: 22, status: 1 },
-  ],
-  3: [
-    { id: 301, code: 'FW0003', name: '术后康复训练', categoryName: '康复护理', type: 2, price: 128, dailyCapacity: '6 单/日', orderCount: 76, status: 1 },
-    { id: 302, code: 'FW0009', name: '中医理疗', categoryName: '健康管理', type: 2, price: 88, dailyCapacity: '10 单/日', orderCount: 41, status: 9 },
-  ],
-  4: [
-    { id: 401, code: 'FW0005', name: '居家安全评估', categoryName: '居家安全', type: 1, price: 99, dailyCapacity: '5 单/日', orderCount: 21, status: 9 },
-    { id: 402, code: 'FW0004', name: '慢病健康随访', categoryName: '健康管理', type: 1, price: 69, dailyCapacity: '8 单/日', orderCount: 63, status: 1 },
-  ],
-  5: [
-    { id: 501, code: 'FW0006', name: '全程陪诊服务', categoryName: '陪诊出行', type: 1, price: 268, dailyCapacity: '8 单/日', orderCount: 42, status: 9 },
-  ],
-  6: [
-    { id: 601, code: 'FW0001', name: '上门助浴服务', categoryName: '生活照护', type: 1, price: 168, dailyCapacity: '6 单/日', orderCount: 35, status: 1 },
-    { id: 602, code: 'FW0010', name: '就医陪同（半天）', categoryName: '陪诊出行', type: 2, price: 158, dailyCapacity: '4 单/日', orderCount: 12, status: 9 },
-  ],
-}
-
-const mockDelay = <T,>(data: T, ms = 300) =>
-  new Promise<T>((resolve) => setTimeout(() => resolve(data), ms))
-
-/** 模拟接口：获取机构列表（TODO: 替换为 institutionApi 的机构列表接口） */
-const fetchInstitutions = () => mockDelay(mockInstitutionList)
-
-/** 模拟接口：按机构 id 获取已接入服务列表（TODO: 替换为 serviceApi.getInstitutionServices） */
-const fetchInstitutionServices = (institutionId: number) =>
-  mockDelay(mockServiceMap[institutionId] ?? [])
-
-const countByStatus = (services: InstitutionService[], status: number) =>
-  services.filter((item) => item.status === status).length
 
 export default function ServiceInstitutionPage() {
   const { message, modal } = App.useApp()
@@ -139,22 +95,71 @@ export default function ServiceInstitutionPage() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
   const [statusTarget, setStatusTarget] = useState<StatusTarget | null>(null)
 
+  /** 服务池与分类缓存：用于把机构服务关联拼装为可读行 */
+  const [poolMap, setPoolMap] = useState<Map<number, { name: string; type: number; price: number; unit: string; category_id: number }>>(new Map())
+  const [catMap, setCatMap] = useState<Map<number, string>>(new Map())
+
   // 接口①：进入页面拉取机构列表；完成后确定初始选中（URL 参数 > store 记忆 > 第一项）
   useEffect(() => {
     let cancelled = false
     setInstLoading(true)
-    fetchInstitutions().then((list) => {
-      if (cancelled) return
-      setInstitutions(list)
-      setInstLoading(false)
-      const fromQuery = qsInst ? list.find((i) => i.id === Number(qsInst)) : undefined
-      const fromStore = rememberedId ? list.find((i) => i.id === Number(rememberedId)) : undefined
-      setSelectedId((fromQuery ?? fromStore ?? list[0])?.id ?? null)
-    })
+    institutionApi
+      .getInstitutions({ page: 1, page_size: 100 })
+      .then((res) => {
+        if (cancelled) return
+        const list: InstitutionSummary[] = (res.list ?? []).map((item) => ({
+          id: item.id,
+          name: item.name,
+          address: [item.province, item.city, item.district, item.address].filter(Boolean).join(' · '),
+          serviceCount: 0,
+          onlineCount: 0,
+          offlineCount: 0,
+        }))
+        setInstitutions(list)
+        const fromQuery = qsInst ? list.find((i) => i.id === Number(qsInst)) : undefined
+        const fromStore = rememberedId ? list.find((i) => i.id === Number(rememberedId)) : undefined
+        setSelectedId((fromQuery ?? fromStore ?? list[0])?.id ?? null)
+      })
+      .catch(() => {
+        /* 错误提示由 request 拦截器统一处理 */
+        setInstitutions([])
+      })
+      .finally(() => {
+        if (!cancelled) setInstLoading(false)
+      })
     return () => {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 服务池 + 分类：一次性拉取用于拼装服务名称/分类（机构服务关联接口只返回 service_id）
+  useEffect(() => {
+    void (async () => {
+      try {
+        const [poolRes, catRes] = await Promise.all([
+          serviceApi.getServices({ page: 1, page_size: 100 }),
+          serviceApi.getServiceCategories({ page: 1, page_size: 100 }),
+        ])
+        setPoolMap(
+          new Map(
+            (poolRes.list ?? []).map((item) => [
+              item.id,
+              {
+                name: item.name,
+                type: item.service_type,
+                price: item.price,
+                unit: item.unit,
+                category_id: item.category_id,
+              },
+            ]),
+          ),
+        )
+        setCatMap(new Map((catRes.list ?? []).map((item) => [item.id, item.name])))
+      } catch {
+        /* 拼装信息缺失时降级展示 */
+      }
+    })()
   }, [])
 
   // 接口②：选中机构后，携带机构 id 拉取其已接入服务列表
@@ -164,15 +169,51 @@ export default function ServiceInstitutionPage() {
     setServiceLoading(true)
     setServices([])
     setSelectedRowKeys([])
-    fetchInstitutionServices(selectedId).then((list) => {
-      if (cancelled) return
-      setServices(list)
-      setServiceLoading(false)
-    })
+    institutionApi
+      .getInstitutionServiceList(selectedId, { page: 1, page_size: 100 })
+      .then((res) => {
+        if (cancelled) return
+        const list: InstitutionService[] = (res.list ?? []).map((item) => {
+          const svc = poolMap.get(item.service_id)
+          return {
+            id: item.id,
+            service_id: item.service_id,
+            code: svc ? String(item.service_id) : '',
+            name: svc?.name ?? `服务 ${item.service_id}`,
+            categoryName: svc ? (catMap.get(svc.category_id) ?? '—') : '—',
+            type: svc?.type ?? 1,
+            price: item.price_override || svc?.price || 0,
+            unit: svc?.unit ?? '次',
+            status: item.status,
+          }
+        })
+        setServices(list)
+        // 回填左侧机构聚合统计
+        setInstitutions((prev) =>
+          prev.map((inst) =>
+            inst.id === selectedId
+              ? {
+                  ...inst,
+                  serviceCount: list.length,
+                  onlineCount: list.filter((s) => s.status === 1).length,
+                  offlineCount: list.filter((s) => s.status === 9).length,
+                }
+              : inst,
+          ),
+        )
+      })
+      .catch(() => {
+        /* 错误提示由 request 拦截器统一处理 */
+        setServices([])
+      })
+      .finally(() => {
+        if (!cancelled) setServiceLoading(false)
+      })
     return () => {
       cancelled = true
     }
-  }, [selectedId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, poolMap, catMap])
 
   // 从机构详情带参跳转：机构列表就绪后应用到选中态并写入 store
   useEffect(() => {
@@ -254,30 +295,22 @@ export default function ServiceInstitutionPage() {
         render: (value: number) => <Tag variant='outlined' color={typeColor[value]}>{typeText[value]}</Tag>
       },
       {
-        title: '集团定价',
+        title: '机构价',
         dataIndex: 'price',
         key: 'price',
-        width: 110,
-        render: (value: number) => `¥${value} / 次`,
-      },
-      {
-        title: '日容量',
-        dataIndex: 'dailyCapacity',
-        key: 'dailyCapacity',
-        width: 110,
-      },
-      {
-        title: '近30日订单',
-        dataIndex: 'orderCount',
-        key: 'orderCount',
-        width: 110,
+        width: 120,
+        render: (value: number, record) => `¥${value} / ${record.unit}`,
       },
       {
         title: '状态',
         dataIndex: 'status',
         key: 'status',
         width: 100,
-        render: (value: number) => <span className={`status-btn status--${value === 1 ? 'success' : 'danger'}`}>{statusText[value]}</span>,
+        render: (value: number) => (
+          <span className={`status-btn status--${value === 1 ? 'success' : 'danger'}`}>
+            {value === 1 ? '可预约' : '已下架'}
+          </span>
+        ),
       },
       {
         title: '操作',
@@ -329,26 +362,49 @@ export default function ServiceInstitutionPage() {
       ? '所选择的服务状态不一致，无法批量上架/下架'
       : ''
 
-  /** 状态变更统一入口：更新当前机构服务列表，并同步左侧机构聚合统计 */
-  const applyServiceStatus = (ids: number[], nextStatus: number) => {
-    const next = services.map((item) =>
-      ids.includes(item.id) ? { ...item, status: nextStatus } : item,
-    )
-    setServices(next)
+  /** 状态变更统一入口：调用机构服务关联的上下架接口，成功后重新拉取当前机构服务列表 */
+  const applyServiceStatus = async (ids: number[], nextStatus: CommonStatus) => {
+    try {
+      await Promise.all(ids.map((id) => institutionApi.updateInstitutionServiceStatus(id, nextStatus)))
+      message.success(
+        nextStatus === 1
+          ? `已上架 ${ids.length} 项服务`
+          : `已下架 ${ids.length} 项服务`,
+      )
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    }
+    // 重新拉取（触发接口②）以同步列表与左侧聚合统计
     if (selectedId != null) {
+      const res = await institutionApi.getInstitutionServiceList(selectedId, { page: 1, page_size: 100 })
+      const list: InstitutionService[] = (res.list ?? []).map((item) => {
+        const svc = poolMap.get(item.service_id)
+        return {
+          id: item.id,
+          service_id: item.service_id,
+          code: svc ? String(item.service_id) : '',
+          name: svc?.name ?? `服务 ${item.service_id}`,
+          categoryName: svc ? (catMap.get(svc.category_id) ?? '—') : '—',
+          type: svc?.type ?? 1,
+          price: item.price_override || svc?.price || 0,
+          unit: svc?.unit ?? '次',
+          status: item.status,
+        }
+      })
+      setServices(list)
       setInstitutions((prev) =>
         prev.map((inst) =>
           inst.id === selectedId
             ? {
                 ...inst,
-                onlineCount: countByStatus(next, 1),
-                offlineCount: countByStatus(next, 9),
+                serviceCount: list.length,
+                onlineCount: list.filter((s) => s.status === 1).length,
+                offlineCount: list.filter((s) => s.status === 9).length,
               }
             : inst,
         ),
       )
     }
-    // TODO: 接后端后调用 serviceApi.updateServiceStatus / batchUpdateServiceStatus
   }
 
   const openOfflineModal = (record: InstitutionService) => {
@@ -383,22 +439,16 @@ export default function ServiceInstitutionPage() {
       content: `确认上架 “${record.name}” ？上架后用户端可预约该服务。`,
       okText: '确认上架',
       cancelText: '取消',
-      onOk: () => {
-        applyServiceStatus([record.id], 1)
-        message.success(`${record.name} 已上架`)
+      onOk: async () => {
+        await applyServiceStatus([record.id], 1)
       },
     })
   }
 
-  const handleConfirmStatusChange = (reason?: string) => {
+  const handleConfirmStatusChange = async () => {
     if (!statusTarget) return
-    if (statusTarget.action === 'offline') {
-      applyServiceStatus(statusTarget.ids, 9)
-      message.success(`已下架 ${statusTarget.ids.length} 项服务`)
-    } else {
-      applyServiceStatus(statusTarget.ids, 1)
-      message.success(`已上架 ${statusTarget.ids.length} 项服务`)
-    }
+    const nextStatus: CommonStatus = statusTarget.action === 'offline' ? 9 : 1
+    await applyServiceStatus(statusTarget.ids, nextStatus)
     setStatusTarget(null)
     setSelectedRowKeys([])
   }
@@ -438,7 +488,7 @@ export default function ServiceInstitutionPage() {
             value={status}
             placeholder="服务状态"
             onChange={(value) => setStatus(value ?? null)}
-            options={Object.entries(statusText).map(([key, label]) => ({
+            options={Object.entries(instServiceStatusText).map(([key, label]) => ({
               label,
               value: Number(key),
             }))}
@@ -483,7 +533,7 @@ export default function ServiceInstitutionPage() {
                         <span><i className="dot dot--on" />可预约 {inst.onlineCount}</span>
                         <span>已下架 {inst.offlineCount}</span>
                       </div>
-                      <span className="inst-panel__orders">近30日订单 {inst.orderCount30d}</span>
+                      <span className="inst-panel__orders">已接入 {inst.serviceCount} 项服务</span>
                     </button>
                   ))}
                   {!visibleInstitutions.length && (
@@ -542,7 +592,7 @@ export default function ServiceInstitutionPage() {
       <StatusTargetModal
         statusTarget={statusTarget}
         onCancel={() => setStatusTarget(null)}
-        onOk={(reason?: string) => handleConfirmStatusChange(reason)}
+        onOk={() => handleConfirmStatusChange()}
       />
     </PageContainer>
   )

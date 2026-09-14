@@ -137,8 +137,17 @@ export default function RichTextEditor({
         })
         URL.revokeObjectURL(localUrl)
       } catch {
-        // 后端暂不可用：保留本地预览，接入文件服务器后此处即为正式逻辑
-        message.warning('上传接口暂不可用，图片以本地预览展示')
+        // 上传失败：移除该图片节点，避免把本地 blob 地址写入富文本 JSON 提交给后端
+        const { state, view } = editor
+        state.doc.descendants((node, pos) => {
+          if (node.type.name === 'image' && node.attrs.src === localUrl) {
+            view.dispatch(state.tr.delete(pos, pos + node.nodeSize))
+            return false
+          }
+          return true
+        })
+        URL.revokeObjectURL(localUrl)
+        message.warning('图片上传失败，请稍后重试')
       }
       return false
     },

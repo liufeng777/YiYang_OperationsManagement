@@ -26,9 +26,14 @@ export interface ActivityItem {
   code: string /** 活动编号，如 HD20260807001 */
   title: string
   title_en: string
-  type: number   /** 活动类型：1社区活动 / 2康养旅游 / 3健康课堂 / 4健康活动 */
+  /** 活动类型：1社区活动 / 2康养旅游 / 3健康课堂 / 4健康活动 / 5其他
+   *  注意：后端出参与创建入参均为 activity_type（筛选入参为 type，见 getActivities） */
+  activity_type: number
   status: number  // 1-待发布 2-报名中 3-已开始 9-已取消
+  /** 封面图：创建/编辑入参字段名为 cover_image */
   cover_image: string
+  /** 封面图：后端返回字段名为 cover_url（出参） */
+  cover_url?: string
   description: string // 富文本json
   location: string
   start_date: number // UTC秒级
@@ -66,38 +71,24 @@ export interface ActivityInstitutionDTO {
   end_time: number // 选填 该机构场次结束时间
 }
 
-/** 活动 DTO */
-export interface ActivityDTO {
-  title: string // 必填
-  title_en: string // 选填
-  description: string // 选填
-  cover_image: string // 选填
-  activity_type: number // 选填 /** 活动类型：1 社区活动 / 2 康养旅游 / 3 健康课堂 / 4 健康活动 / 5 其他 */
-  /** UTC 秒；入参接受 yyyy-MM-dd*/
-  start_date: number // 选填
-  end_date: number // 选填
-  location: string // 选填
-  institutions: ActivityInstitutionDTO[]
-}
-
-
 /** 活动新增 / 编辑入参 */
-export type ActivitySaveBody = Omit<ActivityDTO, 'id' | 'status' | 'registration_summary'>
+export type ActivitySaveBody = Omit<ActivityItem, 'id' | 'status' | 'registration_summary'>
 
-/** 活动列表 GET /api/admin/activities（按类型/机构/状态/关键字） */
+/** 活动列表 GET /api/admin/activities（按类型/机构/状态/关键字）
+ *  筛选参数名以后端为准：类型为 type（实测生效），非 activity_type */
 export function getActivities(
   params?: ApiPageParams & {
-    activity_type?: number
+    type?: number
     institution_id?: number
-    status?: ActivityStatusCode
+    status?: number
   },
 ) {
-  return http.get<ApiPageResult<ActivityDTO>>('/admin/activities', { ...params })
+  return http.get<ApiPageResult<ActivityItem>>('/admin/activities', { ...params })
 }
 
 /** 活动详情 GET /api/admin/activities/:id（含指定机构列表、报名情况） */
 export function getActivity(id: number) {
-  return http.get<ActivityDTO>(`/admin/activities/${id}`)
+  return http.get<ActivityItem>(`/admin/activities/${id}`)
 }
 
 /** 新增活动 POST /api/admin/activities（含指定参与机构） */
@@ -111,7 +102,7 @@ export function updateActivity(id: number, data: Partial<ActivitySaveBody>) {
 }
 
 /** 发布/取消 POST /api/admin/activities/:id/status，body {status:1|2|3|9} */
-export function updateActivityStatus(id: number, status: ActivityStatusCode) {
+export function updateActivityStatus(id: number, status: number) {
   return http.post<null>(`/admin/activities/${id}/status`, { status })
 }
 

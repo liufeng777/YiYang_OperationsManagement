@@ -5,18 +5,8 @@
  * 说明：上半部分为页面展示用类型（mock），下半部分 DTO 对齐文档契约。
  */
 import { http } from '@/utils/request'
-import type { ApiPageParams, ApiPageResult, BatchResult, CommonStatus } from '@/types/api'
-
-/* ------------------------------------------------------------------ */
-/* 页面展示类型（mock，接后端后逐步切换到下方 DTO）                       */
-/* ------------------------------------------------------------------ */
-
-/** 机构已添加服务 */
-export interface InstitutionService {
-  institution_id: number
-  service_id: number
-  status: number // 1-上架 9-下架
-}
+import type { ApiPageParams, ApiPageResult, BatchResult, CommonStatus } from '@/types/api';
+import type { ServiceItem } from './service';
 
 /* ------------------------------------------------------------------ */
 /* §3.1 机构管理（权限 institution:manage）                              */
@@ -41,8 +31,11 @@ export interface InstitutionItem {
   district: string // 区
   /** 服务半径 km，NULL=不限 */
   service_radius_km: number | null
-  cover_image: string; // 封面图片
-  // images: string[] // 环境照片
+  cover_url: string; // 封面图片
+  /** 环境照片（后端返回） */
+  images?: string[]
+  latitude?: number
+  longitude?: number
   contact_phone: string
   manager_name: string
   manager_phone: string
@@ -68,7 +61,7 @@ export function getInstitution(id: number) {
 
 /** 新增机构 POST /api/admin/institutions */
 export function createInstitution(data: InstitutionSaveBody) {
-  return http.post<null>('/admin/institutions', data)
+  return http.post<{ id: number; message?: string }>('/admin/institutions', data)
 }
 
 /** 编辑机构 PUT /api/admin/institutions/:id */
@@ -86,6 +79,11 @@ export function batchUpdateInstitutionStatus(ids: number[], status: CommonStatus
   return http.post<BatchResult>('/admin/institutions/batch-status', { ids, status })
 }
 
+/** 删除机构 DELETE /api/admin/institutions/:id */
+export function deleteInstitution(id: number) {
+  return http.delete<null>(`/admin/institutions/${id}`)
+}
+
 /** 服务半径变更 POST /api/admin/institutions/:id/radius（备用） */
 export function updateInstitutionRadius(id: number, radiusKm: number, note?: string) {
   return http.post<null>(`/admin/institutions/${id}/radius`, { radius_km: radiusKm, note })
@@ -95,31 +93,20 @@ export function updateInstitutionRadius(id: number, radiusKm: number, note?: str
 /* §5.4 机构服务关联配置 institution_services（权限 service:manage）      */
 /* ------------------------------------------------------------------ */
 
-/** 机构服务关联 DTO */
-export interface InstitutionServiceDTO {
-  id: number
-  institution_id: number
-  service_id: number
-  /** 平铺关联展示（共通 §1.4） */
-  service_name?: string
-  /** 1-上门 2-非上门（默认上门） */
-  is_home_service: 1 | 2
-  /** 机构特定价（元），NULL 沿用 services.price */
-  price_override: number | null
-  sort: number
-  /** 机构维度上下架：1-上架 9-下架 */
-  status: CommonStatus
+// 批量新增机构服务关联入参
+export interface InstitutionServiceBatchCreateBody {
+  institution_id: number;
+  items: {
+    service_id: number;
+    institution_id: number;
+  }[];
 }
-
-/** 机构服务关联新增 / 编辑入参 */
-export type InstitutionServiceSaveBody = Omit<InstitutionServiceDTO, 'id' | 'service_name'>
-
 /** 机构服务列表 GET /api/admin/institutions/:id/services */
 export function getInstitutionServiceList(
   institutionId: number,
   params?: ApiPageParams & { service_id?: number; status?: CommonStatus },
 ) {
-  return http.get<ApiPageResult<InstitutionServiceDTO>>(
+  return http.get<ApiPageResult<ServiceItem>>(
     `/admin/institutions/${institutionId}/services`,
     { ...params },
   )
@@ -127,23 +114,28 @@ export function getInstitutionServiceList(
 
 /** 关联详情 GET /api/admin/institution-services/:id */
 export function getInstitutionService(id: number) {
-  return http.get<InstitutionServiceDTO>(`/admin/institution-services/${id}`)
+  return http.get<ServiceItem>(`/admin/institution-services/${id}`)
 }
 
-/** 新增机构服务关联 POST /api/admin/institution-services */
-export function createInstitutionService(data: InstitutionServiceSaveBody) {
-  return http.post<null>('/admin/institution-services', data)
+// /** 新增机构服务关联 POST /api/admin/institution-services */
+// export function createInstitutionService(data: InstitutionServiceSaveBody) {
+//   return http.post<null>('/admin/institution-services', data)
+// }
+
+/** 机构批量关联服务 POST /api/admin/institution-services/batch */
+export function batchCreateInstitutionService(data: InstitutionServiceBatchCreateBody) {
+  return http.post<null>('/admin/institution-services/batch-create', data)
 }
 
-/** 编辑关联 PUT /api/admin/institution-services/:id（改机构特定价/排序/上门标记） */
-export function updateInstitutionService(id: number, data: Partial<InstitutionServiceSaveBody>) {
-  return http.put<null>(`/admin/institution-services/${id}`, data)
-}
+// /** 编辑关联 PUT /api/admin/institution-services/:id（改机构特定价/排序/上门标记） */
+// export function updateInstitutionService(id: number, data: Partial<InstitutionServiceSaveBody>) {
+//   return http.put<null>(`/admin/institution-services/${id}`, data)
+// }
 
-/** 机构服务上下架 POST /api/admin/institution-services/:id/status */
-export function updateInstitutionServiceStatus(id: number, status: CommonStatus) {
-  return http.post<null>(`/admin/institution-services/${id}/status`, { status })
-}
+// /** 机构服务上下架 POST /api/admin/institution-services/:id/status */
+// export function updateInstitutionServiceStatus(id: number, status: CommonStatus) {
+//   return http.post<null>(`/admin/institution-services/${id}/status`, { status })
+// }
 
 /** 删除关联 DELETE /api/admin/institution-services/:id（软删，校验无在途订单引用） */
 export function deleteInstitutionService(id: number) {
@@ -151,8 +143,8 @@ export function deleteInstitutionService(id: number) {
 }
 
 /** 批量同步 POST /api/admin/institutions/:id/services/sync（一次开通/回收多个服务） */
-export function syncInstitutionServices(institutionId: number, serviceIds: number[]) {
-  return http.post<BatchResult>(`/admin/institutions/${institutionId}/services/sync`, {
-    service_ids: serviceIds,
-  })
-}
+// export function syncInstitutionServices(institutionId: number, serviceIds: number[]) {
+//   return http.post<BatchResult>(`/admin/institutions/${institutionId}/services/sync`, {
+//     service_ids: serviceIds,
+//   })
+// }

@@ -2,83 +2,23 @@
  * 服务项目 - 新建 / 编辑服务项目
  * 集团统一定义一次，机构选择后继承基础信息与价格
  * 表单使用 antd Form 管理（便于字段校验），排布样式仍由 detail.less 的 editor-grid 提供
- * 当前为 mock 数据，后端就绪后替换为 serviceApi.getServiceItem / saveService
+ * 数据来源：serviceApi.getService / createService / updateService / getServiceCategories
+ * 说明：服务过程（service_process）后端为数组，按约定本轮暂不提交
  */
-import { useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Form, Input, InputNumber, Modal, Select, Table, Upload } from 'antd'
+import { useCallback, useEffect, useState } from 'react'
+import { App, Button, Card, Empty, Form, Input, InputNumber, Modal, Select, Skeleton, Table, Upload } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { ArrowLeftOutlined, ArrowDownOutlined, ArrowUpOutlined, CheckOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import RichDetailEditor from '@/components/RichDetailEditor'
-import type { JSONContent } from '@/components/RichTextEditor'
-import { uploadApi } from '@/api'
-import type { ServiceItem, ServiceSaveBody, Package, PriceUnit } from '@/api/modules/service'
-import { categories, typeText } from '../list'
+import { serviceApi } from '@/api'
+import { useImageUpload } from '@/hooks'
+import type { Package, PriceUnit, ServiceCategory, ServiceItem, ServiceSaveBody } from '@/api/modules/service'
+import { typeText } from '../list'
 import './index.less'
 
-/** 患者端详情示例（ProseMirror JSON 字符串，存储到 ServiceItem.description） */
-const demoDescription = JSON.stringify({
-  type: 'doc',
-  content: [
-    {
-      type: 'heading',
-      attrs: { level: 2 },
-      content: [{ type: 'text', text: '服务包含项目' }],
-    },
-    {
-      type: 'bulletList',
-      content: [
-        {
-          type: 'listItem',
-          content: [
-            {
-              type: 'paragraph',
-              content: [{ type: 'text', text: '全身温水擦浴或淋浴助浴（约 60 分钟）' }],
-            },
-          ],
-        },
-        {
-          type: 'listItem',
-          content: [
-            {
-              type: 'paragraph',
-              content: [{ type: 'text', text: '浴前生命体征测量与风险评估' }],
-            },
-          ],
-        },
-      ],
-    },
-  ],
-} satisfies JSONContent)
 
-const detailMocks: Record<string, ServiceItem> = {
-  1: {
-    id: 1,
-    code: 'FW0001',
-    category_id: 1,
-    service_type: 1,
-    name: '上门助浴服务',
-    name_en: '',
-    description: demoDescription,
-    price: 168,
-    unit: '次',
-    duration: 60,
-    status: 1,
-    vital_sign: [],
-    is_consumable_supported: true,
-    packages: [
-      { count: 5, price: 1100, price_with_consum: 1300 },
-      { count: 10, price: 2100, price_with_consum: 2500 },
-    ],
-    service_process: JSON.stringify([
-      { title: '上门评估', description: '核对身份，评估居室与洗浴环境安全' },
-      { title: '助浴服务', description: '调节水温与室温，全程陪护助浴' },
-      { title: '浴后护理', description: '皮肤护理与居室整理，记录服务结果' },
-    ]),
-    cover_url: '',
-  },
-}
 
 const unitOptions: Array<{ label: string; value: PriceUnit }> = [
   { label: '次', value: '次' },
@@ -161,34 +101,74 @@ export default function ServiceEditorPage() {
   const navigate = useNavigate()
   const params = useParams()
   const { message, modal } = App.useApp()
+  const { uploading, upload } = useImageUpload()
   const serviceId = params.id ?? 'new'
   const isCreate = serviceId === 'new'
-  const detail = useMemo(() => detailMocks[serviceId], [serviceId])
+  const [detail, setDetail] = useState<ServiceItem | null>(null)
+  const [loading, setLoading] = useState(!isCreate)
 
   const [form] = Form.useForm<ServiceFormValues>()
-  /** 列表封面：存储到 ServiceItem.cover_url */
+  /** 封面预览地址（本地 objectURL 或服务器地址） */
   const [coverUrl, setCoverUrl] = useState<string>()
+  /** 封面服务器地址（上传成功后写入 cover_url） */
+  const [coverServerUrl, setCoverServerUrl] = useState('')
   /** 患者端详情（富文本 JSON 字符串）：存储到 ServiceItem.description */
   const [description, setDescription] = useState('')
-  /** 服务过程步骤：序列化存入 ServiceItem.service_process */
+  /** 服务过程步骤：后端 service_process 为数组，按约定本轮暂不提交 */
   const [processSteps, setProcessSteps] = useState<ProcessStep[]>(initialProcessSteps)
   const [packages, setPackages] = useState<PackageItem[]>(initialPackages)
   const [packageModalOpen, setPackageModalOpen] = useState(false)
   const [editingPackage, setEditingPackage] = useState<PackageItem | null>(null)
   const [packageForm] = Form.useForm<Package>()
+  const [submitting, setSubmitting] = useState(false)
+  /** 服务分类（来自后端 service-categories） */
+  const [catList, setCatList] = useState<ServiceCategory[]>([])
 
-  /** 封面上传：走共通上传接口存入 cover_url；接口不可用时降级本地预览 */
-  const handleCoverUpload = async (file: File) => {
-    const localUrl = URL.createObjectURL(file)
-    setCoverUrl(localUrl)
-    try {
-      const result = await uploadApi.uploadFile(file)
-      setCoverUrl(result.url)
-      message.success('封面已上传')
-    } catch {
-      // TODO: 后端就绪后移除此降级分支
-      message.success('封面已更新（本地预览）')
+  /** 拉取服务分类（表单下拉） */
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await serviceApi.getServiceCategories({ page: 1, page_size: 100 })
+        setCatList(res.list ?? [])
+      } catch {
+        setCatList([])
+      }
+    })()
+  }, [])
+
+  /** 拉取服务详情（编辑场景） */
+  const fetchDetail = useCallback(async () => {
+    if (isCreate || !serviceId) {
+      setLoading(false)
+      return
     }
+    setLoading(true)
+    try {
+      const data = await serviceApi.getService(Number(serviceId))
+      setDetail(data)
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+      setDetail(null)
+    } finally {
+      setLoading(false)
+    }
+  }, [isCreate, serviceId])
+
+  useEffect(() => {
+    void fetchDetail()
+  }, [fetchDetail])
+
+  /** 封面上传：本地预览 + 后台上传，成功后保存服务器地址 */
+  const handleCoverUpload = async (file: File) => {
+    await upload(file, {
+      onLocalPreview: (localUrl) => setCoverUrl(localUrl),
+      onUploaded: (url) => {
+        setCoverServerUrl(url)
+        setCoverUrl(url)
+        message.success('封面已上传')
+      },
+      onError: () => setCoverServerUrl(detail?.cover_url ?? ''),
+    })
     return false
   }
 
@@ -215,19 +195,20 @@ export default function ServiceEditorPage() {
   /** 耗材与套餐联动：是否上架套餐 */
   const packageEnabled = Form.useWatch('packageEnabled', form) ?? true
 
-  /** 编辑场景：回填表单、封面、富文本详情与套餐 */
+  /** 编辑场景：回填表单、封面、富文本详情、服务过程与套餐 */
   useEffect(() => {
     if (!detail) return
     form.setFieldsValue({
       name: detail.name,
       category_id: detail.category_id,
       service_type: detail.service_type,
-      price: detail.price.toFixed(2),
+      price: detail.price?.toFixed(2),
       duration: detail.duration,
-      consumable: detail.is_consumable_supported ? '1' : '2',
+      consumable: detail.support_consum === 1 ? '1' : '2',
       publishStatus: detail.status === 1 ? 'on' : 'draft',
     })
     setCoverUrl(detail.cover_url || undefined)
+    setCoverServerUrl(detail.cover_url ?? '')
     setDescription(detail.description ?? '')
     setPackages((prev) => [
       ...prev.filter((item) => item.fixed),
@@ -235,20 +216,16 @@ export default function ServiceEditorPage() {
         .filter((item) => item.count !== 1)
         .map((item, index) => ({ id: `pkg-${item.count}-${index}`, ...item })),
     ])
-    // 服务过程：JSON 字符串解析为步骤；为空或非法时保留默认步骤
-    try {
-      const steps = JSON.parse(detail.service_process) as Array<Omit<ProcessStep, 'id'>>
-      if (Array.isArray(steps) && steps.length > 0) {
-        setProcessSteps(
-          steps.map((s, index) => ({
-            id: `step-load-${index}`,
-            title: s.title ?? '',
-            description: s.description,
-          })),
-        )
-      }
-    } catch {
-      /* 保留默认步骤 */
+    // 服务过程：后端为数组结构，直接回填
+    const steps = detail.service_process
+    if (Array.isArray(steps) && steps.length > 0) {
+      setProcessSteps(
+        steps.map((s, index) => ({
+          id: `step-load-${index}`,
+          title: s.title ?? '',
+          description: s.description,
+        })),
+      )
     }
   }, [detail, form])
 
@@ -264,30 +241,40 @@ export default function ServiceEditorPage() {
       message.warning('请先完善必填项：服务名称、服务分类、参考起售价、计价单位、列表摘要')
       return
     }
+    // 服务过程（processSteps）按约定本轮暂不提交：后端字段为数组，待确认结构后再接入
     const payload: ServiceSaveBody = {
       category_id: values.category_id,
       name: values.name,
-      description, // 富文本 JSON 字符串（详情图片 + 服务内容）
+      name_en: detail?.name_en ?? '',
+      description, // 富文本 JSON 字符串
       duration: values.duration,
-      is_consumable_supported: values.consumable === '1',
+      // 后端字段名为 support_consum（1-涉及耗材 0-不涉及）
+      support_consum: values.consumable === '1' ? 1 : 0,
       price: Number(values.price),
       unit: values.unit,
-      service_process: JSON.stringify(
-        processSteps
-          .filter((s) => s.title.trim())
-          .map(({ title, description: stepDesc }) => ({ title, description: stepDesc })),
-      ),
       status: targetStatus === 'on' ? 1 : 9,
       service_type: values.service_type,
       packages: (packageEnabled ? packages : packages.filter((item) => item.fixed)).map(
         ({ count, price, price_with_consum }) => ({ count, price, price_with_consum }),
       ),
-      cover_url: coverUrl ?? '',
-      vital_sign: [],
+      // 封面使用上传接口返回的服务器地址（无新上传时沿用原值）
+      cover_url: coverServerUrl || (detail?.cover_url ?? ''),
     }
-    console.log('[服务保存] payload:', payload)
-    message.success(targetStatus === 'on' ? '服务已保存并上架' : '草稿已保存')
-    navigate('/service')
+    setSubmitting(true)
+    try {
+      if (isCreate) {
+        await serviceApi.createService(payload)
+        message.success(targetStatus === 'on' ? '服务已创建并上架' : '草稿已创建')
+      } else {
+        await serviceApi.updateService(Number(serviceId), payload)
+        message.success(targetStatus === 'on' ? '服务已保存并上架' : '草稿已保存')
+      }
+      navigate('/service/list')
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   /** 添加 / 编辑套餐：打开弹窗（回填在下方 useEffect 中处理，确保 Modal 内 Form 已挂载） */
@@ -381,6 +368,26 @@ export default function ServiceEditorPage() {
     },
   ]
 
+  if (loading) {
+    return (
+      <PageContainer title={pageTitle} description="集团统一定义一次，机构选择后继承基础信息与价格">
+        <Card variant="borderless">
+          <Skeleton active paragraph={{ rows: 8 }} />
+        </Card>
+      </PageContainer>
+    )
+  }
+
+  if (!isCreate && !detail) {
+    return (
+      <PageContainer title={pageTitle} description="集团统一定义一次，机构选择后继承基础信息与价格">
+        <Card variant="borderless">
+          <Empty description="未找到该服务项目，可能已被删除" />
+        </Card>
+      </PageContainer>
+    )
+  }
+
   return (
     <PageContainer
       title={pageTitle}
@@ -424,9 +431,12 @@ export default function ServiceEditorPage() {
                     label={<span>服务分类</span>}
                     rules={[{ required: true, message: '请选择服务分类' }]}
                   >
-                    <Select placeholder="请选择服务分类" options={categories
-                      .filter((item) => item.id > 0)
-                      .map((item) => ({ label: item.name, value: item.id }))} />
+                    <Select
+                      placeholder="请选择服务分类"
+                      options={catList
+                        .filter((item) => item.status === 1)
+                        .map((item) => ({ label: item.name, value: item.id }))}
+                    />
                   </Form.Item>
                   <Form.Item
                     name="service_type"
@@ -647,6 +657,7 @@ export default function ServiceEditorPage() {
                     listType="picture-card"
                     accept="image/*"
                     showUploadList={false}
+                    disabled={uploading}
                     beforeUpload={handleCoverUpload}
                   >
                     {coverUrl ? (
@@ -658,7 +669,7 @@ export default function ServiceEditorPage() {
                     ) : (
                       <div>
                         <PlusOutlined />
-                        <div style={{ marginTop: 8 }}>上传封面</div>
+                        <div style={{ marginTop: 8 }}>{uploading ? '上传中…' : '上传封面'}</div>
                       </div>
                     )}
                   </Upload>
@@ -693,7 +704,7 @@ export default function ServiceEditorPage() {
               <span>上架后机构可从服务池选择添加；历史订单保留创建时快照。</span>
               <div>
                 {/* <Button onClick={() => handleSave('draft')}>保存草稿</Button> */}
-                <Button type="primary" icon={<CheckOutlined />} onClick={() => handleSave('on')}>
+                <Button type="primary" icon={<CheckOutlined />} loading={submitting} onClick={() => handleSave('on')}>
                   保存并上架
                 </Button>
               </div>
@@ -747,7 +758,7 @@ export default function ServiceEditorPage() {
           <span>必填项完成后可保存；编辑服务时，同一页面会带入已有内容。</span>
           <div>
             <Button onClick={() => handleSave('draft')}>保存草稿</Button>
-            <Button type="primary" icon={<CheckOutlined />} onClick={() => handleSave('on')}>
+            <Button type="primary" icon={<CheckOutlined />} loading={submitting} onClick={() => handleSave('on')}>
               保存并上架
             </Button>
           </div>

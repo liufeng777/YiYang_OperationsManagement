@@ -1,12 +1,13 @@
 /**
  * 活动管理 - 活动详情（原报名查询页）
  * 从活动列表「查看」进入：活动摘要统计 + 报名记录筛选 / Tabs + 取消报名确认弹窗
- * 当前为 mock 数据，后端就绪后替换为 activityApi.getActivitySignups
+ * 当前为 mock 数据，后端就绪后替换为 activityApi.getActivityRegistrations
+ * （真实报名接口 GET /v1/admin/activities/:id/registrations 字段见 ActivityRegistrationDTO）
  */
 import { useMemo, useState } from 'react'
 import { App, Button, Card, Col, Input, Modal, Radio, Row, Select, Table, Space } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { ArrowLeftOutlined, BarChartOutlined, EditOutlined, SearchOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, BarChartOutlined, EditOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import type { ActivitySignup } from '@/api/modules/activity'

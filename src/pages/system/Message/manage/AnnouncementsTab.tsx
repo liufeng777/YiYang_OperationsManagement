@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react'
 import { App, Button, Card, DatePicker, Drawer, Form, Input, Select, Space, Table, Tag, Upload } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons'
+import { useImageUpload } from '@/hooks'
 import type { AnnouncementDTO } from '@/api/modules/message'
 import dayjs, { type Dayjs } from 'dayjs'
 import { formatDateTime } from '@/utils'
@@ -21,6 +22,45 @@ const publishStatusMap: Record<AnnouncementDTO['publish_status'], { text: string
   1: { text: '草稿', color: 'default' },
   2: { text: '已发布', color: 'success' },
   3: { text: '已撤回', color: 'warning' },
+}
+
+/** 公告封面受控上传（配合 Form.Item）：本地预览 + 后台上传，value 为服务器的封面地址 */
+function AnnouncementCoverUpload({
+  value,
+  uploading,
+  onUpload,
+}: {
+  value?: string
+  uploading?: boolean
+  onUpload: (file: File) => void
+}) {
+  const [preview, setPreview] = useState<string | undefined>(value)
+  return (
+    <Upload
+      listType="picture-card"
+      accept="image/*"
+      showUploadList={false}
+      disabled={uploading}
+      beforeUpload={(file) => {
+        setPreview(URL.createObjectURL(file))
+        onUpload(file)
+        return Upload.LIST_IGNORE
+      }}
+    >
+      {(preview || value) ? (
+        <img
+          src={preview || value}
+          alt="公告封面"
+          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
+        />
+      ) : (
+        <div>
+          <UploadOutlined />
+          <div style={{ marginTop: 8 }}>{uploading ? '上传中…' : '上传封面'}</div>
+        </div>
+      )}
+    </Upload>
+  )
 }
 
 /** mock 系统公告（对齐 AnnouncementDTO） */
@@ -52,6 +92,7 @@ interface AnnouncementFormValues {
 
 export default function AnnouncementsTab() {
   const { message, modal } = App.useApp()
+  const { uploading, upload } = useImageUpload()
   const [data, setData] = useState(mockAnnouncements)
   const [keyword, setKeyword] = useState('')
   const [type, setType] = useState('all')
@@ -400,17 +441,15 @@ export default function AnnouncementsTab() {
             />
           </Form.Item>
           <Form.Item name="cover_image" label="封面图（可选）">
-            <Upload
-              name="file"
-              listType="picture-card"
-              maxCount={1}
-              beforeUpload={() => false}
-            >
-              <div>
-                <UploadOutlined />
-                <div style={{ marginTop: 8 }}>上传封面</div>
-              </div>
-            </Upload>
+            <AnnouncementCoverUpload
+              uploading={uploading}
+              onUpload={(file) =>
+                upload(file, {
+                  onUploaded: (url) => form.setFieldValue('cover_image', url),
+                  onError: () => form.setFieldValue('cover_image', ''),
+                })
+              }
+            />
           </Form.Item>
         </Form>
       </Drawer>
