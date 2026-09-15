@@ -34,35 +34,22 @@ export const useUserStore = create<UserState>()(
       setToken: (token) => set({ token }),
       setUserInfo: (userInfo) => set({ userInfo }),
       login: async (params) => {
-        // const res = await authApi.login(params)
-        // const { admin } = res
-        // set({
-        //   token: res.token,
-        //   userInfo: {
-        //     id: admin.id,
-        //     username: admin.username,
-        //     nickname: admin.nickname,
-        //     avatar: admin.avatar_url ?? undefined,
-        //     phone: admin.phone,
-        //     email: admin.email,
-        //     roles: admin.roles,
-        //     permissions: admin.permissions,
-        //   },
-        // })
+        const res = await authApi.login(params)
+        const { admin } = res
         set({
-          token: `mock-token-${Date.now()}`,
+          token: res.token,
           userInfo: {
-            id: 1,
-            username: params.username,
-            nickname: params.username,
-            avatar: undefined,
-            phone: '18258419062',
-            email: null,
-            roles: ["finance", "operator"],
-            permissions: ["order:view", "order:manage", "finance:reconcile"]
+            id: admin.id,
+            username: admin.username,
+            nickname: admin.nickname,
+            avatar: admin.avatar_url ?? undefined,
+            phone: admin.phone ?? null,
+            email: admin.email ?? null,
+            roles: admin.roles ?? [],
+            // 登录出参可能不返回权限码，兜底为空数组（菜单暂不依赖权限过滤）
+            permissions: admin.permissions ?? [],
           },
         })
-         
       },
       logout: () => {
         set({ token: '', userInfo: null })

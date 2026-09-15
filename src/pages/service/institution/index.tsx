@@ -16,7 +16,7 @@ import PageContainer from '@/components/PageContainer'
 import { useServiceInstitutionStore } from '@/store/modules/serviceInstitution'
 import { institutionApi, serviceApi } from '@/api'
 import type { CommonStatus } from '@/types/api'
-import { typeText, typeColor } from '../list'
+import { serviceTypeText } from '../list'
 import StatusTargetModal from '../components/StatusTargetModal'
 import '../list.less'
 import './index.less'
@@ -59,7 +59,7 @@ interface ServiceFilters {
 }
 
 /** 机构服务预约状态（关联维度）：1-可预约 9-已下架 */
-const instServiceStatusText: Record<number, string> = {
+export const instServiceStatusText: Record<number, string> = {
   1: '可预约',
   9: '已下架',
 }
@@ -279,10 +279,9 @@ export default function ServiceInstitutionPage() {
         key: 'name',
         render: (_, record) => (
           <div className="pool-service">
-            <i>{record.name.slice(0, 1)}</i>
             <div>
               <strong>{record.name}</strong>
-              <span>{record.categoryName} · {record.code}</span>
+              <span>{record.categoryName}</span>
             </div>
           </div>
         ),
@@ -292,7 +291,7 @@ export default function ServiceInstitutionPage() {
         dataIndex: 'type',
         key: 'type',
         width: 100,
-        render: (value: number) => <Tag variant='outlined' color={typeColor[value]}>{typeText[value]}</Tag>
+        render: (value: number) => <Tag variant='outlined' color={serviceTypeText[value]?.color}>{serviceTypeText[value]?.label}</Tag>
       },
       {
         title: '机构价',
@@ -478,8 +477,8 @@ export default function ServiceInstitutionPage() {
             value={type}
             placeholder="服务方式"
             onChange={(value) => setType(value ?? null)}
-            options={Object.entries(typeText).map(([key, label]) => ({
-              label,
+            options={Object.entries(serviceTypeText).map(([key, item]) => ({
+              label: item.label,
               value: Number(key),
             }))}
           />

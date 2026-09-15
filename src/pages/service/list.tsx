@@ -19,18 +19,20 @@ import StatusTargetModal from './components/StatusTargetModal'
 import './list.less'
 
 export const statusText: Record<number, string> = {
-  1: '已上架',
-  2: '草稿',
-  9: '已下架'
+  1: '已启用',
+  9: '已停用'
 }
 
-export const typeText: Record<number, string> = {
-  1: '上门',
-  2: '到店',
+export const serviceTypeText: Record<number, any> = {
+  1: {
+    label: '上门',
+    color: 'geekblue',
+  },
+  2: {
+    label: '到店',
+    color: 'purple',
+  },
 }
-
-export const typeColor = ['', 'geekblue', 'purple']
-
 
 interface ServiceFilters {
   keyword: string
@@ -39,7 +41,7 @@ interface ServiceFilters {
   status: number | null
 }
 
-/** 上下架目标：action=offline 走「下架原因」流程，action=online 走确认上架流程 */
+/** 上停用目标：action=offline 走「停用原因」流程，action=online 走确认启用流程 */
 export interface StatusTarget {
   ids: number[]
   title: string
@@ -126,9 +128,9 @@ export default function ServicePoolList() {
     const countBy = (target: number) => data.filter((item) => item.status === target).length
     return [
       { key: 'all', label: '服务项目', value: total, note: '集团统一定义' },
-      { key: 'on', label: '已上架', value: countBy(1), note: '机构可选择添加' },
+      { key: 'on', label: '已启用', value: countBy(1), note: '机构可选择添加' },
       { key: 'draft', label: '草稿', value: countBy(2), note: '尚未对机构开放' },
-      { key: 'off', label: '已下架', value: countBy(9), note: '不可新增使用' },
+      { key: 'off', label: '已停用', value: countBy(9), note: '不可新增使用' },
     ]
   }, [data, total])
 
@@ -233,7 +235,7 @@ export default function ServicePoolList() {
     ],
   })
 
-  /* 勾选服务的 status 一致性：一致才可批量上架/下架 */
+  /* 勾选服务的 status 一致性：一致才可批量启用/停用 */
   const selectedItems = useMemo(
     () => data.filter((item) => selectedRowKeys.includes(item.id)),
     [data, selectedRowKeys],
@@ -244,20 +246,20 @@ export default function ServicePoolList() {
   )
   /** 勾选非空且状态一致时才允许批量操作 */
   const batchEnabled = selectedItems.length > 0 && selectedStatuses.size === 1
-  /** 状态一致时的批量方向：已上架 → 批量下架；草稿/已下架 → 批量上架 */
+  /** 状态一致时的批量方向：已启用 → 批量停用；草稿/已停用 → 批量启用 */
   const batchAction: 'online' | 'offline' =
     selectedItems[0]?.status === 1 ? 'offline' : 'online'
   const batchTooltip = !selectedItems.length
     ? '请先勾选服务项目'
     : selectedStatuses.size > 1
-      ? '所选择的服务状态不一致，无法批量上架/下架'
+      ? '所选择的服务状态不一致，无法批量启用/停用'
       : ''
 
   const openOfflineModal = (record: ServiceItem) => {
     setStatusTarget({
       ids: [record.id],
       title: `集团服务池 · ${record.name}`,
-      code: `${typeText[record.service_type] ?? ''} · ${catList.find((v) => v.id === record.category_id)?.name ?? '未分类'}`,
+      code: `${serviceTypeText[record.service_type]?.label ?? ''} · ${catList.find((v) => v.id === record.category_id)?.name ?? '未分类'}`,
       action: 'offline',
     })
   }
@@ -268,27 +270,27 @@ export default function ServicePoolList() {
       return
     }
     if (selectedStatuses.size > 1) {
-      message.warning('所选择的服务状态不一致，无法批量上架/下架')
+      message.warning('所选择的服务状态不一致，无法批量启用/停用')
       return
     }
     const ids = selectedItems.map((item) => item.id)
     setStatusTarget(
       batchAction === 'offline'
-        ? { ids, title: `批量下架 ${ids.length} 项服务`, action: 'offline' }
-        : { ids, title: `批量上架 ${ids.length} 项服务`, action: 'online' },
+        ? { ids, title: `批量停用 ${ids.length} 项服务`, action: 'offline' }
+        : { ids, title: `批量启用 ${ids.length} 项服务`, action: 'online' },
     )
   }
 
   const handleEnable = (record: ServiceItem) => {
     modal.confirm({
-      title: '上架服务',
-      content: `确认上架 “${record.name}” ？上架后机构可选择添加该服务。`,
-      okText: '确认上架',
+      title: '启用服务',
+      content: `确认启用 “${record.name}” ？启用后机构可选择添加该服务。`,
+      okText: '确认启用',
       cancelText: '取消',
       onOk: async () => {
         try {
           await serviceApi.updateServiceStatus(record.id, 1)
-          message.success(`${record.name} 已上架`)
+          message.success(`${record.name} 已启用`)
         } catch {
           /* 错误提示由 request 拦截器统一提示 */
         }
@@ -297,7 +299,7 @@ export default function ServicePoolList() {
     })
   }
 
-  /** 单条/批量 上下架（批量走后端 batch-status） */
+  /** 单条/批量 上停用（批量走后端 batch-status） */
   const handleConfirmStatusChange = async () => {
     if (!statusTarget) return
     const nextStatus: CommonStatus = statusTarget.action === 'offline' ? 9 : 1
@@ -309,8 +311,8 @@ export default function ServicePoolList() {
       }
       message.success(
         statusTarget.action === 'offline'
-          ? `已下架 ${statusTarget.ids.length} 项服务`
-          : `已上架 ${statusTarget.ids.length} 项服务`,
+          ? `已停用 ${statusTarget.ids.length} 项服务`
+          : `已启用 ${statusTarget.ids.length} 项服务`,
       )
     } catch {
       /* 错误提示由 request 拦截器统一提示 */
@@ -347,12 +349,11 @@ export default function ServicePoolList() {
         key: 'name',
         render: (_, record) => (
           <div className="pool-service">
-            <i>{record.name.slice(0, 1)}</i>
             <div>
               <strong>{record.name}</strong>
               <span>
                 {catList.find((v) => v.id === record.category_id)?.name ?? '—'}
-                {record.name_en ? ` · ${record.name_en}` : ''}
+                {/* {record.name_en ? ` · ${record.name_en}` : ''} */}
               </span>
             </div>
           </div>
@@ -363,7 +364,7 @@ export default function ServicePoolList() {
         dataIndex: 'service_type',
         key: 'service_type',
         width: 110,
-        render: (value: number) => <Tag variant='outlined' color={typeColor[value]}>{typeText[value]}</Tag>
+        render: (value: number) => <Tag variant='outlined' color={serviceTypeText[value].color}>{serviceTypeText[value].label}</Tag>
       },
       {
         title: '集团定价',
@@ -390,7 +391,7 @@ export default function ServicePoolList() {
         dataIndex: 'status',
         key: 'status',
         width: 100,
-        render: (value: number) => <span className={`status-btn status--${value === 1 ? 'success' : 'danger'}`}>{statusText[value]}</span>,
+        render: (value: number) => <span className={`status-btn status--${value === 1 ? 'success' : 'danger'}`}>{statusText[value] ?? '已停用'}</span>,
       },
       {
         title: '操作',
@@ -403,11 +404,11 @@ export default function ServicePoolList() {
             </Button>
             {record.status === 1 ? (
               <Button type="link" size="small" danger onClick={() => openOfflineModal(record)}>
-                下架
+                停用
               </Button>
             ) : (
               <Button type="link" size="small" onClick={() => handleEnable(record)}>
-                上架
+                启用
               </Button>
             )}
             <Button type="link" size="small" danger onClick={() => handleDeleteService(record)}>
@@ -467,8 +468,8 @@ export default function ServicePoolList() {
             value={type}
             placeholder="服务方式"
             onChange={(value) => setType(value ?? null)}
-            options={Object.entries(typeText).map(([key, label]) => ({
-              label,
+            options={Object.entries(serviceTypeText).map(([key, item]) => ({
+              label: item.label,
               value: Number(key),
             }))}
           />
@@ -488,7 +489,6 @@ export default function ServicePoolList() {
 
         <div className="service-pool__main">
           <Card variant="borderless" className="pool-category">
-            <div style={{flex: 1}}>
             <div className="pool-category__header">
               <h3>服务分类</h3>
               <Button size="small" type="primary" icon={<PlusOutlined />} onClick={openCategoryCreate}>
@@ -526,8 +526,7 @@ export default function ServicePoolList() {
                 </div>
               ))}
             </div>
-            </div>
-            <div className="pool-category__tip">
+            {/* <div className="pool-category__tip">
               <h4>集团服务池定义什么？</h4>
               <ul>
                 <li>服务名称、编码与分类</li>
@@ -536,8 +535,8 @@ export default function ServicePoolList() {
                 <li>适用人群、服务时长与须知</li>
               </ul>
               <h4 className="is-danger">不在这里配置</h4>
-              <p>机构服务半径、日容量、接单时间与预约上下架状态。</p>
-            </div>
+              <p>机构服务半径、日容量、接单时间与预约上停用状态。</p>
+            </div> */}
           </Card>
 
           <Card variant="borderless" className="list-card" style={{marginTop: 0}}>
@@ -549,7 +548,7 @@ export default function ServicePoolList() {
                 {/* disabled 按钮不触发鼠标事件，需包一层 span 才能展示 Tooltip */}
                 <span>
                   <Button color="primary" variant="outlined" disabled={!batchEnabled} onClick={openBatchStatusModal}>
-                    批量上架/下架
+                    批量启用/停用
                   </Button>
                 </span>
               </Tooltip>

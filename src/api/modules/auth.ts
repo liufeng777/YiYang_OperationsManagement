@@ -4,22 +4,23 @@
  */
 import { http } from '@/utils/request'
 
-/** 管理员信息（登录出参 / profile 出参） */
+/** 管理员信息（登录出参 / profile 出参）
+ *  注：后端登录接口仅返回 id/username/nickname/roles，其余字段需兜底处理 */
 export interface AdminProfile {
   id: number
   username: string
   nickname: string
-  avatar_url: string | null
+  avatar_url?: string | null
   /** 脱敏手机号 */
-  phone: string | null
-  email: string | null
+  phone?: string | null
+  email?: string | null
   /** 最近登录时间 UTC 秒 */
-  last_login_at: number | null
-  last_login_ip: string | null
+  last_login_at?: number | null
+  last_login_ip?: string | null
   /** 角色编码数组，如 ["finance","operator"] */
   roles: string[]
-  /** 权限码数组，如 ["order:view","order:manage"] */
-  permissions: string[]
+  /** 权限码数组，如 ["order:view","order:manage"]；登录出参可能不返回 */
+  permissions?: string[]
 }
 
 /** 后台登录入参 */
@@ -31,11 +32,11 @@ export interface LoginParams {
   captcha_id?: string
 }
 
-/** 后台登录出参 */
+/** 后台登录出参（字段名与后端实际返回一致） */
 export interface LoginResult {
   token: string
-  /** token 有效期（秒） */
-  expires_in: number
+  /** token 有效期（秒）；后端返回字段名为 expire_in */
+  expire_in: number
   admin: AdminProfile
 }
 

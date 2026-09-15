@@ -6,7 +6,6 @@
  */
 import { http } from '@/utils/request'
 import type { ApiPageParams, ApiPageResult, BatchResult, CommonStatus } from '@/types/api';
-import type { ServiceItem } from './service';
 
 /* ------------------------------------------------------------------ */
 /* §3.1 机构管理（权限 institution:manage）                              */
@@ -101,12 +100,41 @@ export interface InstitutionServiceBatchCreateBody {
     institution_id: number;
   }[];
 }
+
+/** 机构服务关联（出参：关联记录 + 服务/分类平铺信息） */
+export interface InstitutionServiceRow {
+  id: number
+  institution_id: number
+  service_id: number
+  /** 平铺：服务名称 */
+  service_name: string
+  /** 平铺：服务分类 id / 名称 */
+  service_category_id: number
+  service_category_name: string
+  /** 1-上门 2-非上门（到店） */
+  is_home_service: 1 | 2
+  /** 机构特定价（元），0 表示沿用集团价 */
+  price_override: number
+  sort: number
+  /** 机构维度上下架：1-可预约 9-已下架 */
+  status: CommonStatus
+  remark: string
+  price: number
+  unit: string
+  service_type: number
+}
+
+/** 机构服务列表响应（列表 + 所属机构 id） */
+export interface InstitutionServicePage extends ApiPageResult<InstitutionServiceRow> {
+  institution_id: number
+}
+
 /** 机构服务列表 GET /api/admin/institutions/:id/services */
 export function getInstitutionServiceList(
   institutionId: number,
   params?: ApiPageParams & { service_id?: number; status?: CommonStatus },
 ) {
-  return http.get<ApiPageResult<ServiceItem>>(
+  return http.get<InstitutionServicePage>(
     `/admin/institutions/${institutionId}/services`,
     { ...params },
   )
@@ -114,7 +142,7 @@ export function getInstitutionServiceList(
 
 /** 关联详情 GET /api/admin/institution-services/:id */
 export function getInstitutionService(id: number) {
-  return http.get<ServiceItem>(`/admin/institution-services/${id}`)
+  return http.get<InstitutionServiceRow>(`/admin/institution-services/${id}`)
 }
 
 // /** 新增机构服务关联 POST /api/admin/institution-services */
@@ -122,7 +150,7 @@ export function getInstitutionService(id: number) {
 //   return http.post<null>('/admin/institution-services', data)
 // }
 
-/** 机构批量关联服务 POST /api/admin/institution-services/batch */
+/** 机构批量关联服务 POST /api/admin/institution-services/batch-create */
 export function batchCreateInstitutionService(data: InstitutionServiceBatchCreateBody) {
   return http.post<null>('/admin/institution-services/batch-create', data)
 }
@@ -132,10 +160,11 @@ export function batchCreateInstitutionService(data: InstitutionServiceBatchCreat
 //   return http.put<null>(`/admin/institution-services/${id}`, data)
 // }
 
-// /** 机构服务上下架 POST /api/admin/institution-services/:id/status */
-// export function updateInstitutionServiceStatus(id: number, status: CommonStatus) {
-//   return http.post<null>(`/admin/institution-services/${id}/status`, { status })
-// }
+/** 机构服务上下架 POST /api/admin/institution-services/:id/status
+ *  注：契约中此接口一度注释，但后端实测仍可用（返回「状态已更新」），页面上下架功能依赖它 */
+export function updateInstitutionServiceStatus(id: number, status: CommonStatus) {
+  return http.post<null>(`/admin/institution-services/${id}/status`, { status })
+}
 
 /** 删除关联 DELETE /api/admin/institution-services/:id（软删，校验无在途订单引用） */
 export function deleteInstitutionService(id: number) {

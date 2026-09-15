@@ -72,7 +72,7 @@ export default function BasicLayout() {
           )}
         </div>
         <SiderMenu />
-        <div className='basic-layout__user'>
+        {/* <div className='basic-layout__user'>
           {collapsed ? (
             <Tooltip
               placement="right"
@@ -91,7 +91,7 @@ export default function BasicLayout() {
               </span>
             </>
           )}
-        </div>
+        </div> */}
       </Sider>
       <Layout className="basic-layout__main">
         <HeaderBar />

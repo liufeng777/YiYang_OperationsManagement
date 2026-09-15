@@ -38,8 +38,8 @@ export default function InstitutionDetailPage() {
   const institutionId = params.id ?? ''
   const [detail, setDetail] = useState<InstitutionItem | null>(null)
   const [loading, setLoading] = useState(true)
-  /** 服务项目数量（Tab 角标用，由 ServicesTab 回传） */
-  const [serviceCount, setServiceCount] = useState(0)
+  /** 已关联服务数量（Tab 角标用）：null 表示尚未取到，由详情页与 ServicesTab 共同维护 */
+  const [serviceCount, setServiceCount] = useState<number | null>(null)
 
   /** 拉取机构详情 */
   const fetchDetail = useCallback(async () => {
@@ -59,9 +59,31 @@ export default function InstitutionDetailPage() {
     }
   }, [institutionId])
 
+  /**
+   * 拉取已关联服务数量（供 Tab 角标展示）
+   * 仅取分页 total（page_size=1），避免与 ServicesTab 的全量拉取重复
+   */
+  const fetchServiceCount = useCallback(async () => {
+    if (!institutionId) return
+    try {
+      const res = await institutionApi.getInstitutionServiceList(Number(institutionId), {
+        page: 1,
+        page_size: 1,
+      })
+      setServiceCount(res.total ?? 0)
+    } catch {
+      /* 取不到数量时角标不展示数字（保持 null） */
+    }
+  }, [institutionId])
+
   useEffect(() => {
     void fetchDetail()
   }, [fetchDetail])
+
+  // 打开详情即取服务数量，无需等到切换到「服务项目」Tab
+  useEffect(() => {
+    void fetchServiceCount()
+  }, [fetchServiceCount])
 
   const queryTab = searchParams.get('tab')
   const activeTab: DetailTab = detailTabs.some((item) => item.key === queryTab)
@@ -71,7 +93,13 @@ export default function InstitutionDetailPage() {
   const tabItems = useMemo(
     () =>
       detailTabs.map((item) =>
-        item.key === 'services' ? { ...item, label: `服务项目 ${serviceCount}` } : item,
+        item.key === 'services'
+          ? {
+              ...item,
+              // 数量未取到时只展示标签，避免闪出「服务项目 0」
+              label: serviceCount == null ? item.label : `${item.label} ${serviceCount}`,
+            }
+          : item,
       ),
     [serviceCount],
   )

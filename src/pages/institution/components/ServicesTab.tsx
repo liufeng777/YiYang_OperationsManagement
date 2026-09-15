@@ -13,8 +13,10 @@ import { useNavigate } from 'react-router-dom'
 import type { ColumnsType } from 'antd/es/table'
 import { CheckOutlined, ArrowRightOutlined, PlusOutlined } from '@ant-design/icons'
 import { institutionApi, serviceApi } from '@/api'
-import type { InstitutionItem, InstitutionServiceDTO } from '@/api/modules/institution'
+import type { InstitutionItem, InstitutionServiceRow } from '@/api/modules/institution'
 import type { ServiceCategory, ServiceItem } from '@/api/modules/service'
+import { serviceTypeText } from '@/pages/service/list'
+import { instServiceStatusText } from '@/pages/service/institution'
 
 interface ServicesTabProps {
   detail: InstitutionItem
@@ -22,23 +24,14 @@ interface ServicesTabProps {
   onCountChange?: (count: number) => void
 }
 
-/** 表格行：关联记录 + 平铺服务信息 */
-interface ServiceRow extends InstitutionServiceDTO {
-  service_name: string
-  service_code: string
-  category_name: string
-  price: number
-  unit: string
-  service_type: number
-}
 
 export default function ServicesTab({ detail, onCountChange }: ServicesTabProps) {
   const navigate = useNavigate()
-  const { message, modal } = App.useApp()
+  const { message } = App.useApp()
 
-  const [rows, setRows] = useState<ServiceRow[]>([])
+  const [rows, setRows] = useState<InstitutionServiceRow[]>([])
   const [loading, setLoading] = useState(false)
-  const [deleting, setDeleting] = useState<ServiceRow | null>(null)
+  const [deleting, setDeleting] = useState<InstitutionServiceRow | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
@@ -56,30 +49,13 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
     setLoading(true)
     try {
       const link = await institutionApi.getInstitutionServiceList(detail.id, { page: 1, page_size: 100 })
-      const linkList = link.list ?? []
-      // 服务池明细用于补全名称/编码/分类（关联接口只返回 service_id）
-      const poolRes = await serviceApi.getServices({ page: 1, page_size: 100 })
-      const poolList = poolRes.list ?? []
+      const linkList: InstitutionServiceRow[] = link.list ?? []
       const catRes = await serviceApi.getServiceCategories({ page: 1, page_size: 100 })
       const catList = catRes.list ?? []
       setCategories(catList)
 
-      const poolMap = new Map(poolList.map((item) => [item.id, item]))
-      const catMap = new Map(catList.map((item) => [item.id, item.name]))
-      const merged: ServiceRow[] = linkList.map((item) => {
-        const svc = poolMap.get(item.service_id)
-        return {
-          ...item,
-          service_name: svc?.name ?? `服务 ${item.service_id}`,
-          service_code: svc?.code ?? '',
-          category_name: svc ? (catMap.get(svc.category_id) ?? '—') : '—',
-          price: item.price_override || svc?.price || 0,
-          unit: svc?.unit ?? '次',
-          service_type: svc?.service_type ?? 1,
-        }
-      })
-      setRows(merged)
-      onCountChange?.(merged.length)
+      setRows(linkList)
+      onCountChange?.(linkList.length)
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
       setRows([])
@@ -133,7 +109,7 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
     }
     setSubmitting(true)
     try {
-      const items = targets.map((serviceId, index) => ({
+      const items = targets.map((serviceId) => ({
         service_id: serviceId,
         institution_id: detail.id,
       }))
@@ -166,26 +142,26 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
   }
 
   /** 上架/下架机构服务（关联维度） */
-  const handleToggleStatus = (record: ServiceRow) => {
-    const nextStatus = record.status === 1 ? 9 : 1
-    modal.confirm({
-      title: nextStatus === 9 ? '下架服务' : '上架服务',
-      content: `确认${nextStatus === 9 ? '下架' : '上架'}「${record.service_name}」？`,
-      okText: `确认${nextStatus === 9 ? '下架' : '上架'}`,
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          await institutionApi.updateInstitutionServiceStatus(record.id, nextStatus)
-          message.success(`已${nextStatus === 9 ? '下架' : '上架'}「${record.service_name}」`)
-        } catch {
-          /* 错误提示由 request 拦截器统一处理 */
-        }
-        void fetchRows()
-      },
-    })
-  }
+  // const handleToggleStatus = (record: ServiceRow) => {
+  //   const nextStatus = record.status === 1 ? 9 : 1
+  //   modal.confirm({
+  //     title: nextStatus === 9 ? '下架服务' : '上架服务',
+  //     content: `确认${nextStatus === 9 ? '下架' : '上架'}「${record.service_name}」？`,
+  //     okText: `确认${nextStatus === 9 ? '下架' : '上架'}`,
+  //     cancelText: '取消',
+  //     onOk: async () => {
+  //       try {
+  //         await institutionApi.updateInstitutionServiceStatus(record.id, nextStatus)
+  //         message.success(`已${nextStatus === 9 ? '下架' : '上架'}「${record.service_name}」`)
+  //       } catch {
+  //         /* 错误提示由 request 拦截器统一处理 */
+  //       }
+  //       void fetchRows()
+  //     },
+  //   })
+  // }
 
-  const serviceColumns = useMemo<ColumnsType<ServiceRow>>(
+  const serviceColumns = useMemo<ColumnsType<InstitutionServiceRow>>(
     () => [
       {
         title: '服务项目',
@@ -193,47 +169,40 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
         render: (_, record) => (
           <div className="service-cell">
             <strong>{record.service_name}</strong>
-            <span>{record.category_name}</span>
+            <span>{record.service_category_name}</span>
           </div>
         ),
       },
       {
         title: '服务方式',
-        key: 'mode',
-        width: 90,
-        render: (_, record) => (record.service_type === 2 ? '到店' : '上门'),
+        key: 'service_type',
+        dataIndex: 'service_type',
+        render: (value: number) => <Tag variant='outlined' color={serviceTypeText[value]?.color}>{serviceTypeText[value]?.label}</Tag>,
       },
       {
         title: '定价',
         key: 'price',
-        width: 120,
         render: (_, record) => `¥${record.price} / ${record.unit}`,
-      },
-      {
-        title: '配置来源',
-        key: 'configSource',
-        width: 110,
-        render: (_, record) => (record.price_override ? '单项调整' : '机构默认'),
       },
       {
         title: '状态',
         key: 'status',
-        width: 100,
-        render: (_, record) => (
-          <span className={`status-btn status--${record.status === 1 ? 'success' : 'cancel'}`}>
-            {record.status === 1 ? '可预约' : '已下架'}
+        dataIndex: 'status',
+        render: (value: number) => (
+          <span className={`status-btn status--${value === 1 ? 'success' : 'cancel'}`}>
+            {instServiceStatusText[value]}
           </span>
         ),
       },
       {
         title: '操作',
         key: 'action',
-        width: 140,
+        width: 120,
         render: (_, record) => (
           <div className="service-actions">
-            <Button type="link" size="small" onClick={() => handleToggleStatus(record)}>
+            {/* <Button type="link" size="small" onClick={() => handleToggleStatus(record)}>
               {record.status === 1 ? '下架' : '上架'}
-            </Button>
+            </Button> */}
             <Button type="link" size="small" danger onClick={() => setDeleting(record)}>
               删除
             </Button>
@@ -270,16 +239,16 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
             <strong>{record.name}</strong>
             <span>
               {categories.find((item) => item.id === record.category_id)?.name ?? '—'}
-              {record.name_en ? ` · ${record.name_en}` : ''}
             </span>
           </div>
         ),
       },
       {
         title: '服务方式',
-        key: 'mode',
+        key: 'service_type',
+        dataIndex: 'service_type',
         width: 100,
-        render: (_: unknown, record: ServiceItem) => (record.service_type === 2 ? '到店' : '上门'),
+        render: (value: number) => <Tag variant='outlined' color={serviceTypeText[value]?.color}>{serviceTypeText[value]?.label}</Tag>,
       },
       {
         title: '集团定价',
@@ -291,8 +260,14 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
         title: '选择状态',
         key: 'selected',
         width: 100,
-        render: (_: unknown, record: ServiceItem) =>
-          existingServiceIds.has(record.id) ? '已添加' : selectedServiceIds.includes(record.id) ? '已选择' : '未选择',
+        render: (_: unknown, record: ServiceItem) => {
+          // 三态区分：已添加（完成，绿）/ 已选择（本次已勾选，蓝）/ 未选择（灰）
+          const added = existingServiceIds.has(record.id)
+          const checked = selectedServiceIds.includes(record.id)
+          const tone = added ? 'success' : checked ? 'info' : 'cancel'
+          const label = added ? '已添加' : checked ? '已选择' : '未选择'
+          return <span className={`status-btn status--${tone}`}>{label}</span>
+        },
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -324,7 +299,7 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
             添加服务项目
           </Button>
         </div>
-        <Table<ServiceRow>
+        <Table<InstitutionServiceRow>
           rowKey="id"
           size="small"
           loading={loading}
@@ -441,7 +416,7 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
                 {detail.name} · {deleting.service_name}
               </span>
               <span>
-                {deleting.category_name} · 关联 #{deleting.id}
+                {deleting.service_category_name} · 关联 #{deleting.id}
               </span>
             </div>
             <div className="delete-modal__conditions">

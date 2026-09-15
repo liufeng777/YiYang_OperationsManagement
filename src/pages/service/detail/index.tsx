@@ -15,7 +15,7 @@ import RichDetailEditor from '@/components/RichDetailEditor'
 import { serviceApi } from '@/api'
 import { useImageUpload } from '@/hooks'
 import type { Package, PriceUnit, ServiceCategory, ServiceItem, ServiceSaveBody } from '@/api/modules/service'
-import { typeText } from '../list'
+import { serviceTypeText } from '../list'
 import './index.less'
 
 
@@ -443,8 +443,8 @@ export default function ServiceEditorPage() {
                     label={<span>服务方式</span>}
                     rules={[{ required: true, message: '请选择服务方式' }]}
                   >
-                    <Select options={Object.keys(typeText).map((key) => ({
-                      label: typeText[Number(key)],
+                    <Select options={Object.keys(serviceTypeText).map((key) => ({
+                      label: serviceTypeText[Number(key)]?.label,
                       value: Number(key),
                     }))} />
                   </Form.Item>
@@ -737,7 +737,7 @@ export default function ServiceEditorPage() {
                   <span>/ {previewUnit}</span>
                 </div>
                 <div className="service-phone__meta">
-                  <span>{previewType ? typeText[previewType] : ''}</span>
+                  <span>{previewType ? serviceTypeText[previewType]?.label : ''}</span>
                   <em>由附近已上架机构提供</em>
                 </div>
                 <div className="service-phone__section">

@@ -71,7 +71,6 @@
   }
 
   .detail-card {
-    flex: 1;
     margin-top: @spacing-md;
     .card-surface();
     .ant-card-body {
@@ -200,8 +199,7 @@
   /* ===== 患者端介绍 ===== */
   .patient-intro {
     margin-top: @spacing-md;
-    display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(390px, 0.8fr);
+    display: flex;
     gap: @spacing-md;
 
     .detail-card {
@@ -210,6 +208,7 @@
     }
 
     &__left {
+      flex: 1;
       display: flex;
       flex-direction: column;
       gap: @spacing-md;
@@ -353,6 +352,7 @@
   }
 
   .patient-preview {
+    width: 390px;
     position: sticky;
     top: @spacing-xl;
     align-self: start;

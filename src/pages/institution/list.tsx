@@ -22,8 +22,8 @@ const typeText: Record<InstitutionType, string> = {
 }
 
 const statusText: Record<InstitutionStatus, string> = {
-  1: '启用',
-  9: '停用',
+  1: '已启用',
+  9: '已停用',
 }
 
 /** 示例机构数据（仅供应未接入接口的页面/组件作占位，列表页已改为真实接口） */
