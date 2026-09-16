@@ -1,0 +1,237 @@
+/**
+ * 机构信息表单（InstitutionInfoForm）样式
+ * 布局参照服务编辑页：左侧表单卡片 + 底部操作条，右侧患者端手机实时预览
+ * 患者端展示（封面 + 图文详情）区块统一使用公共样式 patient-detail.less
+ */
+
+.institution-editor {
+  margin-top: @spacing-md;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 376px;
+  gap: @spacing-md;
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-md;
+    min-width: 0;
+    .ant-form {
+      display: flex;
+      flex-direction: column;
+      gap: @spacing-md;
+    }
+  }
+
+  .editor-card {
+    .card-surface();
+
+    .ant-card-body {
+      padding: @spacing-md @spacing-lg;
+    }
+
+    &__header {
+      display: flex;
+      align-items: baseline;
+      gap: @spacing-sm;
+      margin-bottom: @spacing-md;
+
+      h3 {
+        margin: 0;
+        .text-title-card();
+      }
+
+      span {
+        .text-auxiliary();
+      }
+    }
+  }
+
+  &__footer {
+    .card-surface();
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: @spacing-md @spacing-lg;
+
+    > span {
+      .text-auxiliary();
+    }
+
+    > div {
+      display: flex;
+      gap: @spacing-sm;
+    }
+  }
+
+  &__preview {
+    .card-surface();
+    align-self: start;
+
+    .ant-card-body {
+      position: sticky;
+      top: @spacing-xl;
+      padding: @spacing-md @spacing-lg;
+    }
+  }
+
+  /* ===== 患者端手机预览 ===== */
+  .institution-phone {
+    width: 328px;
+    height: 620px;
+    margin: 0 auto;
+    overflow: hidden;
+    background: @color-bg-card;
+    border: 1px solid @color-border;
+    border-radius: (@radius-xl + 8px);
+    box-shadow: @shadow-card;
+    position: relative;
+
+    &__status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: @spacing-xs @spacing-md 0;
+      .text-auxiliary();
+
+      i {
+        width: 48px;
+        height: 8px;
+        background: @color-text-primary;
+        border-radius: @radius-full;
+        opacity: 0.85;
+      }
+    }
+
+    &__nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: @spacing-xs @spacing-md @spacing-sm;
+
+      strong {
+        .text-body-medium();
+      }
+
+      span {
+        font-size: @font-size-title-card;
+      }
+    }
+
+    &__hero {
+      margin: 0 @spacing-md;
+      padding: @spacing-md;
+      background: fade(@color-info, 12%);
+      border-radius: @radius-md;
+
+      h4 {
+        margin: 0;
+        .text-title-card();
+        color: @color-primary-dark;
+      }
+
+      p {
+        margin: @spacing-2xs 0;
+        .text-auxiliary();
+        color: @color-primary;
+      }
+
+      span {
+        .text-auxiliary();
+      }
+    }
+
+    &__body {
+      padding: @spacing-md;
+
+      h4 {
+        margin: 0 0 @spacing-xs;
+        .text-title-card();
+      }
+
+      > p {
+        .text-auxiliary();
+        color: @color-text-primary;
+      }
+    }
+
+    &__section {
+      margin-top: @spacing-md;
+
+      > div:first-child {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        strong {
+          .text-body-medium();
+        }
+
+        span {
+          .text-auxiliary();
+        }
+      }
+    }
+
+    &__photos {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: @spacing-xs;
+      margin-top: @spacing-sm;
+
+      i {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        min-height: 56px;
+        padding: @spacing-2xs;
+        font-style: normal;
+        .text-auxiliary();
+        background: fade(@color-warning, 14%);
+        border-radius: @radius-xs;
+
+        &:nth-child(2) {
+          background: fade(@color-info, 12%);
+        }
+
+        &:nth-child(3) {
+          background: @color-bg-active;
+        }
+      }
+    }
+
+    &__tabs {
+      display: flex;
+      gap: @spacing-lg;
+      margin-top: @spacing-md;
+      .text-auxiliary();
+    }
+
+    &__cta {
+      position: absolute;
+      padding: @spacing-md;
+      bottom: 0;
+      left: 14px;
+      width: 300px;
+    }
+  }
+}
+
+@media (max-width: 1200px) {
+  .institution-editor {
+    grid-template-columns: 1fr;
+
+    &__preview {
+      position: static;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .institution-editor {
+    &__footer {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: @spacing-md;
+    }
+  }
+}

@@ -1,10 +1,11 @@
 /**
  * 活动管理（运营后台端-API设计 §8.1 活动 + §8.2 报名记录）
  * 权限 activity:manage；活动/报名状态枚举见共通 §6.12 / §6.13
- * 说明：上半部分为页面展示用类型（mock），下半部分 DTO 对齐文档契约。
+ * 说明：DTO 对齐文档契约（snake_case，时间为 UTC 秒），字段名以后端实测返回为准
  */
+import type { AxiosResponse } from 'axios'
 import { http } from '@/utils/request'
-import type { ApiPageParams, ApiPageResult, BatchResult } from '@/types/api'
+import type { ApiPageParams, ApiPageResult } from '@/types/api'
 
 /** 发布状态 */
 export type PublishStatus = 'published' | 'unpublished' | 'pending' | 'offline'
@@ -19,60 +20,36 @@ export interface ActivityInstitutionConfig {
   contact_phone: string
 }
 
-
 /** 活动列表项 */
 export interface ActivityItem {
   id: string
   code: string /** 活动编号，如 HD20260807001 */
   title: string
-  title_en: string
+  title_en?: string
   /** 活动类型：1社区活动 / 2康养旅游 / 3健康课堂 / 4健康活动 / 5其他
    *  注意：后端出参与创建入参均为 activity_type（筛选入参为 type，见 getActivities） */
   activity_type: number
-  status: number  // 1-待发布 2-报名中 3-已开始 9-已取消
-  /** 封面图：创建/编辑入参字段名为 cover_image */
-  cover_image: string
-  /** 封面图：后端返回字段名为 cover_url（出参） */
-  cover_url?: string
-  description: string // 富文本json
-  location: string
+  status: number  // 1-待发布 2-报名中 9-已取消
+  /** 封面图：创建 / 编辑入参字段名同为 cover_url */
+  cover_url: string
+  description?: string // 富文本json
+  location?: string // 区域，用户输入活动举办的区域即可
   start_date: number // UTC秒级
   end_date: number // UTC秒级
   institutions: ActivityInstitutionConfig[]
-}
-
-/** 活动报名记录 */
-export interface ActivitySignup {
-  id: string
-  /** 报名编号，如 BM20260818001 */
-  code: string
-  userName: string
-  /** 脱敏手机号，如 138****1026 */
-  phone: string
-  institutionName: string
-  /** 机构区域，如 拱墅区·申花街道 */
-  institutionArea: string
-  status: 'signed' | 'cancelled'
-  signupTime: string
-  remark?: string
+  target_crowd?: string // 适用人群
+  /** 以下为列表接口额外聚合字段（后端列表返回） */
+  institution_count?: number
+  total_max_participants?: number
+  total_registered?: number
 }
 
 /* ------------------------------------------------------------------ */
 /* §8.1 活动管理（权限 activity:manage）                                 */
 /* ------------------------------------------------------------------ */
 
-/** 活动参与机构（出参，含报名数） */
-export interface ActivityInstitutionDTO {
-  institution_id: number // 必填
-  max_participants: number // 选填 该机构名额上限
-  contact_name: string // 选填 联系人
-  contact_phone: string // 选填 联系电话
-  start_time: number // 选填 UTC秒 该机构场次开始时间
-  end_time: number // 选填 该机构场次结束时间
-}
-
 /** 活动新增 / 编辑入参 */
-export type ActivitySaveBody = Omit<ActivityItem, 'id' | 'status' | 'registration_summary'>
+export type ActivitySaveBody = Omit<ActivityItem, 'id' | 'status'>
 
 /** 活动列表 GET /api/admin/activities（按类型/机构/状态/关键字）
  *  筛选参数名以后端为准：类型为 type（实测生效），非 activity_type */
@@ -96,7 +73,7 @@ export function createActivity(data: ActivitySaveBody) {
   return http.post<null>('/admin/activities', data)
 }
 
-/** 编辑活动 PUT /api/admin/activities/:id */
+/** 编辑活动 PUT /api/admin/activities/:id（全量覆盖） */
 export function updateActivity(id: number, data: Partial<ActivitySaveBody>) {
   return http.put<null>(`/admin/activities/${id}`, data)
 }
@@ -106,13 +83,8 @@ export function updateActivityStatus(id: number, status: number) {
   return http.post<null>(`/admin/activities/${id}/status`, { status })
 }
 
-/** 批量发布/取消 POST /api/admin/activities/batch-status */
-export function batchUpdateActivityStatus(ids: number[], status: 1 | 9) {
-  return http.post<BatchResult>('/admin/activities/batch-status', { ids, status })
-}
-
 /** 指定机构配置 PUT /api/admin/activities/:id/institutions */
-export function saveActivityInstitutions(id: number, institutions: ActivityInstitutionDTO) {
+export function saveActivityInstitutions(id: number, institutions: ActivityInstitutionConfig[]) {
   return http.put<null>(`/admin/activities/${id}/institutions`, { institutions })
 }
 
@@ -125,53 +97,60 @@ export function deleteActivity(id: number) {
 /* §8.2 报名记录                                                        */
 /* ------------------------------------------------------------------ */
 
-/** 报名状态（共通 §6.13）：1-已报名 2-已参加 3-已取消 */
-export type RegistrationStatus = 1 | 2 | 3
-
-/** 报名记录 DTO */
+/** 报名记录 DTO（字段名以后端实测返回为准：name / phone / registered_source） */
 export interface ActivityRegistrationDTO {
   id: number
   activity_id: number
-  activity_title: string
   institution_id: number
   member_id: number
-  member_name: string
-  member_phone: string
+  /** 会员姓名 */
+  name: string
+  /** 手机号 */
+  phone: string
   participant_count: number
   /** 报名来源，如 miniapp */
-  registration_source: string
-  signed_at: number | null
-  status: RegistrationStatus
-  referral_mem_id: number | null
+  registered_source: string
+  /** 报名状态：1-已报名 2-已签到 3-已取消 */
+  status: number
+  /** 报名时间（UTC 秒；后端暂未填充，0 表示缺失） */
   registered_at: number
+  /** 取消报名时间（UTC 秒；0 表示未取消） */
+  unregistered_at: number
+  remark: string
+  user_id: number
 }
 
-/** 活动报名列表 GET /api/admin/activities/:id/registrations（按签到状态） */
-export function getActivityRegistrations(
-  activityId: number,
-  params?: ApiPageParams & { status?: RegistrationStatus },
-) {
-  return http.get<ApiPageResult<ActivityRegistrationDTO>>(
-    `/admin/activities/${activityId}/registrations`,
-    { ...params },
-  )
-}
-
-/** 活动报名导出 GET /api/admin/activities/:id/registrations/export */
-export function exportActivityRegistrations(activityId: number) {
-  return http.get<Blob>(
+/** 活动报名导出 GET /api/admin/activities/:id/registrations/export
+ *  后端返回 CSV 文件流（Content-Disposition 带文件名）；
+ *  注意：响应拦截器对 responseType=blob 的请求返回整个 AxiosResponse，故此处类型为 AxiosResponse<Blob> */
+export function exportActivityRegistrations(activityId: number): Promise<AxiosResponse<Blob>> {
+  return http.get<AxiosResponse<Blob>>(
     `/admin/activities/${activityId}/registrations/export`,
     undefined,
     { responseType: 'blob' },
   )
 }
 
-/** 报名列表（跨活动）GET /api/admin/activity-registrations */
+/** 报名列表（跨活动）GET /api/admin/activity-registrations
+ *  说明：活动内报名接口 /activities/:id/registrations 后端已下线（404），统一走本接口并用 activity_id 过滤 */
+export function getActivityRegistrations(
+  params?: ApiPageParams & {
+    activity_id?: number
+    institution_id?: number
+    status?: number
+  },
+) {
+  return http.get<ApiPageResult<ActivityRegistrationDTO>>('/admin/activity-registrations', {
+    ...params,
+  })
+}
+
+/** 报名列表别名（跨活动，语义与 getActivityRegistrations 相同） */
 export function getRegistrations(
   params?: ApiPageParams & {
     activity_id?: number
     institution_id?: number
-    status?: RegistrationStatus
+    status?: number
   },
 ) {
   return http.get<ApiPageResult<ActivityRegistrationDTO>>('/admin/activity-registrations', {
@@ -182,4 +161,9 @@ export function getRegistrations(
 /** 签到 POST /api/admin/activity-registrations/:id/checkin（扫码核销或运营代签到） */
 export function checkinRegistration(id: number) {
   return http.post<null>(`/admin/activity-registrations/${id}/checkin`)
+}
+
+/** 取消报名 POST /api/admin/activity-registrations/:id/cancel */
+export function cancelRegistration(id: number, remark: string) {
+  return http.post<null>(`/admin/activity-registrations/${id}/cancel`, { remark })
 }

@@ -1,0 +1,74 @@
+/* 活动 - 参与机构配置抽屉（列表页「配置机构」与新建/编辑活动共用） */
+.institution-drawer {
+  &__desc {
+    margin: 0 0 @spacing-md;
+    .text-auxiliary();
+  }
+
+  &__add {
+    .ant-select {
+      width: 100%;
+
+      .ant-select-selector {
+        padding-block: @spacing-2xs;
+      }
+    }
+  }
+
+  &__hint {
+    display: block;
+    margin-top: @spacing-xs;
+    .text-auxiliary();
+  }
+
+  &__summary {
+    margin: @spacing-md 0;
+    padding: @spacing-sm @spacing-md;
+    color: @color-primary-dark;
+    background: @color-primary-light;
+    border-radius: @radius-sm;
+    .text-body-medium();
+  }
+
+  .institution-cell {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  &__tip {
+    margin-top: @spacing-md;
+    padding: @spacing-md;
+    color: @color-info;
+    background: fade(@color-info, 8%);
+    border-radius: @radius-sm;
+    .text-auxiliary();
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: @spacing-sm;
+  }
+}
+
+/* 机构下拉选项：机构名为主，地址 / 已添加状态为次要信息 */
+.institution-option {
+  &__area,
+  &__added {
+    font-style: normal;
+    color: @color-text-secondary;
+  }
+
+  &__added {
+    margin-left: @spacing-2xs;
+  }
+}

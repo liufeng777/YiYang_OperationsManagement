@@ -3,7 +3,7 @@
  * 集团统一定义一次，机构选择后继承基础信息与价格
  * 表单使用 antd Form 管理（便于字段校验），排布样式仍由 detail.less 的 editor-grid 提供
  * 数据来源：serviceApi.getService / createService / updateService / getServiceCategories
- * 说明：服务过程（service_process）后端为数组，按约定本轮暂不提交
+ * 说明：服务过程（service_process）后端以 JSON 字符串存储与返回，保存时序列化、回填时反序列化
  */
 import { useCallback, useEffect, useState } from 'react'
 import { App, Button, Card, Empty, Form, Input, InputNumber, Modal, Select, Skeleton, Table, Upload } from 'antd'
@@ -14,17 +14,9 @@ import PageContainer from '@/components/PageContainer'
 import RichDetailEditor from '@/components/RichDetailEditor'
 import { serviceApi } from '@/api'
 import { useImageUpload } from '@/hooks'
-import type { Package, PriceUnit, ServiceCategory, ServiceItem, ServiceSaveBody } from '@/api/modules/service'
+import type { Package, PriceUnit, ServiceCategory, ServiceItem, ServiceProcessStep, ServiceSaveBody } from '@/api/modules/service'
 import { serviceTypeText } from '../list'
 import './index.less'
-
-
-
-const unitOptions: Array<{ label: string; value: PriceUnit }> = [
-  { label: '次', value: '次' },
-  { label: '小时', value: '小时' },
-  { label: '天', value: '天' },
-]
 
 const consumableOptions = [
   { label: '是', value: '1' },
@@ -36,10 +28,6 @@ interface PackageItem extends Package {
   id: string
   fixed?: boolean
 }
-
-const initialPackages: PackageItem[] = [
-  { id: 'pkg-1', count: 1, price_with_consum: 275, price: 235, fixed: true },
-]
 
 /** 套餐名称由次数派生：单次服务 / N次套餐 */
 const packageName = (count: number) => (count === 1 ? '单次服务' : `${count}次套餐`)
@@ -70,20 +58,6 @@ interface ServiceFormValues {
   openAfterSave: boolean
 }
 
-const initialFormValues: Partial<ServiceFormValues> = {
-  service_type: 1,
-  price: '168.00',
-  unit: '次',
-  duration: 60,
-  audience: '老年人、术后康复人群',
-  consumable: '1',
-  consumableSpec: '含耗材',
-  consumableList: '清洁用品、护理垫',
-  packageEnabled: true,
-  publishStatus: 'draft',
-  openAfterSave: true,
-}
-
 /** 服务过程步骤：序列化为 JSON 字符串存入 ServiceItem.service_process，患者端按顺序展示 */
 interface ProcessStep {
   id: string
@@ -91,11 +65,38 @@ interface ProcessStep {
   description?: string
 }
 
-const initialProcessSteps: ProcessStep[] = [
-  { id: 'step-1', title: '上门评估', description: '核对身份，评估居室与洗浴环境安全' },
-  { id: 'step-2', title: '助浴服务', description: '调节水温与室温，全程陪护助浴' },
-  { id: 'step-3', title: '浴后护理', description: '皮肤护理与居室整理，记录服务结果' },
-]
+/**
+ * 反序列化 service_process（后端返回 JSON 字符串）为页面步骤列表；
+ * 兼容历史数组 / 非法 JSON，步骤名称为空的项被忽略
+ */
+function parseProcessSteps(raw?: string): ProcessStep[] {
+  if (!raw) return []
+  try {
+    const list: unknown = JSON.parse(raw)
+    if (!Array.isArray(list)) return []
+    return list
+      .filter(
+        (s): s is ServiceProcessStep =>
+          !!s && typeof (s as ServiceProcessStep).title === 'string',
+      )
+      .map((s, index) => ({
+        id: `step-load-${index}`,
+        title: s.title ?? '',
+        description: s.description,
+      }))
+  } catch {
+    return []
+  }
+}
+
+/** 序列化服务过程步骤为 JSON 字符串（提交给后端），步骤名称为空的行被忽略 */
+function stringifyProcessSteps(steps: ProcessStep[]): string {
+  return JSON.stringify(
+    steps
+      .filter((s) => s.title.trim())
+      .map(({ title, description }) => ({ title, description })),
+  )
+}
 
 export default function ServiceEditorPage() {
   const navigate = useNavigate()
@@ -114,9 +115,9 @@ export default function ServiceEditorPage() {
   const [coverServerUrl, setCoverServerUrl] = useState('')
   /** 患者端详情（富文本 JSON 字符串）：存储到 ServiceItem.description */
   const [description, setDescription] = useState('')
-  /** 服务过程步骤：后端 service_process 为数组，按约定本轮暂不提交 */
-  const [processSteps, setProcessSteps] = useState<ProcessStep[]>(initialProcessSteps)
-  const [packages, setPackages] = useState<PackageItem[]>(initialPackages)
+  /** 服务过程步骤（页面态）：保存时序列化为 JSON 字符串提交 service_process */
+  const [processSteps, setProcessSteps] = useState<ProcessStep[]>([])
+  const [packages, setPackages] = useState<PackageItem[]>([])
   const [packageModalOpen, setPackageModalOpen] = useState(false)
   const [editingPackage, setEditingPackage] = useState<PackageItem | null>(null)
   const [packageForm] = Form.useForm<Package>()
@@ -216,17 +217,8 @@ export default function ServiceEditorPage() {
         .filter((item) => item.count !== 1)
         .map((item, index) => ({ id: `pkg-${item.count}-${index}`, ...item })),
     ])
-    // 服务过程：后端为数组结构，直接回填
-    const steps = detail.service_process
-    if (Array.isArray(steps) && steps.length > 0) {
-      setProcessSteps(
-        steps.map((s, index) => ({
-          id: `step-load-${index}`,
-          title: s.title ?? '',
-          description: s.description,
-        })),
-      )
-    }
+    // 服务过程：后端返回 JSON 字符串，反序列化后回填
+    setProcessSteps(parseProcessSteps(detail.service_process))
   }, [detail, form])
 
   const pageTitle = isCreate ? '新建服务项目' : '编辑服务项目'
@@ -241,7 +233,7 @@ export default function ServiceEditorPage() {
       message.warning('请先完善必填项：服务名称、服务分类、参考起售价、计价单位、列表摘要')
       return
     }
-    // 服务过程（processSteps）按约定本轮暂不提交：后端字段为数组，待确认结构后再接入
+    // 服务过程（processSteps）序列化为 JSON 字符串提交，与后端 service_process 字段对齐
     const payload: ServiceSaveBody = {
       category_id: values.category_id,
       name: values.name,
@@ -254,6 +246,7 @@ export default function ServiceEditorPage() {
       unit: values.unit,
       status: targetStatus === 'on' ? 1 : 9,
       service_type: values.service_type,
+      service_process: stringifyProcessSteps(processSteps),
       packages: (packageEnabled ? packages : packages.filter((item) => item.fixed)).map(
         ({ count, price, price_with_consum }) => ({ count, price, price_with_consum }),
       ),
@@ -370,7 +363,7 @@ export default function ServiceEditorPage() {
 
   if (loading) {
     return (
-      <PageContainer title={pageTitle} description="集团统一定义一次，机构选择后继承基础信息与价格">
+      <PageContainer title={pageTitle}>
         <Card variant="borderless">
           <Skeleton active paragraph={{ rows: 8 }} />
         </Card>
@@ -380,7 +373,7 @@ export default function ServiceEditorPage() {
 
   if (!isCreate && !detail) {
     return (
-      <PageContainer title={pageTitle} description="集团统一定义一次，机构选择后继承基础信息与价格">
+      <PageContainer title={pageTitle}>
         <Card variant="borderless">
           <Empty description="未找到该服务项目，可能已被删除" />
         </Card>
@@ -391,7 +384,6 @@ export default function ServiceEditorPage() {
   return (
     <PageContainer
       title={pageTitle}
-      description="集团统一定义一次，机构选择后继承基础信息与价格；编辑时复用本页面"
       extra={
         <Button color="primary" variant="outlined" icon={<ArrowLeftOutlined />} onClick={() => navigate('/service/list')}>
           返回服务池
@@ -401,7 +393,6 @@ export default function ServiceEditorPage() {
       <Form<ServiceFormValues>
         form={form}
         layout="vertical"
-        initialValues={initialFormValues}
       >
         <div className="service-editor">
           <div className="service-editor__form">
@@ -411,7 +402,7 @@ export default function ServiceEditorPage() {
                 {/* <span>这些字段由集团统一维护，机构不可单独修改</span> */}
               </div>
               <div className="editor-grid">
-                <div className="editor-grid__2">
+                <div className="editor-grid__3">
                   <Form.Item
                     name="name"
                     label={<span>服务名称</span>}
@@ -419,13 +410,6 @@ export default function ServiceEditorPage() {
                   >
                     <Input placeholder="例如：上门助浴服务" />
                   </Form.Item>
-                  <Form.Item
-                    label={<span>服务编码 <span style={{color: '#66736f'}}>(保存后生成唯一编码)</span></span>}
-                  >
-                    <Input value={detail?.code ?? '系统自动生成'} disabled />
-                  </Form.Item>
-                </div>
-                <div className="editor-grid__3">
                   <Form.Item
                     name="category_id"
                     label={<span>服务分类</span>}
@@ -443,10 +427,19 @@ export default function ServiceEditorPage() {
                     label={<span>服务方式</span>}
                     rules={[{ required: true, message: '请选择服务方式' }]}
                   >
-                    <Select options={Object.keys(serviceTypeText).map((key) => ({
+                    <Select placeholder="请选择服务方式" options={Object.keys(serviceTypeText).map((key) => ({
                       label: serviceTypeText[Number(key)]?.label,
                       value: Number(key),
                     }))} />
+                  </Form.Item>
+                </div>
+                <div className="editor-grid__3">
+                  <Form.Item
+                    name="unit"
+                    label={<span>计价单位</span>}
+                    rules={[{ required: true, message: '请选择计价单位' }]}
+                  >
+                    <Input placeholder='如：次、小时、天' />
                   </Form.Item>
                   <Form.Item
                     name="price"
@@ -456,17 +449,16 @@ export default function ServiceEditorPage() {
                       { pattern: /^\d+(\.\d{1,2})?$/, message: '请输入正确价格（最多两位小数）' },
                     ]}
                   >
-                    <Input />
+                    <Input placeholder='请输入参考起售价' />
+                  </Form.Item>
+                  <Form.Item
+                    name="target_crowd"
+                    label={<span>适用人群</span>}
+                  >
+                    <Input placeholder="如：老年人、术后康复人群" />
                   </Form.Item>
                 </div>
                 <div className="editor-grid__3">
-                  <Form.Item
-                    name="unit"
-                    label={<span>计价单位</span>}
-                    rules={[{ required: true, message: '请选择计价单位' }]}
-                  >
-                    <Select options={unitOptions} />
-                  </Form.Item>
                   <Form.Item name="duration" label="服务时长（分钟）">
                     <InputNumber min={0} precision={0} style={{ width: '100%' }} placeholder="例如：60" />
                   </Form.Item>
@@ -474,7 +466,10 @@ export default function ServiceEditorPage() {
                     name="consumable"
                     label={<span>是否涉及耗材</span>}
                   >
-                    <Select options={consumableOptions} />
+                    <Select options={consumableOptions} placeholder="请选择是否涉及耗材" />
+                  </Form.Item>
+                  <Form.Item name="vital_sign" label="生命体征监测项">
+                    <Select mode="multiple" placeholder="请选择一项或多项" />
                   </Form.Item>
                   {/* <Form.Item name="audience" label="适用人群">
                     <Input />
@@ -502,7 +497,7 @@ export default function ServiceEditorPage() {
                   <Input placeholder="专业护理人员上门提供安全、舒适的助浴服务" />
                 </Form.Item> */}
               </div>
-              <div className="editor-tip">提示：服务半径、日容量、接单时间与预约上下架，由机构添加服务后配置。</div>
+              {/* <div className="editor-tip">提示：服务半径、日容量、接单时间与预约上下架，由机构添加服务后配置。</div> */}
             </Card>
 
             <Card variant="borderless" className="editor-card">

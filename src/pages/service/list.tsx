@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Key } from 'react'
-import { App, Button, Card, Dropdown, Input, Select, Table, Tag, Tooltip } from 'antd'
+import { App, Button, Card, Dropdown, Input, Select, Table, Tag, Tooltip, Space } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { DeleteOutlined, EditOutlined, EllipsisOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -363,14 +363,12 @@ export default function ServicePoolList() {
         title: '服务方式',
         dataIndex: 'service_type',
         key: 'service_type',
-        width: 110,
         render: (value: number) => <Tag variant='outlined' color={serviceTypeText[value].color}>{serviceTypeText[value].label}</Tag>
       },
       {
         title: '集团定价',
         dataIndex: 'price',
         key: 'price',
-        width: 110,
         render: (value: number, record) => `¥${value} / ${record.unit}`,
       },
       // {
@@ -390,17 +388,16 @@ export default function ServicePoolList() {
         title: '状态',
         dataIndex: 'status',
         key: 'status',
-        width: 100,
         render: (value: number) => <span className={`status-btn status--${value === 1 ? 'success' : 'danger'}`}>{statusText[value] ?? '已停用'}</span>,
       },
       {
         title: '操作',
         key: 'action',
-        width: 160,
+        width: 180,
         render: (_, record) => (
-          <div className="pool-actions">
+          <Space>
             <Button type="link" size="small" onClick={() => navigate(`/service/list/detail/${record.id}`)}>
-              编辑
+              查看详情
             </Button>
             {record.status === 1 ? (
               <Button type="link" size="small" danger onClick={() => openOfflineModal(record)}>
@@ -414,7 +411,7 @@ export default function ServicePoolList() {
             <Button type="link" size="small" danger onClick={() => handleDeleteService(record)}>
               删除
             </Button>
-          </div>
+          </Space>
         ),
       },
     ],

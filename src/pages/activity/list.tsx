@@ -2,6 +2,7 @@
  * 活动管理 - 活动列表
  * 视觉对齐设计稿：顶部统计 + 筛选 + 状态 Tabs + 活动表格
  * 数据来源：activityApi.getActivities（分页 + 类型/机构/状态/关键字筛选）
+ * 操作列：主操作（发布/重新发布/报名查询）+ 配置机构（独立抽屉组件）+ 查看详情 + 更多（取消/删除）
  * 字段以后端实际契约为准：类型出参 activity_type、筛选入参 type、时间 start_date/end_date、机构 institutions[]
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -10,11 +11,18 @@ import type { MenuProps } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
+import dayjs from 'dayjs'
 import PageContainer from '@/components/PageContainer'
 import { activityApi } from '@/api'
 import type { ActivityItem } from '@/api/modules/activity'
-import { mockInstitutions } from '@/pages/institution/list'
+import { institutionApi } from '@/api'
+import type { InstitutionItem } from '@/api/modules/institution'
 import { formatDateTime } from '@/utils'
+import InstitutionConfigDrawer, {
+  toInstitutionConfigs,
+  toInstitutionRows,
+  type ActivityInstitutionRow,
+} from './components/InstitutionConfigDrawer'
 import './list.less'
 
 /** 活动类型：1社区活动 / 2康养旅游 / 3健康课堂 / 4健康活动 / 5其他 */
@@ -66,6 +74,7 @@ const emptyFilters: ActivityFilters = {
 export default function ActivityList() {
   const navigate = useNavigate()
   const { message, modal } = App.useApp()
+  const [institutions, setInstitutions] = useState<InstitutionItem[]>([])
   const [data, setData] = useState<ActivityItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -76,6 +85,30 @@ export default function ActivityList() {
   const [applied, setApplied] = useState<ActivityFilters>(emptyFilters)
   const [page, setPage] = useState(1)
   const pageSize = 10
+  /** 配置机构抽屉：目标活动 + 抽屉内编辑的行 + 落库中 */
+  const [configTarget, setConfigTarget] = useState<ActivityItem | null>(null)
+  const [configRows, setConfigRows] = useState<ActivityInstitutionRow[]>([])
+  const [configSubmitting, setConfigSubmitting] = useState(false)
+
+  // 接口①：进入页面拉取机构列表（筛选下拉 + 配置机构抽屉共用；抽屉内还会再拉一次以补全机构信息）
+  useEffect(() => {
+    let cancelled = false
+    institutionApi
+      .getInstitutions({ page: 1, page_size: 1000 })
+      .then((res) => {
+        if (cancelled) return
+        const list = res.list ?? []
+        setInstitutions(list)
+      })
+      .catch(() => {
+        /* 错误提示由 request 拦截器统一处理 */
+        setInstitutions([])
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   /** 拉取活动列表（筛选条件以后端查询参数下发） */
   const fetchList = useCallback(
@@ -131,6 +164,48 @@ export default function ActivityList() {
     setStatus(null)
     setPage(1)
     setApplied(emptyFilters)
+  }
+
+  /** 打开「配置机构」抽屉：以列表行已配置的机构初始化（提交时再取详情做全量覆盖） */
+  const openInstitutionDrawer = (record: ActivityItem) => {
+    setConfigRows(toInstitutionRows(record.institutions))
+    setConfigTarget(record)
+  }
+
+  const closeInstitutionDrawer = () => {
+    setConfigTarget(null)
+    setConfigRows([])
+  }
+
+  /** 完成配置：走「更新活动」接口（PUT /activities/:id，全量覆盖） */
+  const handleSubmitInstitutions = async (rows: ActivityInstitutionRow[]) => {
+    if (!configTarget) return
+    const id = Number(configTarget.id)
+    setConfigSubmitting(true)
+    try {
+      // 列表数据不一定含完整字段（图文详情 / 封面等），先取详情再整体提交，避免把后端数据写空
+      const detail = await activityApi.getActivity(id)
+      await activityApi.updateActivity(id, {
+        code: detail.code,
+        title: detail.title,
+        title_en: detail.title_en,
+        activity_type: detail.activity_type,
+        cover_url: detail.cover_url,
+        description: detail.description,
+        location: detail.location,
+        target_crowd: detail.target_crowd,
+        start_date: detail.start_date,
+        end_date: detail.end_date,
+        institutions: toInstitutionConfigs(rows, detail.institutions ?? []),
+      })
+      message.success('参与机构配置已更新')
+      closeInstitutionDrawer()
+      void fetchList(page)
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      setConfigSubmitting(false)
+    }
   }
 
   /** 发布活动（待发布 → 报名中） */
@@ -237,15 +312,6 @@ export default function ActivityList() {
           <span className={`activity-status activity-status--${value}`}>{statusText[value] ?? '—'}</span>
         ),
       },
-      // {
-      //   title: '发布状态',
-      //   dataIndex: 'publishStatus',
-      //   key: 'publishStatus',
-      //   width: 100,
-      //   render: (value: PublishStatus) => (
-      //     <span className={`publish-status publish-status--${value}`}>{publishText[value]}</span>
-      //   ),
-      // },
       {
         title: '活动时间',
         key: 'activityTime',
@@ -256,9 +322,9 @@ export default function ActivityList() {
       {
         title: '操作',
         key: 'action',
-        width: 190,
+        width: 260,
         render: (_, record) => {
-          /* 三段式操作列：状态主操作 + 编辑（恒有）+ 更多（低频/危险操作收拢）
+          /* 四段式操作列：状态主操作 + 配置机构 + 查看详情 + 更多（低频/危险操作收拢）
              - 待发布(1)：发布；报名中(2)/已结束(3)：报名查询；已取消(9)：重新发布
              - 取消、删除放入「更多」，均需二次确认 */
           const primary =
@@ -282,12 +348,15 @@ export default function ActivityList() {
               <Button type="link" size="small" onClick={primary.onClick}>
                 {primary.label}
               </Button>
+              <Button type="link" size="small" onClick={() => openInstitutionDrawer(record)}>
+                配置机构
+              </Button>
               <Button
                 type="link"
                 size="small"
                 onClick={() => navigate(`/activity/detail/${record.id}`)}
               >
-                编辑活动
+                查看详情
               </Button>
               <Divider vertical />
               <Dropdown menu={{ items: moreItems, onClick: onMoreClick }} trigger={['click']}>
@@ -357,7 +426,7 @@ export default function ActivityList() {
           <Select
             value={institution}
             onChange={setInstitution}
-            options={mockInstitutions.map(v => ({
+            options={institutions.map(v => ({
               label: v.name,
               value: v.id
             }))}
@@ -410,6 +479,18 @@ export default function ActivityList() {
           />
         </Card>
       </div>
+
+      <InstitutionConfigDrawer
+        open={!!configTarget}
+        title={configTarget ? `配置参与机构 · ${configTarget.title}` : '配置参与机构'}
+        value={configRows}
+        submitting={configSubmitting}
+        // 活动报名起止时间：限制场次日期，并作为新添加机构场次的默认值
+        activityStart={configTarget?.start_date ? dayjs(configTarget.start_date * 1000) : null}
+        activityEnd={configTarget?.end_date ? dayjs(configTarget.end_date * 1000) : null}
+        onClose={closeInstitutionDrawer}
+        onSubmit={handleSubmitInstitutions}
+      />
     </PageContainer>
   )
 }

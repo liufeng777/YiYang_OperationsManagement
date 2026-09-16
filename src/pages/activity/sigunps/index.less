@@ -29,6 +29,11 @@
       background: @color-primary-light;
     }
 
+    &--checked {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
     &--cancelled {
       color: @color-text-secondary;
       background: @color-bg-active;
@@ -57,6 +62,16 @@
 
     span {
       .text-auxiliary();
+    }
+  }
+
+  &__remark {
+    margin-top: @spacing-md;
+
+    label {
+      display: block;
+      margin-bottom: @spacing-xs;
+      .text-body-medium();
     }
   }
 

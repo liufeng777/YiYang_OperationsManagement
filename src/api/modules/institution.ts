@@ -129,10 +129,16 @@ export interface InstitutionServicePage extends ApiPageResult<InstitutionService
   institution_id: number
 }
 
-/** 机构服务列表 GET /api/admin/institutions/:id/services */
+/** 机构服务列表 GET /api/admin/institutions/:id/services
+ *  分页 + 关键字 / 服务方式 / 状态查询参数一并下推（keyword 来自 ApiPageParams）
+ *  注：后端当前仅实现了 page / page_size 分页，其余筛选参数会被忽略，前端因此对当前页再做一次本地兜底过滤 */
 export function getInstitutionServiceList(
   institutionId: number,
-  params?: ApiPageParams & { service_id?: number; status?: CommonStatus },
+  params?: ApiPageParams & {
+    service_id?: number
+    service_type?: number
+    status?: CommonStatus
+  },
 ) {
   return http.get<InstitutionServicePage>(
     `/admin/institutions/${institutionId}/services`,

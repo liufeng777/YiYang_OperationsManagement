@@ -1,6 +1,6 @@
 /**
  * 机构管理 - 机构详情（编辑与配置）
- * - 基础资料（可编辑）/ 服务项目 / 患者端介绍为页内 Tab，已拆分为 components/ 下独立组件
+ * - 基础资料（可编辑，复用 InstitutionInfoForm，含患者端展示详情与手机预览）/ 服务项目为页内 Tab
  * - Tab 通过 ?tab= 查询参数驱动，可直接分享链接；默认展示「基础资料」
  * - 机构信息由平台直接维护，无「同步」概念
  * 数据来源：institutionApi.getInstitution
@@ -12,12 +12,11 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import { institutionApi } from '@/api'
 import type { InstitutionItem, InstitutionType } from '@/api/modules/institution'
-import BaseInfoTab from '../components/BaseInfoTab'
+import InstitutionInfoForm from '../components/InstitutionInfoForm'
 import ServicesTab from '../components/ServicesTab'
-import PatientIntroTab from '../components/PatientIntroTab'
 import './index.less'
 
-type DetailTab = 'base' | 'services' | 'patient'
+type DetailTab = 'base' | 'services'
 
 const typeText: Record<InstitutionType, string> = {
   1: '护理院',
@@ -26,7 +25,6 @@ const typeText: Record<InstitutionType, string> = {
 
 const detailTabs: { key: DetailTab; label: string }[] = [
   { key: 'base', label: '基础资料' },
-  { key: 'patient', label: '患者端介绍' },
   { key: 'services', label: '服务项目' },
 ]
 
@@ -144,7 +142,7 @@ export default function InstitutionDetailPage() {
       }
     >
       <div className="institution-detail">
-        <Card variant="borderless" className="institution-summary">
+        {/* <Card variant="borderless" className="institution-summary">
           <div className="institution-summary__main">
             <h3>{detail.name}</h3>
             <p>
@@ -166,17 +164,14 @@ export default function InstitutionDetailPage() {
           >
             {detail.status === 1 ? '启用' : '停用'}
           </span>
-        </Card>
+        </Card> */}
 
         <Card variant="borderless" className="detail-tabs-card">
           <Tabs activeKey={activeTab} items={tabItems} onChange={handleTabChange} />
         </Card>
 
         {activeTab === 'base' && (
-          <BaseInfoTab key={detail.id} detail={detail} onSaved={fetchDetail} />
-        )}
-        {activeTab === 'patient' && (
-          <PatientIntroTab key={detail.id} detail={detail} onSaved={fetchDetail} />
+          <InstitutionInfoForm key={detail.id} detail={detail} onSaved={fetchDetail} />
         )}
         {activeTab === 'services' && (
           <ServicesTab detail={detail} onCountChange={setServiceCount} />

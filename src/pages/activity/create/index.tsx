@@ -1,7 +1,7 @@
 /**
  * 活动管理 - 新建 / 编辑活动
- * 视觉对齐设计稿：左侧表单（基础信息两列 + 报名设置三列 + 详情图网格 + 底部操作条）
- * 右侧患者端实时预览；参与机构配置 Drawer；患者端活动预览弹窗（状态切换 + 预览范围）
+ * 视觉对齐设计稿：左侧表单（基础信息 + 报名与参与设置 + 患者端展示详情 + 底部操作条）
+ * 右侧患者端实时预览；参与机构配置抽屉（独立组件 components/InstitutionConfigDrawer）；患者端活动预览弹窗
  * 数据来源：GET/POST/PUT /v1/admin/activities（编辑 PUT 为全量覆盖）
  */
 import { useEffect, useState } from 'react'
@@ -9,19 +9,14 @@ import {
   App,
   Button,
   Card,
-  Cascader,
   DatePicker,
-  Drawer,
   Form,
   Input,
-  InputNumber,
   Modal,
   Radio,
   Select,
-  Table,
   Upload,
 } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
 import {
   ArrowLeftOutlined,
   CheckOutlined,
@@ -35,60 +30,12 @@ import RichDetailEditor from '@/components/RichDetailEditor'
 import { activityApi } from '@/api'
 import { useImageUpload } from '@/hooks'
 import type { ActivityInstitutionConfig, ActivitySaveBody } from '@/api/modules/activity'
-import pcaData from 'china-division/dist/pca.json'
+import InstitutionConfigDrawer, {
+  toInstitutionConfigs,
+  toInstitutionRows,
+  type ActivityInstitutionRow,
+} from '../components/InstitutionConfigDrawer'
 import './index.less'
-
-/** 省市区级联选项：{省:{市:[区]}} → Cascader 树 */
-type PcaData = Record<string, Record<string, string[]>>
-const pca = pcaData as PcaData
-const regionOptions = Object.entries(pca).map(([province, cities]) => ({
-  value: province,
-  label: province,
-  children: Object.entries(cities).map(([city, areas]) => ({
-    value: city,
-    label: city,
-    children: areas.map((area) => ({ value: area, label: area })),
-  })),
-}))
-
-/** 活动参与机构（页面展示/编辑用本地模型；提交时映射为 ActivityInstitutionDTO） */
-interface InstitutionRow {
-  /** 机构 id（页面 mock） */
-  id: string
-  name: string
-  /** 机构区域展示，如 拱墅区·申花街道 */
-  area: string
-  /** 场次展示，如 09-20 09:00 */
-  activityTime: string
-  /** 承接人数（提交映射 max_participants） */
-  capacity: number
-  contactName?: string
-  contactPhone?: string
-  /** 场次开始/结束时间（dayjs，提交转 UTC 秒） */
-  startTime?: Dayjs | null
-  endTime?: Dayjs | null
-}
-
-const initialInstitutions: InstitutionRow[] = [
-  { id: '1', name: '幸福里健康驿站', area: '拱墅区·申花街道', activityTime: '09-20 09:00', capacity: 40, contactName: '王老师', contactPhone: '138****0000', startTime: dayjs('2026-09-20 09:00'), endTime: dayjs('2026-09-20 17:00') },
-  { id: '2', name: '康乐护理院', area: '西湖区·古荡街道', activityTime: '09-20 09:00', capacity: 50, contactName: '李馆长', contactPhone: '139****0000', startTime: dayjs('2026-09-20 09:00'), endTime: dayjs('2026-09-20 17:00') },
-  { id: '3', name: '长青健康驿站', area: '滨江区·长河街道', activityTime: '09-20 14:00', capacity: 30, contactName: '张站长', contactPhone: '137****0000', startTime: dayjs('2026-09-20 14:00'), endTime: dayjs('2026-09-20 18:00') },
-]
-
-/**
- * 全部机构池（mock）：供可搜索 Select 选择；已添加的机构 disabled 并标识（已添加）
- * TODO: 后端 /v1/admin/institutions 就绪后替换为 institutionApi.getInstitutions
- */
-const mockInstitutionPool: Array<{ id: string; name: string; area: string }> = [
-  { id: '1', name: '幸福里健康驿站', area: '拱墅区·申花街道' },
-  { id: '2', name: '康乐护理院', area: '西湖区·古荡街道' },
-  { id: '3', name: '长青健康驿站', area: '滨江区·长河街道' },
-  { id: '4', name: '安怡养老院', area: '上城区·四季青街道' },
-  { id: '5', name: '和睦护理中心', area: '拱墅区·半山街道' },
-  { id: '6', name: '乐活居家养老站', area: '西湖区·转塘街道' },
-  { id: '7', name: '松鹤护理院', area: '滨江区·浦沿街道' },
-  { id: '8', name: '幸福家园驿站', area: '余杭区·闲林街道' },
-]
 
 /** 预览状态：正常报名 / 报名成功 / 名额已满 */
 const previewStatusOptions = [
@@ -118,7 +65,7 @@ const labelToTypeValue = (label?: unknown) =>
 
 export default function ActivityCreate() {
   const navigate = useNavigate()
-  const { message, modal } = App.useApp()
+  const { message } = App.useApp()
   const { uploading, upload } = useImageUpload()
   const params = useParams<{ id: string }>()
   const isEdit = !!params.id && params.id !== 'new'
@@ -129,26 +76,25 @@ export default function ActivityCreate() {
   /** 提交中 */
   const [submitting, setSubmitting] = useState(false)
   const name = Form.useWatch('name', form) ?? ''
-  const summary = Form.useWatch('summary', form) ?? ''
-  const audience = Form.useWatch('audience', form) ?? ''
+  const typeLabel = Form.useWatch('type', form) ?? ''
+  const location = Form.useWatch('location', form) ?? ''
+  const targetCrowd = Form.useWatch('target_crowd', form) ?? ''
   const feeType = Form.useWatch('feeType', form) ?? 'free'
   const notice = Form.useWatch('notice', form) ?? ''
   const activityStart = Form.useWatch('start_date', form) as Dayjs | undefined
   const activityEnd = Form.useWatch('end_date', form) as Dayjs | undefined
-  const [institutions, setInstitutions] = useState<InstitutionRow[]>(initialInstitutions)
+  /** 参与机构（本地行，抽屉内编辑后回传） */
+  const [institutions, setInstitutions] = useState<ActivityInstitutionRow[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewStatus, setPreviewStatus] = useState('normal')
-  /** 可搜索 Select 当前选中的机构 id（选中即添加并清空） */
-  const [selectedInstitutionId, setSelectedInstitutionId] = useState<string | undefined>()
   // 报名须知编辑入口暂时隐藏（切换按钮被注释），保留状态便于恢复
   const [noticeOpen] = useState(false)
   /** 封面预览地址（本地 objectURL 或服务器地址） */
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
   /** 封面服务器地址（上传成功后写入 cover_url） */
   const [coverServerUrl, setCoverServerUrl] = useState('')
-  /** 编辑态原始数据：PUT 为全量覆盖，未在表单暴露的字段需原值回写 */
-  const [originTitleEn, setOriginTitleEn] = useState('')
+  /** 编辑态原始数据：PUT 为全量覆盖，未在表单暴露的字段（code）与原封面需原值回写 */
   const [originCode, setOriginCode] = useState('')
   const [originCoverUrl, setOriginCoverUrl] = useState('')
   /** 编辑态原始时间：用户清空日期时回退原值，避免被 0 覆盖 */
@@ -156,7 +102,7 @@ export default function ActivityCreate() {
     start: 0,
     end: 0,
   })
-  /** 编辑态原始参与机构：PUT 全量覆盖下，表格里的场次时间/名额被清空时回退原值 */
+  /** 编辑态原始参与机构：PUT 全量覆盖下，机构场次 / 名额被清空时回退原值 */
   const [originInstitutions, setOriginInstitutions] = useState<
     ActivityInstitutionConfig[]
   >([])
@@ -165,89 +111,6 @@ export default function ActivityCreate() {
 
   const totalCapacity = institutions.reduce((sum, item) => sum + (item.capacity || 0), 0)
   const feeText = feeType === 'free' ? '免费' : '付费'
-
-  const handleRemoveInstitution = (record: InstitutionRow) => {
-    modal.confirm({
-      title: `确认移除机构「${record.name}」？`,
-      content: '移除后该机构将不参与本活动，已配置的场次时间与承接人数将被清空。',
-      okText: '确认移除',
-      okButtonProps: { danger: true },
-      cancelText: '取消',
-      onOk: () => {
-        setInstitutions((prev) => prev.filter((item) => item.id !== record.id))
-        message.success(`已移除「${record.name}」（mock）`)
-      },
-    })
-  }
-
-  const handleCapacityChange = (id: string, value: number | null) => {
-    setInstitutions((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, capacity: value ?? 0 } : item)),
-    )
-  }
-
-  /** 更新机构联系类字段（联系人/电话） */
-  const updateInstitution = (id: string, patch: Partial<InstitutionRow>) => {
-    setInstitutions((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)))
-  }
-
-  const handleStartTimeChange = (id: string, value: Dayjs | null) => {
-    setInstitutions((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item
-        const startTime = value ?? null
-        // 若结束时间早于新开始时间，自动同步结束时间
-        const endTime = item.endTime && startTime && item.endTime.isBefore(startTime)
-          ? startTime
-          : item.endTime
-        return { ...item, startTime, endTime, activityTime: startTime?.format('MM-DD HH:mm') ?? '' }
-      }),
-    )
-  }
-
-  const handleEndTimeChange = (id: string, value: Dayjs | null) => {
-    setInstitutions((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, endTime: value ?? null, activityTime: item.startTime?.format('MM-DD HH:mm') ?? '' }
-          : item,
-      ),
-    )
-  }
-
-  /** 机构场次日期限制在活动 start_date ~ end_date 区间内 */
-  const disableInstitutionDate = (current: Dayjs) => {
-    if (activityStart && current.isBefore(activityStart.startOf('day'))) return true
-    if (activityEnd && current.isAfter(activityEnd.endOf('day'))) return true
-    return false
-  }
-
-  const handleAddInstitution = (id?: string) => {
-    if (!id) return
-    const poolItem = mockInstitutionPool.find((item) => item.id === id)
-    if (!poolItem) return
-    if (institutions.some((item) => item.id === id)) {
-      message.warning('该机构已添加，请选择其他机构')
-      setSelectedInstitutionId(undefined)
-      return
-    }
-    setInstitutions((prev) => [
-      ...prev,
-      {
-        id: poolItem.id,
-        name: poolItem.name,
-        area: poolItem.area,
-        activityTime: '',
-        capacity: 20,
-        contactName: '',
-        contactPhone: '',
-        startTime: null,
-        endTime: null,
-      },
-    ])
-    setSelectedInstitutionId(undefined)
-    message.success(`已添加「${poolItem.name}」`)
-  }
 
   /** 封面（cover_url）：本地预览 + 后台上传，成功后保存服务器地址 */
   const handleCoverUpload = async (file: File) => {
@@ -274,20 +137,19 @@ export default function ActivityCreate() {
         if (cancelled) return
         form.setFieldsValue({
           name: detail.title,
+          title_en: detail.title_en ?? '',
           type: typeValueToLabel(detail.activity_type),
-          // location 为「省市区 + 详细地址」拼接串，无法可靠拆分：
-          // 整串回填到详细地址，省市区留空（避免 Cascader 显示错乱）
-          location: undefined,
-          addressDetail: detail.location ?? '',
+          // location 现在为「活动区域」文本，可直接回填
+          location: detail.location ?? '',
+          target_crowd: detail.target_crowd ?? '',
           start_date: detail.start_date ? dayjs(detail.start_date * 1000) : undefined,
           end_date: detail.end_date ? dayjs(detail.end_date * 1000) : undefined,
           notice: '',
         })
-        // 出参为 cover_url，入参为 cover_image（后端入参/出参字段名不同）
+        // 出参与入参字段名同为 cover_url
         setCoverUrl(detail.cover_url || null)
         setCoverServerUrl(detail.cover_url ?? '')
         setOriginCoverUrl(detail.cover_url ?? '')
-        setOriginTitleEn(detail.title_en ?? '')
         setOriginCode(detail.code ?? '')
         setOriginMeta({
           start: detail.start_date ?? 0,
@@ -296,20 +158,8 @@ export default function ActivityCreate() {
         setDescription(detail.description ?? '')
         // 记录原始机构，供 PUT 全量覆盖时对空值回退
         setOriginInstitutions(detail.institutions ?? [])
-        // 参与机构回填（契约 institutions[] 为多机构，页面表格原样恢复）
-        setInstitutions(
-          (detail.institutions ?? []).map((item) => ({
-            id: String(item.institution_id),
-            name: `机构 ${item.institution_id}`,
-            area: '',
-            activityTime: item.start_time ? dayjs(item.start_time * 1000).format('MM-DD HH:mm') : '',
-            capacity: item.max_participants ?? 0,
-            contactName: item.contact_name ?? '',
-            contactPhone: item.contact_phone ?? '',
-            startTime: item.start_time ? dayjs(item.start_time * 1000) : null,
-            endTime: item.end_time ? dayjs(item.end_time * 1000) : null,
-          })),
-        )
+        // 参与机构回填（机构名 / 区域由抽屉用机构池补全，页面无需额外查询）
+        setInstitutions(toInstitutionRows(detail.institutions))
       })
       .catch(() => {
         /* 拦截器已统一提示 */
@@ -324,154 +174,30 @@ export default function ActivityCreate() {
 
   /**
    * 提交：组装 ActivitySaveBody（契约见 api/modules/activity.ts）
-   * 注意 PUT 为全量覆盖：表单未暴露的字段（title_en / code）与原封面需原值回写，避免清空后端数据
+   * 注意 PUT 为全量覆盖：表单未暴露的字段（code）与原封面需原值回写，避免清空后端数据
    */
   const buildPayload = (
     values: Record<string, unknown>,
     descriptionValue: string,
   ): ActivitySaveBody => {
-    const region = Array.isArray(values.location) ? (values.location as string[]) : []
-    const addressDetail = String(values.addressDetail ?? '').trim()
-    // location = 省市区 + 详细地址
-    // 编辑态回填时整串会落在 addressDetail（含原省市区），若再次前置会重复，故做去重判断
-    const regionText = region.join(' ')
-    const location =
-      regionText && addressDetail.startsWith(regionText)
-        ? addressDetail
-        : [regionText, addressDetail].filter(Boolean).join(' ')
-    // 本地上传接口未就绪：仅提交真实 URL，否则保留原值（防止写入 blob: 失效地址）
-    // 封面：使用上传接口返回的服务器地址（无新上传时沿用编辑态原值）
-    const cover = coverServerUrl || originCoverUrl
     const toSeconds = (value: unknown, fallback: number) =>
       value ? Math.floor((value as Dayjs).valueOf() / 1000) : fallback
-    // 参与机构：页面表格多行 → 契约 institutions[]
-    // 注意：契约里 institution_id 声明为 string，但后端要求 int（实测传字符串报
-    // "cannot unmarshal string into Go struct field ... of type int"），故提交数字。
-    // 另：PUT 为全量覆盖，表格里的名额/场次被清空时回退编辑态原值，避免清写机构数据。
-    const institutionItems = institutions
-      .filter((item) => item.id)
-      .map((item) => {
-        const origin = originInstitutions.find(
-          (origin) => Number(origin.institution_id) === Number(item.id),
-        )
-        return {
-          institution_id: Number(item.id) as unknown as string,
-          max_participants: item.capacity > 0 ? item.capacity : (origin?.max_participants ?? 0),
-          start_time: toSeconds(item.startTime, origin?.start_time ?? 0),
-          end_time: toSeconds(item.endTime, origin?.end_time ?? 0),
-          contact_name: item.contactName?.trim() ? item.contactName : (origin?.contact_name ?? ''),
-          contact_phone: item.contactPhone?.trim()
-            ? item.contactPhone
-            : (origin?.contact_phone ?? ''),
-        }
-      })
     return {
       title: String(values.name ?? ''),
-      // 表单未提供英文标题输入：原值回写，避免全量覆盖清空
-      title_en: originTitleEn,
+      title_en: String(values.title_en ?? '').trim(),
       code: originCode,
       activity_type: labelToTypeValue(values.type),
       description: descriptionValue,
-      cover_image: cover,
-      location,
+      // 封面：使用上传接口返回的服务器地址（无新上传时沿用编辑态原值，避免写入失效地址）
+      cover_url: coverServerUrl || originCoverUrl,
+      location: String(values.location ?? '').trim(),
+      target_crowd: String(values.target_crowd ?? '').trim(),
       start_date: toSeconds(values.start_date, originMeta.start),
       end_date: toSeconds(values.end_date, originMeta.end),
-      institutions: institutionItems,
+      // 参与机构：抽屉回传的本地行 → 契约 institutions[]（空值回退原配置）
+      institutions: toInstitutionConfigs(institutions, originInstitutions),
     }
   }
-
-  const institutionColumns: ColumnsType<InstitutionRow> = [
-    {
-      title: '参与机构',
-      key: 'name',
-      render: (_, record) => (
-        <div className="institution-cell">
-          <strong>{record.name}</strong>
-          <span>{record.area}</span>
-        </div>
-      ),
-    },
-    {
-      title: '联系人',
-      key: 'contactName',
-      width: 110,
-      render: (_, record) => (
-        <Input
-          value={record.contactName}
-          placeholder="联系人"
-          onChange={(e) => updateInstitution(record.id, { contactName: e.target.value })}
-        />
-      ),
-    },
-    {
-      title: '联系电话',
-      key: 'contactPhone',
-      width: 140,
-      render: (_, record) => (
-        <Input
-          value={record.contactPhone}
-          placeholder="联系电话"
-          onChange={(e) => updateInstitution(record.id, { contactPhone: e.target.value })}
-        />
-      ),
-    },
-    {
-      title: '场次开始',
-      key: 'startTime',
-      width: 180,
-      render: (_, record) => (
-        <DatePicker
-          showTime
-          format="MM-DD HH:mm"
-          disabledDate={disableInstitutionDate}
-          value={record.startTime}
-          onChange={(value) => handleStartTimeChange(record.id, value)}
-        />
-      ),
-    },
-    {
-      title: '场次结束',
-      key: 'endTime',
-      width: 180,
-      render: (_, record) => (
-        <DatePicker
-          showTime
-          format="MM-DD HH:mm"
-          disabledDate={disableInstitutionDate}
-          value={record.endTime}
-          onChange={(value) => handleEndTimeChange(record.id, value)}
-        />
-      ),
-    },
-    {
-      title: '承接人数',
-      key: 'capacity',
-      width: 120,
-      render: (_, record) => (
-        <InputNumber
-          min={1}
-          value={record.capacity}
-          addonAfter="人"
-          onChange={(value) => handleCapacityChange(record.id, value)}
-        />
-      ),
-    },
-    {
-      title: '操作',
-      key: 'action',
-      width: 70,
-      render: (_, record) => (
-        <Button
-          type="link"
-          size="small"
-          danger
-          onClick={() => handleRemoveInstitution(record)}
-        >
-          移除
-        </Button>
-      ),
-    },
-  ]
 
   /** 患者端手机预览；status 控制底部报名按钮状态 */
   const renderPhonePreview = (status: string = 'normal') => (
@@ -483,16 +209,16 @@ export default function ActivityCreate() {
         </div>
         <div className="phone-preview__hero">
           <strong>{name || '秋日康养游园会'}</strong>
-          <span>{summary || '健康相伴 · 乐享秋日好时光'}</span>
+          <span>{location || '健康相伴 · 乐享秋日好时光'}</span>
         </div>
         <div className="phone-preview__tags">
-          <em>社区活动</em>
+          <em>{typeLabel || '社区活动'}</em>
           <em>{institutions.length} 家机构可选</em>
         </div>
         <div className="phone-preview__info">
           <p className='phone-preview__info__title'>选择机构后展示对应活动时间</p>
           <p className='phone-preview__info__label'>{institutions.length} 家参与机构可选 · 共承接 {totalCapacity} 人</p>
-          <p className='phone-preview__info__highlight'>适合 {audience || '60 岁以上长者'} · {feeText}</p>
+          <p className='phone-preview__info__highlight'>适合 {targetCrowd || '60 岁以上长者'} · {feeText}</p>
         </div>
         <div className="phone-preview__image phone-preview__image--cream">
           <em>DETAIL IMAGE 01</em>
@@ -544,16 +270,8 @@ export default function ActivityCreate() {
         form={form}
         layout="vertical"
         initialValues={{
-          name: isEdit ? '秋日康养游园会' : '',
           type: '社区活动',
-          summary: isEdit ? '健康相伴 · 乐享秋日好时光' : '',
-          location: undefined,
-          addressDetail: '',
-          start_date: dayjs('2026-08-15'),
-          end_date: dayjs('2026-09-18'),
-          audience: '60 岁以上长者',
           feeType: 'free',
-          notice: isEdit ? '活动免费，报名成功后如需取消请提前 24 小时操作；名额有限，先到先得。' : '',
         }}
       >
         <div className="activity-create">
@@ -570,6 +288,12 @@ export default function ActivityCreate() {
                     >
                       <Input placeholder="请输入活动名称" />
                     </Form.Item>
+                    <Form.Item name="title_en" label="英文标题">
+                      <Input placeholder="选填，用于患者端英文展示" />
+                    </Form.Item>
+                  </div>
+
+                  <div className="create-grid create-grid--two">
                     <Form.Item
                       name="type"
                       label="活动类型"
@@ -582,36 +306,13 @@ export default function ActivityCreate() {
                         }))}
                       />
                     </Form.Item>
-                  </div>
-                  
-                  <div className="create-grid create-grid--two">
                     <Form.Item
                       name="location"
-                      label={<span>活动地址</span>}
-                      rules={
-                        isEdit
-                          ? []
-                          : [{ required: true, message: '请选择省 / 市 / 区' }]
-                      }
+                      label={<span>活动区域</span>}
                     >
-                      <Cascader
-                        options={regionOptions}
-                        placeholder={isEdit ? '留空则沿用原有地址' : '请选择省 / 市 / 区'}
-                        showSearch
-                      />
-                    </Form.Item>
-                    <Form.Item
-                      name="addressDetail"
-                      label={<span>详细地址</span>}
-                      rules={[{ required: true, message: '请输入详细地址' }]}
-                    >
-                      <Input placeholder="请输入详细地址（街道、门牌）" />
+                      <Input placeholder="请输入活动举办的区域，如 杭州市滨江区" />
                     </Form.Item>
                   </div>
-                  
-                  {/* <Form.Item name="summary" label="活动摘要">
-                    <Input placeholder="用于活动列表和详情首屏展示，建议 30 字以内" />
-                  </Form.Item> */}
                 </div>
                 {/* <div className='create-card__basicInfo__right'>
                   <Form.Item label="活动封面" className="create-cover">
@@ -649,8 +350,8 @@ export default function ActivityCreate() {
                 >
                   <DatePicker placeholder="选择结束日期" style={{ width: '100%' }} />
                 </Form.Item>
-                <Form.Item name="audience" label="适用人群">
-                  <Input />
+                <Form.Item name="target_crowd" label="适用人群">
+                  <Input placeholder="如 60 岁以上长者" />
                 </Form.Item>
                 <Form.Item
                   name="feeType"
@@ -722,8 +423,8 @@ export default function ActivityCreate() {
                   </p>
                 </div>
                 <div className="create-footer">
-                  <Button onClick={() => message.success('草稿已保存')}>保存草稿</Button>
                   <Button onClick={() => setPreviewOpen(true)}>手机预览</Button>
+                  <Button onClick={() => {}}>存为草稿</Button>
                   <Button
                     type="primary"
                     loading={submitting || detailLoading}
@@ -732,11 +433,11 @@ export default function ActivityCreate() {
                       try {
                         values = (await form.validateFields()) as Record<string, unknown>
                       } catch {
-                        message.warning('请先完善必填项：活动名称、活动类型、省市区与详细地址、报名起止日期、收费方式')
+                        message.warning('请先完善必填项：活动名称、活动类型、活动区域、报名起止日期、收费方式')
                         return
                       }
                       if (institutions.length === 0) {
-                        message.warning('请先配置参与机构：后端活动与机构为一对一，需至少配置一家')
+                        message.warning('请先配置参与机构：需至少配置一家')
                         return
                       }
                       const payload = buildPayload(values, description)
@@ -778,61 +479,18 @@ export default function ActivityCreate() {
         </div>
       </Form>
 
-      <Drawer
+      <InstitutionConfigDrawer
         open={drawerOpen}
-        width={1000}
-        title="配置参与机构"
+        value={institutions}
+        activityStart={activityStart}
+        activityEnd={activityEnd}
         onClose={() => setDrawerOpen(false)}
-        footer={
-          <div className="institution-drawer__footer">
-            <Button onClick={() => setDrawerOpen(false)}>取消</Button>
-            <Button
-              type="primary"
-              onClick={() => {
-                setDrawerOpen(false)
-                message.success('参与机构配置已更新')
-              }}
-            >
-              完成配置
-            </Button>
-          </div>
-        }
-      >
-        <div className="institution-drawer">
-          <p className="institution-drawer__desc">每家机构独立配置活动时间与承接人数</p>
-          <div className="institution-drawer__add">
-            <Select
-              showSearch
-              allowClear
-              placeholder="搜索机构名称，选择后添加到本活动"
-              value={selectedInstitutionId}
-              onChange={handleAddInstitution}
-              optionFilterProp="label"
-              options={mockInstitutionPool.map((item) => {
-                const added = institutions.some((inst) => inst.id === item.id)
-                return {
-                  value: item.id,
-                  label: added ? `${item.name}（已添加）` : item.name,
-                  disabled: added,
-                }
-              })}
-            />
-          </div>
-          <div className="institution-drawer__summary">
-            已选择 {institutions.length} 家参与机构 / 总承接 {totalCapacity} 人
-          </div>
-          <Table<InstitutionRow>
-            rowKey="id"
-            size="small"
-            columns={institutionColumns}
-            dataSource={institutions}
-            pagination={false}
-          />
-          <div className="institution-drawer__tip">
-            患者端选择机构后，自动带出该机构地址、活动时间和剩余名额。
-          </div>
-        </div>
-      </Drawer>
+        onSubmit={(rows) => {
+          setInstitutions(rows)
+          setDrawerOpen(false)
+          message.success('参与机构配置已更新')
+        }}
+      />
 
       <Modal
         open={previewOpen}

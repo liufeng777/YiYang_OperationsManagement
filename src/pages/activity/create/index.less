@@ -363,61 +363,6 @@
   }
 }
 
-.institution-drawer {
-  &__desc {
-    margin: 0 0 @spacing-md;
-    .text-auxiliary();
-  }
-
-  &__add {
-    .ant-select {
-      width: 100%;
-
-      .ant-select-selector {
-        padding-block: @spacing-2xs;
-      }
-    }
-  }
-
-  &__summary {
-    margin: @spacing-md 0;
-    padding: @spacing-sm @spacing-md;
-    color: @color-primary-dark;
-    background: @color-primary-light;
-    border-radius: @radius-sm;
-    .text-body-medium();
-  }
-
-  .institution-cell {
-    display: flex;
-    flex-direction: column;
-
-    strong {
-      .text-body-medium();
-    }
-
-    span {
-      margin-top: 2px;
-      .text-auxiliary();
-    }
-  }
-
-  &__tip {
-    margin-top: @spacing-md;
-    padding: @spacing-md;
-    color: @color-info;
-    background: fade(@color-info, 8%);
-    border-radius: @radius-sm;
-    .text-auxiliary();
-  }
-
-  &__footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: @spacing-sm;
-  }
-}
-
 /* ===== 患者端活动预览弹窗 ===== */
 .preview-modal {
   display: grid;

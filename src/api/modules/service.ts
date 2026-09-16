@@ -34,8 +34,8 @@ export interface ServiceItem {
   support_consum: number
   price: number // 单价
   unit: string // 计价单位
-  /** 服务流程（后端为 JSON 数组） */
-  service_process?: ServiceProcessStep[]
+  /** 服务流程（后端存储 / 返回均为 JSON 字符串，需 JSON.parse 后使用） */
+  service_process?: string
   status: number // 1-上架 9-下架
   service_type: number // 1'上门' | 2'到店'
   packages?: Package[] // 套餐
@@ -45,6 +45,8 @@ export interface ServiceItem {
   /** 已开通该服务的机构 id 列表（后端返回） */
   institution_ids?: number[]
   created_at?: number
+  target_crowd?: string // 适用人群
+  vital_sign?: number[] // 生命体征
 }
 
 /** 服务流程步骤（service_process 数组元素） */
@@ -97,9 +99,9 @@ export function getService(id: number) {
   return http.get<ServiceItem>(`/admin/services/${id}`)
 }
 
-/** 新增服务 POST /api/admin/services */
+/** 新增服务 POST /api/admin/services（后端返回新建的 id） */
 export function createService(data: ServiceSaveBody) {
-  return http.post<null>('/admin/services', data)
+  return http.post<{ id: number; message?: string }>('/admin/services', data)
 }
 
 /** 编辑服务 PUT /api/admin/services/:id */
