@@ -3,10 +3,11 @@
  * 视觉对齐设计稿：顶部统计 + 筛选 + 状态 Tabs + 活动表格
  * 数据来源：activityApi.getActivities（分页 + 类型/机构/状态/关键字筛选）
  * 操作列：主操作（发布/重新发布/报名查询）+ 配置机构（独立抽屉组件）+ 查看详情 + 更多（取消/删除）
- * 字段以后端实际契约为准：类型出参 activity_type、筛选入参 type、时间 start_date/end_date、机构 institutions[]
+ * 字段以后端实际契约为准：类型出参 activity_type、筛选入参 type、时间 start_date/end_date、
+ * 聚合字段 institution_count / total_registered / total_max_participants（列表接口返回，不含 institutions）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Dropdown, Input, Select, Table, Col, Row, Tag, Divider } from 'antd'
+import { App, Button, Card, Dropdown, Input, Select, Table, Col, Row, Tag, Divider, Tooltip } from 'antd'
 import type { MenuProps } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons'
@@ -17,7 +18,6 @@ import { activityApi } from '@/api'
 import type { ActivityItem } from '@/api/modules/activity'
 import { institutionApi } from '@/api'
 import type { InstitutionItem } from '@/api/modules/institution'
-import { formatDateTime } from '@/utils'
 import InstitutionConfigDrawer, {
   toInstitutionConfigs,
   toInstitutionRows,
@@ -27,11 +27,59 @@ import './list.less'
 
 /** 活动类型：1社区活动 / 2康养旅游 / 3健康课堂 / 4健康活动 / 5其他 */
 
+/** 活动状态枚举文案（status=2 的细分见 resolveActivityStatus） */
 const statusText: Record<number, string> = {
+  0: '未知',
   1: '待发布',
   2: '报名中',
   3: '已结束',
   9: '已取消',
+}
+
+/**
+ * 活动展示状态：status=2（报名中）时结合报名时间与名额动态计算
+ * - 当前时间已超出 end_date → 报名结束
+ * - 当前时间早于 start_date → 报名未开始
+ * - 报名期内：total_registered < total_max_participants → 报名中；已满 → 已满员
+ * 其余状态（1 待发布 / 3 已结束 / 9 已取消）直接取枚举文案
+ * @param nowSeconds 当前时间（UTC 秒），可注入便于校验
+ */
+export function resolveActivityStatus(
+  record: ActivityItem,
+  nowSeconds: number = Math.floor(Date.now() / 1000),
+): {label: string, className: string } {
+  if (record.status !== 2) return {
+    label: statusText[record.status],
+    className: record.status === 1 ? 'status--warning' : 'status--danger'
+  }
+  if (record.end_date && nowSeconds > record.end_date) return {
+    label: '报名已结束',
+    className: 'status--cancel'
+  }
+  if (record.start_date && nowSeconds < record.start_date) return {
+    label: '报名未开始',
+    className: 'status--info'
+  }
+  const registered = record.total_registered ?? 0
+  const maxParticipants = record.total_max_participants ?? 0
+  if (maxParticipants > 0 && registered >= maxParticipants) return {
+    label: '已满员',
+    className: 'status--info'
+  }
+  return {
+    label: '报名中',
+    className: 'status--success'
+  }
+}
+
+/** UTC 秒 → 日期文案：当年只显示「MM-DD」，跨年显示「YYYY-MM-DD」；缺值显示 - */
+export function formatActivityDate(
+  seconds?: number,
+  nowYear: number = dayjs().year(),
+): string {
+  if (!seconds) return '-'
+  const value = dayjs(seconds * 1000)
+  return value.year() === nowYear ? value.format('MM-DD') : value.format('YYYY-MM-DD')
 }
 
 const typeText: Record<number, {text: string, color: string}> = {
@@ -196,6 +244,7 @@ export default function ActivityList() {
         target_crowd: detail.target_crowd,
         start_date: detail.start_date,
         end_date: detail.end_date,
+        status: detail.status,
         institutions: toInstitutionConfigs(rows, detail.institutions ?? []),
       })
       message.success('参与机构配置已更新')
@@ -278,7 +327,7 @@ export default function ActivityList() {
         render: (_, record) => (
           <div className="activity-name">
             <strong>{record.title}</strong>
-            <span>{record.code}</span>
+            <span>{record.title_en}</span>
           </div>
         ),
       },
@@ -291,33 +340,40 @@ export default function ActivityList() {
       },
       {
         title: '承接机构',
-        key: 'institutions',
-        width: 120,
-        render: (_, record) => `${record.institutions?.length ?? 0} 家机构`,
+        key: 'institution_count',
+        width: 110,
+        // 列表接口返回聚合字段 institution_count
+        render: (_, record) =>
+          `${record.institution_count ?? record.institutions?.length ?? 0} 家机构`,
       },
       {
-        title: '承接名额',
-        key: 'capacity',
+        title: '报名人数',
+        key: 'registered',
         width: 120,
-        // 总名额由各参与机构名额上限汇总
-        render: (_, record) =>
-          `${(record.institutions ?? []).reduce((sum, item) => sum + (item.max_participants || 0), 0)} 人`,
+        // 已报名 / 最多承接人数（列表聚合字段），浮层给出含义说明
+        render: (_, record) => (
+          <Tooltip title="已报名人数 / 最多承接人数">
+            <span>{`${record.total_registered ?? 0} / ${record.total_max_participants ?? 0} 人`}</span>
+          </Tooltip>
+        ),
       },
       {
         title: '活动状态',
-        dataIndex: 'status',
         key: 'status',
-        width: 100,
-        render: (value: number) => (
-          <span className={`activity-status activity-status--${value}`}>{statusText[value] ?? '—'}</span>
+        width: 110,
+        render: (_, record) => (
+          <span className={`status-btn ${resolveActivityStatus(record).className}`}>
+            {resolveActivityStatus(record).label}
+          </span>
         ),
       },
       {
         title: '活动时间',
         key: 'activityTime',
-        width: 140,
-        // 后端返回 UTC 秒，需 ×1000 交给 dayjs
-        render: (_, record) => formatDateTime(record.start_date && record.start_date * 1000, 'MM-DD HH:mm'),
+        width: 200,
+        // 后端返回 UTC 秒，需 ×1000 交给 dayjs；只展示报名起止日期，当年不显示年份
+        render: (_, record) =>
+          `${formatActivityDate(record.start_date)} ~ ${formatActivityDate(record.end_date)}`,
       },
       {
         title: '操作',

@@ -42,6 +42,7 @@ export interface ActivityItem {
   institution_count?: number
   total_max_participants?: number
   total_registered?: number
+
 }
 
 /* ------------------------------------------------------------------ */
@@ -49,7 +50,7 @@ export interface ActivityItem {
 /* ------------------------------------------------------------------ */
 
 /** 活动新增 / 编辑入参 */
-export type ActivitySaveBody = Omit<ActivityItem, 'id' | 'status'>
+export type ActivitySaveBody = Omit<ActivityItem, 'id'>
 
 /** 活动列表 GET /api/admin/activities（按类型/机构/状态/关键字）
  *  筛选参数名以后端为准：类型为 type（实测生效），非 activity_type */

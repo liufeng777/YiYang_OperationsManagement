@@ -69,13 +69,13 @@ export function updateInstitution(id: number, data: Partial<InstitutionSaveBody>
 }
 
 /** 启用/禁用 POST /api/admin/institutions/:id/status */
-export function updateInstitutionStatus(id: number, status: CommonStatus) {
-  return http.post<null>(`/admin/institutions/${id}/status`, { status })
+export function updateInstitutionStatus(id: number, status: CommonStatus, remark?: string) {
+  return http.post<null>(`/admin/institutions/${id}/status`, { status, remark })
 }
 
 /** 批量启用/禁用 POST /api/admin/institutions/batch-status */
-export function batchUpdateInstitutionStatus(ids: number[], status: CommonStatus) {
-  return http.post<BatchResult>('/admin/institutions/batch-status', { ids, status })
+export function batchUpdateInstitutionStatus(ids: number[], status: CommonStatus, remark?: string) {
+  return http.post<BatchResult>('/admin/institutions/batch-status', { ids, status, remark })
 }
 
 /** 删除机构 DELETE /api/admin/institutions/:id */

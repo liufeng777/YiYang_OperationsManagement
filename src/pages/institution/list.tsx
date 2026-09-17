@@ -267,7 +267,7 @@ export default function InstitutionList() {
     setOfflineReason('')
     setStatusTarget({
       ids: [record.id],
-      title: `机构 · ${record.name}`,
+      title: `${record.name}`,
       code: typeText[record.type],
       action: 'offline',
     })
@@ -301,9 +301,9 @@ export default function InstitutionList() {
     }
     try {
       if (statusTarget.ids.length === 1) {
-        await institutionApi.updateInstitutionStatus(statusTarget.ids[0], nextStatus)
+        await institutionApi.updateInstitutionStatus(statusTarget.ids[0], nextStatus, offlineReason)
       } else {
-        await institutionApi.batchUpdateInstitutionStatus(statusTarget.ids, nextStatus)
+        await institutionApi.batchUpdateInstitutionStatus(statusTarget.ids, nextStatus, offlineReason)
       }
       message.success(
         statusTarget.action === 'offline'
@@ -412,10 +412,10 @@ export default function InstitutionList() {
 
       <Modal
         open={!!statusTarget}
-        title={statusTarget?.action === 'online' ? '启用机构' : '停用机构'}
+        title={statusTarget?.action === 'online' ? '启用机构' : `停用机构 - ${statusTarget?.title}`}
         onCancel={() => setStatusTarget(null)}
         footer={
-          <div className="offline-modal__footer">
+          <Space>
             <Button onClick={() => setStatusTarget(null)}>取消</Button>
             {statusTarget?.action === 'online' ? (
               <Button type="primary" onClick={handleConfirmStatusChange}>
@@ -426,7 +426,7 @@ export default function InstitutionList() {
                 确认停用
               </Button>
             )}
-          </div>
+          </Space>
         }
       >
         {statusTarget && (
@@ -437,10 +437,10 @@ export default function InstitutionList() {
                   <strong>停用后用户端将立即停止展示和预约</strong>
                   <p>已产生的预约订单不受影响，仍按原履约流程处理。</p>
                 </div>
-                <div className="offline-modal__service">
+                {/* <div className="offline-modal__service">
                   <span>{statusTarget.title}</span>
                   <span>{statusTarget.code ?? `${statusTarget.ids.length} 项`}</span>
-                </div>
+                </div> */}
                 <div className="offline-modal__reason">
                   <label>停用原因</label>
                   <Input.TextArea
@@ -453,7 +453,7 @@ export default function InstitutionList() {
               </>
             ) : (
               <>
-                <div className="offline-modal__warning" style={{background: '#e8f4f0'}}>
+                <div className="offline-modal__warning">
                   <strong>启用后机构可选择添加该服务</strong>
                   <p>机构添加时继承集团基础信息与价格，再配置线上履约规则。</p>
                 </div>

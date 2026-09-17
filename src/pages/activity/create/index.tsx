@@ -3,6 +3,7 @@
  * 视觉对齐设计稿：左侧表单（基础信息 + 报名与参与设置 + 患者端展示详情 + 底部操作条）
  * 右侧患者端实时预览；参与机构配置抽屉（独立组件 components/InstitutionConfigDrawer）；患者端活动预览弹窗
  * 数据来源：GET/POST/PUT /v1/admin/activities（编辑 PUT 为全量覆盖）
+ * 状态：存为草稿 → status=1；发布 → status=2；已发布过的活动再次编辑时不提供「存为草稿」
  */
 import { useEffect, useState } from 'react'
 import {
@@ -63,6 +64,10 @@ const typeValueToLabel = (value?: number) =>
 const labelToTypeValue = (label?: unknown) =>
   activityTypeOptions.find((item) => item.label === label)?.value ?? 1
 
+/** 提交状态：1-存为草稿 2-发布（报名中） */
+const STATUS_DRAFT = 1
+const STATUS_PUBLISHED = 2
+
 export default function ActivityCreate() {
   const navigate = useNavigate()
   const { message } = App.useApp()
@@ -97,6 +102,8 @@ export default function ActivityCreate() {
   /** 编辑态原始数据：PUT 为全量覆盖，未在表单暴露的字段（code）与原封面需原值回写 */
   const [originCode, setOriginCode] = useState('')
   const [originCoverUrl, setOriginCoverUrl] = useState('')
+  /** 编辑态原始状态：仅草稿（1）允许再次「存为草稿」 */
+  const [originStatus, setOriginStatus] = useState<number | null>(null)
   /** 编辑态原始时间：用户清空日期时回退原值，避免被 0 覆盖 */
   const [originMeta, setOriginMeta] = useState<{ start: number; end: number }>({
     start: 0,
@@ -111,6 +118,8 @@ export default function ActivityCreate() {
 
   const totalCapacity = institutions.reduce((sum, item) => sum + (item.capacity || 0), 0)
   const feeText = feeType === 'free' ? '免费' : '付费'
+  /** 仅未发布过（新建或草稿）的活动可「存为草稿」 */
+  const draftVisible = !isEdit || originStatus === STATUS_DRAFT
 
   /** 封面（cover_url）：本地预览 + 后台上传，成功后保存服务器地址 */
   const handleCoverUpload = async (file: File) => {
@@ -151,6 +160,7 @@ export default function ActivityCreate() {
         setCoverServerUrl(detail.cover_url ?? '')
         setOriginCoverUrl(detail.cover_url ?? '')
         setOriginCode(detail.code ?? '')
+        setOriginStatus(detail.status ?? null)
         setOriginMeta({
           start: detail.start_date ?? 0,
           end: detail.end_date ?? 0,
@@ -179,6 +189,7 @@ export default function ActivityCreate() {
   const buildPayload = (
     values: Record<string, unknown>,
     descriptionValue: string,
+    statusValue: number,
   ): ActivitySaveBody => {
     const toSeconds = (value: unknown, fallback: number) =>
       value ? Math.floor((value as Dayjs).valueOf() / 1000) : fallback
@@ -194,8 +205,45 @@ export default function ActivityCreate() {
       target_crowd: String(values.target_crowd ?? '').trim(),
       start_date: toSeconds(values.start_date, originMeta.start),
       end_date: toSeconds(values.end_date, originMeta.end),
+      // 状态：存为草稿传 1，发布传 2
+      status: statusValue,
       // 参与机构：抽屉回传的本地行 → 契约 institutions[]（空值回退原配置）
       institutions: toInstitutionConfigs(institutions, originInstitutions),
+    }
+  }
+
+  /**
+   * 提交活动
+   * @param statusValue 1-存为草稿（允许暂不配置参与机构）；2-发布（要求至少一家参与机构）
+   */
+  const submitActivity = async (statusValue: number) => {
+    const isDraft = statusValue === STATUS_DRAFT
+    let values: Record<string, unknown>
+    try {
+      values = (await form.validateFields()) as Record<string, unknown>
+    } catch {
+      message.warning('请先完善必填项：活动名称、活动类型、报名起止日期、收费方式')
+      return
+    }
+    if (!isDraft && institutions.length === 0) {
+      message.warning('请先配置参与机构：需至少配置一家')
+      return
+    }
+    const payload = buildPayload(values, description, statusValue)
+    setSubmitting(true)
+    try {
+      if (isEdit && params.id) {
+        await activityApi.updateActivity(Number(params.id), payload)
+        message.success(isDraft ? '已存为草稿' : '活动已更新')
+      } else {
+        await activityApi.createActivity(payload)
+        message.success(isDraft ? '已存为草稿' : '活动已发布')
+      }
+      navigate('/activity')
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -424,41 +472,21 @@ export default function ActivityCreate() {
                 </div>
                 <div className="create-footer">
                   <Button onClick={() => setPreviewOpen(true)}>手机预览</Button>
-                  <Button onClick={() => {}}>存为草稿</Button>
+                  {/* 已发布过的活动（含已取消）不再提供「存为草稿」 */}
+                  {draftVisible && (
+                    <Button
+                      onClick={() => void submitActivity(STATUS_DRAFT)}
+                      disabled={submitting || detailLoading}
+                    >
+                      存为草稿
+                    </Button>
+                  )}
                   <Button
                     type="primary"
                     loading={submitting || detailLoading}
-                    onClick={async () => {
-                      let values: Record<string, unknown>
-                      try {
-                        values = (await form.validateFields()) as Record<string, unknown>
-                      } catch {
-                        message.warning('请先完善必填项：活动名称、活动类型、活动区域、报名起止日期、收费方式')
-                        return
-                      }
-                      if (institutions.length === 0) {
-                        message.warning('请先配置参与机构：需至少配置一家')
-                        return
-                      }
-                      const payload = buildPayload(values, description)
-                      setSubmitting(true)
-                      try {
-                        if (isEdit && params.id) {
-                          await activityApi.updateActivity(Number(params.id), payload)
-                          message.success('活动已更新')
-                        } else {
-                          await activityApi.createActivity(payload)
-                          message.success('活动已发布')
-                        }
-                        navigate('/activity')
-                      } catch {
-                        /* 错误提示由 request 拦截器统一处理 */
-                      } finally {
-                        setSubmitting(false)
-                      }
-                    }}
+                    onClick={() => void submitActivity(STATUS_PUBLISHED)}
                   >
-                    {isEdit ? '保存活动' : '发布活动'}
+                    {isEdit && originStatus !== STATUS_DRAFT ? '保存活动' : '发布活动'}
                   </Button>
                 </div>
               </div>

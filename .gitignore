@@ -27,6 +27,7 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+.verify-tmp
 
 # Env
 .env.local
@@ -35,3 +36,4 @@ lerna-debug.log*
 # Work log (should be committed)
 !WORKLOG/**/*.md
 .reasonix
+*.toml
