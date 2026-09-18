@@ -493,13 +493,13 @@ export default function ActivitySignups() {
               <span className="list-card__header__title">报名记录</span>
             </div>
             <Space>
-              <Radio.Group
+              {/* <Radio.Group
                 className="list-card__status-filter"
                 optionType="button"
                 value={applied.status == null ? 'all' : String(applied.status)}
                 onChange={(event) => changeStatus(event.target.value === 'all' ? null : Number(event.target.value))}
                 options={tabItems}
-              />
+              /> */}
               <Button icon={<DownloadOutlined />} loading={exporting} onClick={handleExport}>
                 导出
               </Button>

@@ -1,4 +1,9 @@
+/* 订单详情：状态摘要 + 交易订单信息（Descriptions）+ 工单列表 */
 .order-detail {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-md;
+
   &__summary {
     .card-surface();
     .ant-card-body {
@@ -7,7 +12,6 @@
       grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: @spacing-md;
     }
-    
 
     .summary-item {
       display: flex;
@@ -29,27 +33,12 @@
     }
   }
 
-  &__main {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
-    gap: @spacing-md;
-    margin-top: @spacing-md;
-    align-items: start;
-  }
-
-  &__left,
-  &__right {
-    display: flex;
-    flex-direction: column;
-    gap: @spacing-md;
-  }
-
   .detail-card {
     .card-surface();
     .ant-card-body {
       padding: @spacing-md @spacing-lg;
     }
-    
+
     h3 {
       margin: 0 0 @spacing-sm;
       .text-title-card();
@@ -71,150 +60,26 @@
     }
   }
 
-  .detail-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: @spacing-lg @spacing-md;
-
-    &--meta {
-      margin-top: @spacing-lg;
-      padding-top: @spacing-md;
-      border-top: 1px solid @color-border;
+  /* 交易订单信息：label / 内容样式对齐设计规范 */
+  .ant-descriptions {
+    .ant-descriptions-item-label {
+      .text-label();
     }
 
-    &__item {
-      display: flex;
-      flex-direction: column;
-      gap: @spacing-2xs;
-
-      > span {
-        .text-label();
-      }
-
-      > strong {
-        .text-body-medium();
-      }
-    }
-  }
-
-  .work-steps {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: @spacing-sm;
-  }
-
-  .work-step {
-    display: flex;
-    flex-direction: column;
-    gap: @spacing-2xs;
-    padding: @spacing-md;
-    background: @color-bg-page;
-    border-radius: @radius-sm;
-
-    i {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 22px;
-      height: 22px;
-      color: @color-text-secondary;
-      font-style: normal;
-      font-size: @font-size-auxiliary;
-      background: @color-bg-card;
-      border-radius: @radius-full;
-    }
-
-    strong {
+    .ant-descriptions-item-content {
       .text-body-medium();
     }
-
-    > span {
-      .text-auxiliary();
-    }
-
-    &.is-done {
-      background: @color-primary-light;
-
-      i {
-        color: @color-bg-card;
-        background: @color-primary;
-      }
-    }
-
-    &.is-current {
-      background: fade(@color-warning, 18%);
-
-      i {
-        color: @color-bg-card;
-        background: darken(@color-warning, 12%);
-      }
-
-      > span {
-        color: @color-danger;
-      }
-    }
   }
 
-  .action-tip {
-    margin-bottom: 10px;
-    padding: 8px;
-    background: fade(@color-warning, 14%);
-    border-radius: @radius-sm;
-
-    strong {
-      .text-body-medium();
-    }
-
-    p {
-      margin: 2px 0 0;
-      .text-auxiliary();
-    }
-
-    &--plain {
-      background: @color-bg-page;
-
-      p {
-        margin: 0;
-      }
-    }
-  }
-
-  .action-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: @spacing-sm;
-    margin-top: 10px;
-  }
-
-  .countdown {
-    color: @color-primary;
-    font-size: 24px;
-    font-weight: @font-weight-title-page;
-    line-height: @line-height-title-page;
-    letter-spacing: 2px;
-  }
-
-  .countdown-note {
-    margin: 0;
-    .text-auxiliary();
-  }
-
-  .service-remark {
-    margin: 0;
-    font-size: 12px;
-    color: @color-text-secondary;
-  }
-
-  &__logs {
-    margin-top: @spacing-md;
-
+  /* 工单列表卡片：表头与列表页保持一致的浅底样式 */
+  &__work-orders {
     .ant-table-thead > tr > th {
       .text-label();
       background: @color-bg-active;
     }
   }
 
-  /* 复用列表页状态 pill 样式 */
+  /* 状态 pill（订单 / 工单共用外观） */
   .order-status,
   .work-status {
     display: inline-flex;
@@ -224,63 +89,67 @@
     font-size: @font-size-auxiliary;
     border-radius: @radius-full;
 
-    &::before {
-      width: 6px;
-      height: 6px;
-      border-radius: @radius-full;
-      background: currentColor;
-      content: '';
-    }
+    // &::before {
+    //   width: 6px;
+    //   height: 6px;
+    //   border-radius: @radius-full;
+    //   background: currentColor;
+    //   content: '';
+    // }
   }
 
+  /* 订单状态数值：1-待支付 2-待确认 3-生效中 4-已完成 5-已取消 6-已退款 */
   .order-status {
-    &--paid,
-    &--fulfilling {
-      color: @color-info;
-      background: fade(@color-info, 12%);
-    }
-
-    &--finished {
-      color: @color-primary;
-      background: @color-primary-light;
-    }
-
-    &--refunding {
+    &--1,
+    &--2 {
       color: darken(@color-warning, 18%);
       background: fade(@color-warning, 18%);
     }
 
-    &--cancelled {
+    &--3 {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--4 {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--5 {
       color: @color-text-secondary;
       background: @color-bg-active;
     }
-  }
 
-  .work-status {
-    &--pending {
-      color: darken(@color-warning, 18%);
-      background: fade(@color-warning, 18%);
-    }
-
-    &--assigned {
-      color: @color-info;
-      background: fade(@color-info, 12%);
-    }
-
-    &--serving,
-    &--done {
-      color: @color-primary;
-      background: @color-primary-light;
-    }
-
-    &--cancelled {
+    &--6 {
       color: @color-danger;
       background: fade(@color-danger, 12%);
     }
+  }
 
-    &--none {
-      color: @color-text-secondary;
-      background: @color-bg-active;
+  /* 工单状态数值（共通 §6.2）：1-待排单 2-待接单 3-已接单 4-已签到 5-服务中 6-已完成 7-已取消 */
+  .work-status {
+    &--1,
+    &--2 {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--3,
+    &--4 {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--5,
+    &--6 {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--7 {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
     }
   }
 }
@@ -290,26 +159,12 @@
     &__summary {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-
-    &__main {
-      grid-template-columns: 1fr;
-    }
-
-    .work-steps {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .detail-grid {
-      grid-template-columns: 1fr 1fr;
-    }
   }
 }
 
 @media (max-width: 720px) {
   .order-detail {
-    &__summary,
-    .work-steps,
-    .detail-grid {
+    &__summary {
       grid-template-columns: 1fr;
     }
   }

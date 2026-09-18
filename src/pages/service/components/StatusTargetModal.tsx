@@ -61,7 +61,7 @@ export default function StatusTargetModal ({statusTarget, onCancel, onOk}: IProp
               </>
             ) : (
               <>
-                <div className="offline-modal__warning" style={{background: '#e8f4f0'}}>
+                <div className="offline-modal__warning">
                   <strong>上架后机构可选择添加该服务</strong>
                   <p>机构添加时继承集团基础信息与价格，再配置线上履约规则。</p>
                 </div>

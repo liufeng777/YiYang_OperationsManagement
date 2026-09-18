@@ -52,40 +52,6 @@
     }
   }
 
-  .activity-status {
-    display: inline-flex;
-    padding: @spacing-2xs @spacing-xs;
-    font-size: @font-size-auxiliary;
-    border-radius: @radius-full;
-
-    // 报名中
-    &--2 {
-      color: @color-primary;
-      background: @color-primary-light;
-    }
-
-    // 待发布
-    &--1 {
-      color: darken(@color-warning, 18%);
-      background: fade(@color-warning, 18%);
-    }
-
-    &--0 {
-      color: @color-info;
-      background: fade(@color-info, 12%);
-    }
-
-    &--3 {
-      color: @color-text-secondary;
-      background: @color-bg-active;
-    }
-
-    &--9 {
-      color: @color-danger;
-      background: fade(@color-danger, 12%);
-    }
-  }
-
   .activity-actions {
     display: flex;
     align-items: center;

@@ -1,282 +1,314 @@
 /**
  * 订单中心 - 订单列表
- * 视觉对齐设计稿：顶部统计卡 + 筛选 + 状态 Tabs + 订单表格
- * 当前为 mock 数据，后端就绪后替换为 orderApi.getOrderList
+ * 数据来源：orderApi.getOrders（分页 + 订单号 / 机构 / 状态 / 下单时间范围筛选）
+ * 金额单位：后端返回「分」，展示统一换算为「元」
+ * 能力范围：订单列表 / 订单详情 / 订单导出（增删改与确认、取消、退款等流转操作暂不在此维护）
  */
-import { useMemo, useState } from 'react'
-import { App, Button, Card, Input, Radio, Select, Table } from 'antd'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { App, Button, Card, DatePicker, Input, Radio, Select, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { BarChartOutlined, SearchOutlined } from '@ant-design/icons'
+import { BarChartOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
+import dayjs, { type Dayjs } from 'dayjs'
 import PageContainer from '@/components/PageContainer'
-import type { OrderItem, OrderStatus, WorkOrderStatus } from '@/api/modules/order'
+import { institutionApi, orderApi } from '@/api'
+import type { OrderDetail, OrderListParams } from '@/api/modules/order'
+import { downloadBlob, formatAmount, formatDateTime } from '@/utils'
 import './list.less'
 
-const statusText: Record<OrderStatus, string> = {
-  paid: '已支付',
-  fulfilling: '履约中',
-  finished: '已完成',
-  refunding: '退款审核',
-  cancelled: '已取消',
+/** 订单状态文案：1-待支付 2-待确认 3-生效中 4-已完成 5-已取消 6-已退款 */
+const ORDER_STATUS_TEXT: Record<number, string> = {
+  1: '待支付',
+  2: '待确认',
+  3: '生效中',
+  4: '已完成',
+  5: '已取消',
+  6: '已退款',
 }
 
-const workOrderText: Record<WorkOrderStatus, string> = {
-  pending: '待机构接单',
-  assigned: '已派工',
-  serving: '服务中',
-  done: '已完成',
-  cancelled: '工单已取消',
-  none: '未生成工单',
-}
-
-const mockOrders: OrderItem[] = [
-  {
-    id: '1',
-    orderNo: 'DD202608070001',
-    serviceName: '上门助浴服务',
-    userName: '王阿姨',
-    userPhone: '138****1026',
-    institutionName: '幸福里健康驿站',
-    amount: 168,
-    status: 'paid',
-    workOrderStatus: 'pending',
-    appointmentTime: '08-08 09:00',
-  },
-  {
-    id: '2',
-    orderNo: 'DD202608070002',
-    serviceName: '居家护理服务',
-    userName: '李伯伯',
-    userPhone: '136****5381',
-    institutionName: '康乐护理院',
-    amount: 198,
-    status: 'fulfilling',
-    workOrderStatus: 'assigned',
-    appointmentTime: '08-07 14:00',
-  },
-  {
-    id: '3',
-    orderNo: 'DD202608070003',
-    serviceName: '慢病健康随访',
-    userName: '张叔叔',
-    userPhone: '159****2218',
-    institutionName: '幸福里健康驿站',
-    amount: 69,
-    status: 'fulfilling',
-    workOrderStatus: 'serving',
-    appointmentTime: '08-07 10:30',
-  },
-  {
-    id: '4',
-    orderNo: 'DD202608060018',
-    serviceName: '术后康复训练',
-    userName: '周阿姨',
-    userPhone: '137****6632',
-    institutionName: '怡康护理院',
-    amount: 128,
-    status: 'finished',
-    workOrderStatus: 'done',
-    appointmentTime: '08-06 15:00',
-  },
-  {
-    id: '5',
-    orderNo: 'DD202608060011',
-    serviceName: '老年能力评估',
-    userName: '陈伯伯',
-    userPhone: '135****9066',
-    institutionName: '长青健康驿站',
-    amount: 199,
-    status: 'refunding',
-    workOrderStatus: 'cancelled',
-    appointmentTime: '08-08 10:00',
-  },
-  {
-    id: '6',
-    orderNo: 'DD202608050096',
-    serviceName: '全程陪诊服务',
-    userName: '赵阿姨',
-    userPhone: '188****3175',
-    institutionName: '和悦护理院',
-    amount: 268,
-    status: 'cancelled',
-    workOrderStatus: 'none',
-    appointmentTime: '—',
-  },
-]
-
-const tabItems = [
-  { key: 'all', label: '全部' },
-  { key: 'pending', label: '待机构接单 18' },
-  { key: 'assigned', label: '待派工 21' },
-  { key: 'serving', label: '服务中 16' },
-  { key: 'aftersale', label: '售后 9' },
-]
-
-const metrics = [
-  { key: 'all', label: '全部订单', value: '1,286', note: '本月新增 326 单', tone: 'primary' },
-  { key: 'pending', label: '待机构接单', value: '18', note: '其中 5 单即将超时', tone: 'info' },
-  { key: 'fulfilling', label: '履约中', value: '64', note: '待派工 21 · 服务中 16', tone: 'warning' },
-  { key: 'aftersale', label: '售后处理中', value: '9', note: '退款待审核 4 单', tone: 'danger' },
-]
+/** 分 → 元 */
+const fenToYuan = (fen?: number) => (fen ?? 0) / 100
 
 interface OrderFilters {
-  keyword: string
-  institution: string
-  status: OrderStatus | 'all'
-  workOrderStatus: WorkOrderStatus | 'all'
-  date: string
+  order_no: string
+  institution_id: number | null
+  order_status: number | null
+  range: [Dayjs, Dayjs] | null
 }
+
+const emptyFilters: OrderFilters = {
+  order_no: '',
+  institution_id: null,
+  order_status: null,
+  range: null,
+}
+
+const PAGE_SIZE = 10
 
 export default function OrderList() {
   const navigate = useNavigate()
   const { message } = App.useApp()
-  const [keyword, setKeyword] = useState('')
-  const [institution, setInstitution] = useState('all')
-  const [status, setStatus] = useState<OrderStatus | 'all'>('all')
-  const [workOrderStatus, setWorkOrderStatus] = useState<WorkOrderStatus | 'all'>('all')
-  const [date, setDate] = useState('')
-  const [tab, setTab] = useState('all')
-  const [applied, setApplied] = useState<OrderFilters>({
-    keyword: '',
-    institution: 'all',
-    status: 'all',
-    workOrderStatus: 'all',
-    date: '',
-  })
+  const [institutions, setInstitutions] = useState<Array<{ id: number; name: string }>>([])
+  const [rows, setRows] = useState<OrderDetail[]>([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [page, setPage] = useState(1)
-  const pageSize = 10
+  /** 顶部统计：全部 / 待确认 / 生效中 / 已完成 */
+  const [stats, setStats] = useState({ all: 0, pending: 0, active: 0, finished: 0 })
 
-  const filteredData = useMemo(() => {
-    return mockOrders.filter((item) => {
-      const keywordHit =
-        !applied.keyword ||
-        item.orderNo.toLowerCase().includes(applied.keyword.toLowerCase()) ||
-        item.userName.includes(applied.keyword) ||
-        item.userPhone.includes(applied.keyword)
-      const institutionHit =
-        applied.institution === 'all' || item.institutionName === applied.institution
-      const statusHit = applied.status === 'all' || item.status === applied.status
-      const workHit =
-        applied.workOrderStatus === 'all' || item.workOrderStatus === applied.workOrderStatus
-      const tabHit =
-        tab === 'all' ||
-        (tab === 'pending' && item.workOrderStatus === 'pending') ||
-        (tab === 'assigned' && item.workOrderStatus === 'assigned') ||
-        (tab === 'serving' && item.workOrderStatus === 'serving') ||
-        (tab === 'aftersale' && item.status === 'refunding')
-      return keywordHit && institutionHit && statusHit && workHit && tabHit
-    })
-  }, [applied, tab])
+  const [keyword, setKeyword] = useState('')
+  const [institution, setInstitution] = useState<number | null>(null)
+  const [status, setStatus] = useState<number | null>(null)
+  const [range, setRange] = useState<[Dayjs, Dayjs] | null>(null)
+  const [applied, setApplied] = useState<OrderFilters>(emptyFilters)
+
+  const instMap = useMemo(
+    () => new Map(institutions.map((item) => [item.id, item.name])),
+    [institutions],
+  )
+  const institutionName = (record: OrderDetail) =>
+    instMap.get(record.institution_id) ?? `机构 ${record.institution_id}`
+
+  // 机构列表：用于筛选下拉与列表机构名展示
+  useEffect(() => {
+    let cancelled = false
+    institutionApi
+      .getInstitutions({ page: 1, page_size: 1000 })
+      .then((res) => {
+        if (!cancelled) setInstitutions(res.list ?? [])
+      })
+      .catch(() => {
+        if (!cancelled) setInstitutions([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  /** 组装查询参数（时间范围转 UTC 秒） */
+  const buildParams = useCallback(
+    (targetPage: number, filters: OrderFilters): OrderListParams => ({
+      page: targetPage,
+      page_size: PAGE_SIZE,
+      order_no: filters.order_no || undefined,
+      institution_id: filters.institution_id ?? undefined,
+      order_status: filters.order_status ?? undefined,
+      start_time: filters.range?.[0] ? filters.range[0].startOf('day').unix() : undefined,
+      end_time: filters.range?.[1] ? filters.range[1].endOf('day').unix() : undefined,
+    }),
+    [],
+  )
+
+  /** 拉取订单列表 */
+  const fetchList = useCallback(
+    async (targetPage: number, filters: OrderFilters) => {
+      setLoading(true)
+      try {
+        const res = await orderApi.getOrders(buildParams(targetPage, filters))
+        setRows(res.list ?? [])
+        setTotal(res.total ?? 0)
+      } catch {
+        /* 错误提示由 request 拦截器统一处理 */
+        setRows([])
+        setTotal(0)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [buildParams],
+  )
+
+  /** 顶部统计：各状态各取 1 条拿 total */
+  const fetchStats = useCallback(async () => {
+    try {
+      const [all, pending, active, finished] = await Promise.all([
+        orderApi.getOrders({ page: 1, page_size: 1 }),
+        orderApi.getOrders({ page: 1, page_size: 1, order_status: 2 }),
+        orderApi.getOrders({ page: 1, page_size: 1, order_status: 3 }),
+        orderApi.getOrders({ page: 1, page_size: 1, order_status: 4 }),
+      ])
+      setStats({
+        all: all.total ?? 0,
+        pending: pending.total ?? 0,
+        active: active.total ?? 0,
+        finished: finished.total ?? 0,
+      })
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    }
+  }, [])
+
+  // 进入页面：加载第 1 页与统计
+  useEffect(() => {
+    void fetchList(1, emptyFilters)
+    void fetchStats()
+  }, [fetchList, fetchStats])
+
+  /** 切换订单状态（Tabs 与下拉共用）：回到第 1 页 */
+  const changeStatus = (nextStatus: number | null) => {
+    setStatus(nextStatus)
+    const nextFilters: OrderFilters = { ...applied, order_status: nextStatus }
+    setApplied(nextFilters)
+    setPage(1)
+    void fetchList(1, nextFilters)
+  }
 
   const applyFilters = () => {
-    setApplied({ keyword: keyword.trim(), institution, status, workOrderStatus, date })
+    const nextFilters: OrderFilters = {
+      order_no: keyword.trim(),
+      institution_id: institution,
+      order_status: status,
+      range,
+    }
+    setApplied(nextFilters)
+    setPage(1)
+    void fetchList(1, nextFilters)
   }
 
   const handleReset = () => {
     setKeyword('')
-    setInstitution('all')
-    setStatus('all')
-    setWorkOrderStatus('all')
-    setDate('')
-    setApplied({ keyword: '', institution: 'all', status: 'all', workOrderStatus: 'all', date: '' })
+    setInstitution(null)
+    setStatus(null)
+    setRange(null)
+    setApplied(emptyFilters)
+    setPage(1)
+    void fetchList(1, emptyFilters)
   }
 
-  const columns = useMemo<ColumnsType<OrderItem>>(
+  /**
+   * 导出订单：后端当前返回 JSON（download_url）而非文件流，两种形态都兼容
+   * - JSON：取 download_url 新窗口下载
+   * - 二进制流：直接落盘
+   */
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const res = await orderApi.exportOrders(buildParams(1, applied))
+      const blob = res.data
+      const contentType = String(res.headers?.['content-type'] ?? blob?.type ?? '')
+      if (contentType.includes('json')) {
+        const text = await blob.text()
+        let url = ''
+        try {
+          url = (JSON.parse(text) as { data?: { download_url?: string } })?.data?.download_url ?? ''
+        } catch {
+          /* 非 JSON 时按下载流处理 */
+        }
+        if (!url) {
+          message.error('导出失败：未获取到下载地址')
+          return
+        }
+        window.open(url, '_blank')
+        message.success('导出文件已生成')
+        return
+      }
+      if (!blob || blob.size === 0) {
+        message.warning('导出内容为空')
+        return
+      }
+      downloadBlob(blob, `订单导出_${dayjs().format('YYYYMMDDHHmmss')}.csv`)
+      message.success('导出成功，已开始下载')
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const metrics = [
+    { key: 'all', label: '全部订单', value: stats.all, note: '当前系统全部订单', tone: 'primary' },
+    { key: 'pending', label: '待确认', value: stats.pending, note: '需运营确认后生效', tone: 'warning' },
+    { key: 'active', label: '生效中', value: stats.active, note: '服务履约进行中', tone: 'info' },
+    { key: 'finished', label: '已完成', value: stats.finished, note: '服务已完成结算', tone: 'primary' },
+  ]
+
+  const tabItems = [
+    { value: 'all', label: `全部 ${stats.all}` },
+    { value: '2', label: `待确认 ${stats.pending}` },
+    { value: '3', label: `生效中 ${stats.active}` },
+    { value: '4', label: `已完成 ${stats.finished}` },
+  ]
+
+  const columns = useMemo<ColumnsType<OrderDetail>>(
     () => [
       {
-        title: '订单 / 服务',
-        key: 'serviceName',
+        title: '订单号',
+        key: 'order_no',
         render: (_, record) => (
           <div className="order-service">
-            <strong>{record.serviceName}</strong>
-            <span>{record.orderNo}</span>
+            <strong>{record.order_no}</strong>
+            <span>{record.remark || '—'}</span>
           </div>
         ),
       },
       {
-        title: '用户',
-        key: 'user',
-        width: 140,
+        title: '联系人',
+        key: 'contact',
+        width: 150,
         render: (_, record) => (
           <div className="order-user">
-            <strong>{record.userName}</strong>
-            <span>{record.userPhone}</span>
+            <strong>{record.contact_name || '—'}</strong>
+            <span>{record.contact_phone || '—'}</span>
           </div>
         ),
       },
       {
         title: '服务机构',
-        dataIndex: 'institutionName',
-        key: 'institutionName',
+        key: 'institution',
         width: 150,
+        render: (_, record) => institutionName(record),
+      },
+      {
+        title: '服务次数',
+        key: 'service_count',
+        width: 110,
+        render: (_, record) => `${record.served_count ?? 0} / ${record.service_count ?? 0} 次`,
       },
       {
         title: '实付金额',
-        dataIndex: 'amount',
-        key: 'amount',
-        width: 100,
-        render: (value: number) => `¥${value}`,
+        key: 'paid_amount',
+        width: 120,
+        render: (_, record) => formatAmount(fenToYuan(record.paid_amount)),
       },
       {
         title: '订单状态',
-        dataIndex: 'status',
-        key: 'status',
+        key: 'order_status',
         width: 110,
-        render: (value: OrderStatus) => (
-          <span className={`order-status order-status--${value}`}>{statusText[value]}</span>
+        render: (_, record) => (
+          <span className={`order-status order-status--${record.order_status}`}>
+            {ORDER_STATUS_TEXT[record.order_status] ?? '—'}
+          </span>
         ),
       },
       {
-        title: '工单状态',
-        dataIndex: 'workOrderStatus',
-        key: 'workOrderStatus',
-        width: 120,
-        render: (value: WorkOrderStatus) => (
-          <span className={`work-status work-status--${value}`}>{workOrderText[value]}</span>
-        ),
-      },
-      {
-        title: '预约服务时间',
-        dataIndex: 'appointmentTime',
-        key: 'appointmentTime',
-        width: 120,
+        title: '下单时间',
+        key: 'created_at',
+        width: 150,
+        render: (_, record) => formatDateTime(record.created_at && record.created_at * 1000, 'YYYY-MM-DD HH:mm'),
       },
       {
         title: '操作',
         key: 'action',
-        width: 130,
+        width: 100,
         render: (_, record) => (
           <div className="order-actions">
-            <Button
-              type="link"
-              size="small"
-              onClick={() => navigate(`/order/detail/${record.id}`)}
-            >
-              详情
+            <Button type="link" size="small" onClick={() => navigate(`/order/detail/${record.id}`)}>
+              查看详情
             </Button>
-            {record.workOrderStatus === 'pending' && (
-              <Button
-                type="link"
-                size="small"
-                onClick={() => message.success(`已催促 ${record.institutionName} 接单`)}
-              >
-                催办
-              </Button>
-            )}
-            {record.status === 'refunding' && (
-              <Button type="link" size="small" onClick={() => navigate('/refund')}>
-                审核
-              </Button>
-            )}
           </div>
         ),
       },
     ],
-    [message, navigate],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [instMap, navigate],
   )
 
   return (
-    <PageContainer title="订单中心" description="统一查看交易订单、协作工单与机构履约进度">
+    <PageContainer
+      title="订单中心"
+      description="统一查看交易订单与机构履约进度，支持按条件检索与导出"
+    >
       <div className="order-list">
         <div className="metric-cards">
           {metrics.map((metric) => (
@@ -288,9 +320,7 @@ export default function OrderList() {
                 </i>
               </div>
               <strong className="metric-card__value">{metric.value}</strong>
-              <em className={`metric-card__note metric-card__note--${metric.tone}`}>
-                {metric.note}
-              </em>
+              <em className={`metric-card__note metric-card__note--${metric.tone}`}>{metric.note}</em>
             </Card>
           ))}
         </div>
@@ -298,56 +328,35 @@ export default function OrderList() {
         <Card variant="borderless" className="filter-bar order-list__filter">
           <Input
             allowClear
-            placeholder="订单号、用户姓名或手机号"
+            placeholder="订单号"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             onPressEnter={applyFilters}
           />
           <Select
             value={institution}
-            onChange={setInstitution}
-            options={[
-              { label: '全部机构', value: 'all' },
-              { label: '幸福里健康驿站', value: '幸福里健康驿站' },
-              { label: '康乐护理院', value: '康乐护理院' },
-              { label: '怡康护理院', value: '怡康护理院' },
-              { label: '长青健康驿站', value: '长青健康驿站' },
-              { label: '和悦护理院', value: '和悦护理院' },
-            ]}
+            onChange={(value) => setInstitution(value ?? null)}
+            options={institutions.map((item) => ({ label: item.name, value: item.id }))}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder="服务机构"
           />
           <Select
             value={status}
-            onChange={setStatus}
-            options={[
-              { label: '全部订单状态', value: 'all' },
-              { label: '已支付', value: 'paid' },
-              { label: '履约中', value: 'fulfilling' },
-              { label: '已完成', value: 'finished' },
-              { label: '退款审核', value: 'refunding' },
-              { label: '已取消', value: 'cancelled' },
-            ]}
-          />
-          <Select
-            value={workOrderStatus}
-            onChange={setWorkOrderStatus}
-            options={[
-              { label: '全部工单状态', value: 'all' },
-              { label: '待机构接单', value: 'pending' },
-              { label: '已派工', value: 'assigned' },
-              { label: '服务中', value: 'serving' },
-              { label: '已完成', value: 'done' },
-              { label: '工单已取消', value: 'cancelled' },
-              { label: '未生成工单', value: 'none' },
-            ]}
-          />
-          <Input
+            onChange={(value) => changeStatus(value ?? null)}
+            options={Object.entries(ORDER_STATUS_TEXT).map(([key, label]) => ({
+              label,
+              value: Number(key),
+            }))}
             allowClear
-            placeholder="服务日期"
-            value={date}
-            onChange={(event) => setDate(event.target.value)}
-            onPressEnter={applyFilters}
+            placeholder="订单状态"
           />
-          
+          <DatePicker.RangePicker
+            value={range}
+            onChange={(value) => setRange(value as [Dayjs, Dayjs] | null)}
+            placeholder={['下单开始日期', '下单结束日期']}
+          />
           <Button onClick={handleReset}>重置</Button>
           <Button type="primary" onClick={applyFilters}>
             查询
@@ -358,27 +367,41 @@ export default function OrderList() {
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">订单列表</span>
-              <span className="list-card__header__tips">共 1,286 笔订单 · 今日新增 42 笔</span>
             </div>
-            <Radio.Group
+            <Button
+              color="primary"
+              variant="outlined"
+              icon={<DownloadOutlined />}
+              loading={exporting}
+              onClick={handleExport}
+            >
+              导出
+            </Button>
+            {/* <Radio.Group
               className="list-card__status-filter"
               optionType="button"
-              value={tab}
-              onChange={(event) => setTab(event.target.value)}
-              options={tabItems.map((item) => ({ value: item.key, label: item.label }))}
-            />
+              value={applied.order_status == null ? 'all' : String(applied.order_status)}
+              onChange={(event) =>
+                changeStatus(event.target.value === 'all' ? null : Number(event.target.value))
+              }
+              options={tabItems}
+            /> */}
           </div>
-          <Table<OrderItem>
+          <Table<OrderDetail>
             rowKey="id"
             size="small"
+            loading={loading}
             columns={columns}
-            dataSource={filteredData}
+            dataSource={rows}
             pagination={{
               current: page,
-              pageSize,
-              total: filteredData.length,
-              onChange: setPage,
-              showTotal: (total) => `共 ${total} 条`
+              pageSize: PAGE_SIZE,
+              total,
+              onChange: (nextPage) => {
+                setPage(nextPage)
+                void fetchList(nextPage, applied)
+              },
+              showTotal: (count) => `共 ${count} 条`,
             }}
           />
         </Card>

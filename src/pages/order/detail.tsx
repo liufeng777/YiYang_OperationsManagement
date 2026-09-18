@@ -1,314 +1,327 @@
 /**
  * 订单中心 - 订单详情
- * 视觉对齐设计稿：状态摘要条 + 交易订单信息 + 协作工单履约进度
- * 右侧当前操作 / 接单时效 / 服务备注，底部订单操作记录
- * 当前为 mock 数据，后端就绪后替换为 orderApi.getOrderDetail
+ * 数据来源：orderApi.getOrder（金额单位为「分」，展示统一换算为「元」）
+ * 工单列表：当前为示例数据，字段与工单 DTO 对齐（workorder.ts 的 WorkOrderDTO / WoStatus），
+ *           待工单接口接入后替换为 workOrderApi.getWorkOrders({ order_id })
  */
-import { App, Button, Card, Table } from 'antd'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Button, Card, Descriptions, Spin, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { CheckOutlined, ArrowLeftOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import type { OrderLog, OrderStatus, WorkOrderStatus } from '@/api/modules/order'
+import { institutionApi, orderApi } from '@/api'
+import type { OrderDetail } from '@/api/modules/order'
+import { formatAmount, formatDateTime } from '@/utils'
 import './detail.less'
 
-const statusText: Record<OrderStatus, string> = {
-  paid: '已支付',
-  fulfilling: '履约中',
-  finished: '已完成',
-  refunding: '退款审核',
-  cancelled: '已取消',
+/** 订单状态文案（与列表页保持一致）：1-待支付 2-待确认 3-生效中 4-已完成 5-已取消 6-已退款 */
+const ORDER_STATUS_TEXT: Record<number, string> = {
+  1: '待支付',
+  2: '待确认',
+  3: '生效中',
+  4: '已完成',
+  5: '已取消',
+  6: '已退款',
 }
 
-const workOrderText: Record<WorkOrderStatus, string> = {
-  pending: '待机构接单',
-  assigned: '已派工',
-  serving: '服务中',
-  done: '已完成',
-  cancelled: '工单已取消',
-  none: '未生成工单',
+/** 工单状态文案（共通 §6.2）：1-待排单 2-待接单 3-已接单 4-已签到 5-服务中 6-已完成 7-已取消 */
+const WORK_ORDER_STATUS_TEXT: Record<number, string> = {
+  1: '待排单',
+  2: '待接单',
+  3: '已接单',
+  4: '已签到',
+  5: '服务中',
+  6: '已完成',
+  7: '已取消',
 }
 
-interface OrderBase {
-  orderNo: string
-  serviceName: string
-  institutionName: string
-  status: OrderStatus
-  workOrderStatus: WorkOrderStatus
+/** 分 → 元 */
+const fenToYuan = (fen?: number) => (fen ?? 0) / 100
+
+/** 工单行（字段对齐 WorkOrderDTO，便于后续切换真实接口） */
+interface WorkOrderRow {
+  id: number
+  work_order_no: string
+  /** 派单服务人员 */
+  assignee_name: string | null
+  /** 期望医护（下单时所填） */
+  expect_staff_name: string | null
+  expected_start_at: number
+  expected_stop_at: number
+  wo_status: number
+  completed_at: number | null
+  service_address: string
+  remark: string
 }
 
-const orderBaseMap: Record<string, OrderBase> = {
-  '1': {
-    orderNo: 'DD202608070001',
-    serviceName: '上门助浴服务',
-    institutionName: '幸福里健康驿站',
-    status: 'paid',
-    workOrderStatus: 'pending',
-  },
-  '2': {
-    orderNo: 'DD202608070002',
-    serviceName: '居家护理服务',
-    institutionName: '康乐护理院',
-    status: 'fulfilling',
-    workOrderStatus: 'assigned',
-  },
-  '3': {
-    orderNo: 'DD202608070003',
-    serviceName: '慢病健康随访',
-    institutionName: '幸福里健康驿站',
-    status: 'fulfilling',
-    workOrderStatus: 'serving',
-  },
-  '4': {
-    orderNo: 'DD202608060018',
-    serviceName: '术后康复训练',
-    institutionName: '怡康护理院',
-    status: 'finished',
-    workOrderStatus: 'done',
-  },
-  '5': {
-    orderNo: 'DD202608060011',
-    serviceName: '老年能力评估',
-    institutionName: '长青健康驿站',
-    status: 'refunding',
-    workOrderStatus: 'cancelled',
-  },
-  '6': {
-    orderNo: 'DD202608050096',
-    serviceName: '全程陪诊服务',
-    institutionName: '和悦护理院',
-    status: 'cancelled',
-    workOrderStatus: 'none',
-  },
-}
-
-const workSteps = [
-  { key: 'paid', title: '订单已支付', time: '08:46:12' },
-  { key: 'created', title: '工单已创建', time: '08:46:15' },
-  { key: 'pending', title: '待机构接单', time: '剩余 18 分钟' },
-  { key: 'assigned', title: '待派工', time: '—' },
-  { key: 'serving', title: '服务中', time: '—' },
-]
-
-const orderLogs: OrderLog[] = [
+/** 示例工单数据（待工单接口接入后替换） */
+const MOCK_WORK_ORDERS: WorkOrderRow[] = [
   {
-    id: '1',
-    time: '2026-08-07 08:46:05',
-    source: '用户端',
-    action: '提交订单',
-    description: '预约上门助浴服务，等待支付',
-    operator: '王阿姨',
+    id: 101,
+    work_order_no: 'GD20260901001',
+    assignee_name: '王护理',
+    expect_staff_name: '王护理',
+    expected_start_at: 1788102000,
+    expected_stop_at: 1788105600,
+    wo_status: 6,
+    completed_at: 1788106000,
+    service_address: '杭州市滨江区浦沿街道中控科技园 3 号楼',
+    remark: '服务已完成，家属确认满意',
   },
   {
-    id: '2',
-    time: '2026-08-07 08:46:12',
-    source: '支付系统',
-    action: '支付成功',
-    description: '微信支付 ¥168.00，订单状态变更为已支付',
-    operator: '系统',
+    id: 102,
+    work_order_no: 'GD20260903002',
+    assignee_name: '李护理',
+    expect_staff_name: '李护理',
+    expected_start_at: 1788274800,
+    expected_stop_at: 1788278400,
+    wo_status: 5,
+    completed_at: null,
+    service_address: '杭州市滨江区浦沿街道中控科技园 3 号楼',
+    remark: '服务中，预计 17:00 前完成',
   },
   {
-    id: '3',
-    time: '2026-08-07 08:46:15',
-    source: '协作平台',
-    action: '生成履约工单',
-    description: '已推送幸福里健康驿站，等待机构接单',
-    operator: '系统',
+    id: 103,
+    work_order_no: 'GD20260910003',
+    assignee_name: null,
+    expect_staff_name: '王护理',
+    expected_start_at: 1788793200,
+    expected_stop_at: 1788796800,
+    wo_status: 2,
+    completed_at: null,
+    service_address: '杭州市滨江区浦沿街道中控科技园 3 号楼',
+    remark: '已推送机构，等待接单',
   },
 ]
 
-const logColumns: ColumnsType<OrderLog> = [
-  { title: '时间', dataIndex: 'time', key: 'time', width: 180 },
-  { title: '操作来源', dataIndex: 'source', key: 'source', width: 120 },
-  { title: '操作内容', dataIndex: 'action', key: 'action', width: 160 },
-  { title: '状态说明', dataIndex: 'description', key: 'description' },
-  { title: '操作人', dataIndex: 'operator', key: 'operator', width: 120 },
+/** 工单列表列定义 */
+const workOrderColumns: ColumnsType<WorkOrderRow> = [
+  {
+    title: '工单号',
+    key: 'work_order_no',
+    render: (_, record) => (
+      <div className="order-service">
+        <strong>{record.work_order_no}</strong>
+        <span>{record.remark || '—'}</span>
+      </div>
+    ),
+  },
+  {
+    title: '服务人员',
+    key: 'assignee_name',
+    width: 110,
+    render: (_, record) => record.assignee_name || '待派单',
+  },
+  {
+    title: '期望医护',
+    key: 'expect_staff_name',
+    width: 110,
+    render: (_, record) => record.expect_staff_name || '—',
+  },
+  {
+    title: '预约服务时间',
+    key: 'expected_time',
+    width: 210,
+    render: (_, record) =>
+      `${formatDateTime(
+        record.expected_start_at && record.expected_start_at * 1000,
+        'MM-DD HH:mm',
+      )} ~ ${formatDateTime(record.expected_stop_at && record.expected_stop_at * 1000, 'HH:mm')}`,
+  },
+  {
+    title: '服务地址',
+    key: 'service_address',
+    ellipsis: true,
+    render: (_, record) => record.service_address || '—',
+  },
+  {
+    title: '工单状态',
+    key: 'wo_status',
+    width: 110,
+    render: (_, record) => (
+      <span className={`work-status work-status--${record.wo_status}`}>
+        {WORK_ORDER_STATUS_TEXT[record.wo_status] ?? '—'}
+      </span>
+    ),
+  },
+  {
+    title: '完成时间',
+    key: 'completed_at',
+    width: 150,
+    render: (_, record) =>
+      record.completed_at ? formatDateTime(record.completed_at * 1000, 'YYYY-MM-DD HH:mm') : '—',
+  },
 ]
 
-export default function OrderDetail() {
+export default function OrderDetailPage() {
   const navigate = useNavigate()
-  const { message, modal } = App.useApp()
   const params = useParams<{ id: string }>()
-  const base = orderBaseMap[params.id ?? '1'] ?? orderBaseMap['1']
-  const isPending = base.workOrderStatus === 'pending'
+  const orderId = Number(params.id)
 
-  const handleCancel = () => {
-    modal.confirm({
-      title: '取消订单',
-      content: '确认取消该订单吗？取消后将按退款规则原路退回款项。',
-      okText: '确认取消',
-      cancelText: '再想想',
-      okButtonProps: { danger: true },
-      onOk: () => message.success('订单已取消（mock）'),
-    })
-  }
+  const [order, setOrder] = useState<OrderDetail | null>(null)
+  const [institutions, setInstitutions] = useState<Array<{ id: number; name: string }>>([])
+  const [loading, setLoading] = useState(false)
+
+  /** 拉取订单详情 */
+  const fetchOrder = useCallback(async () => {
+    if (!orderId) return
+    setLoading(true)
+    try {
+      setOrder(await orderApi.getOrder(orderId))
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      setLoading(false)
+    }
+  }, [orderId])
+
+  useEffect(() => {
+    void fetchOrder()
+  }, [fetchOrder])
+
+  // 机构列表：用于展示服务机构的名称
+  useEffect(() => {
+    let cancelled = false
+    institutionApi
+      .getInstitutions({ page: 1, page_size: 1000 })
+      .then((res) => {
+        if (!cancelled) setInstitutions(res.list ?? [])
+      })
+      .catch(() => {
+        if (!cancelled) setInstitutions([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const institutionName = useMemo(() => {
+    const map = new Map(institutions.map((item) => [item.id, item.name]))
+    return (record: OrderDetail) =>
+      map.get(record.institution_id) ?? `机构 ${record.institution_id}`
+  }, [institutions])
+
+  /** 工单进度摘要（示例数据） */
+  const workOrderSummary = useMemo(() => {
+    const countBy = (status: number) =>
+      MOCK_WORK_ORDERS.filter((item) => item.wo_status === status).length
+    return `共 ${MOCK_WORK_ORDERS.length} 个工单 · 待接单 ${countBy(2)} · 服务中 ${countBy(5)} · 已完成 ${countBy(6)}`
+  }, [])
+
+  /** 交易订单信息（Descriptions 渲染；备注并入其中） */
+  const orderDescriptions = useMemo(
+    () => [
+      { key: 'contact_name', label: '联系人', children: order?.contact_name || '—' },
+      { key: 'contact_phone', label: '联系电话', children: order?.contact_phone || '—' },
+      {
+        key: 'created_at',
+        label: '下单时间',
+        children: formatDateTime(order?.created_at && order.created_at * 1000, 'YYYY-MM-DD HH:mm'),
+      },
+      { key: 'user_id', label: '注册会员（用户ID）', children: order?.user_id ?? '—' },
+      { key: 'member_id', label: '服务对象（会员ID）', children: order?.member_id ?? '—' },
+      {
+        key: 'service_count',
+        label: '服务次数',
+        children: order ? `${order.served_count ?? 0} / ${order.service_count ?? 0} 次` : '—',
+      },
+      { key: 'total_amount', label: '原价', children: formatAmount(fenToYuan(order?.total_amount)) },
+      {
+        key: 'discount_amount',
+        label: '优惠金额',
+        children: formatAmount(fenToYuan(order?.discount_amount)),
+      },
+      {
+        key: 'paid_amount',
+        label: '实付金额',
+        children: <strong>{formatAmount(fenToYuan(order?.paid_amount))}</strong>,
+      },
+      {
+        key: 'remark',
+        label: '备注',
+        span: { xs: 1, sm: 2, lg: 3 },
+        children: order?.remark || '—',
+      },
+    ],
+    [order],
+  )
 
   return (
     <PageContainer
       title="订单详情"
-      description={`${base.orderNo} · ${base.serviceName} · ${base.institutionName}`}
+      description={order ? `${order.order_no} · ${institutionName(order)}` : '订单详情'}
       extra={
-        <Button color="primary" variant='outlined' icon={<ArrowLeftOutlined />} onClick={() => navigate('/order')}>
+        <Button
+          color="primary"
+          variant="outlined"
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate('/order')}
+        >
           返回订单列表
         </Button>
       }
     >
-      <div className="order-detail">
-        <Card variant="borderless" className="order-detail__summary">
-          <div className="summary-item">
-            <span>订单状态</span>
-            <em className={`order-status order-status--${base.status}`}>{statusText[base.status]}</em>
-          </div>
-          <div className="summary-item">
-            <span>协作工单状态</span>
-            <em className={`work-status work-status--${base.workOrderStatus}`}>
-              {workOrderText[base.workOrderStatus]}
-            </em>
-          </div>
-          <div className="summary-item">
-            <span>服务机构</span>
-            <strong>{base.institutionName}</strong>
-          </div>
-          <div className="summary-item">
-            <span>预约服务时间</span>
-            <strong>2026-08-08 09:00</strong>
-          </div>
-          <div className="summary-item">
-            <span>实付金额</span>
-            <strong>¥168.00</strong>
-          </div>
-        </Card>
+      <Spin spinning={loading}>
+        <div className="order-detail">
+          <Card variant="borderless" className="order-detail__summary">
+            <div className="summary-item">
+              <span>订单状态</span>
+              <em className={`order-status order-status--${order?.order_status ?? 0}`}>
+                {ORDER_STATUS_TEXT[order?.order_status ?? 0] ?? '—'}
+              </em>
+            </div>
+            <div className="summary-item">
+              <span>服务机构</span>
+              <strong>{order ? institutionName(order) : '—'}</strong>
+            </div>
+            <div className="summary-item">
+              <span>实付金额</span>
+              <strong>{formatAmount(fenToYuan(order?.paid_amount))}</strong>
+            </div>
+            <div className="summary-item">
+              <span>服务次数</span>
+              <strong>
+                {order ? `${order.served_count ?? 0} / ${order.service_count ?? 0} 次` : '—'}
+              </strong>
+            </div>
+            <div className="summary-item">
+              <span>下单时间</span>
+              <strong>
+                {formatDateTime(order?.created_at && order.created_at * 1000, 'YYYY-MM-DD HH:mm')}
+              </strong>
+            </div>
+          </Card>
 
-        <div className="order-detail__main">
-          <div className="order-detail__left">
-            <Card variant="borderless" className="detail-card">
-              <div className="detail-card__header">
-                <h3>交易订单信息</h3>
-                <span>支付时间 2026-08-07 08:46:12</span>
-              </div>
-              <div className="detail-grid">
-                <div className="detail-grid__item">
-                  <span>服务对象</span>
-                  <strong>王阿姨 · 138****1026</strong>
-                </div>
-                <div className="detail-grid__item">
-                  <span>服务项目</span>
-                  <strong>{base.serviceName} · 90 分钟</strong>
-                </div>
-                <div className="detail-grid__item">
-                  <span>支付方式</span>
-                  <strong>微信支付</strong>
-                </div>
-                <div className="detail-grid__item">
-                  <span>服务地址</span>
-                  <strong>杭州市拱墅区申花街道莫干山路 987 号</strong>
-                </div>
-                <div className="detail-grid__item">
-                  <span>订单金额</span>
-                  <strong>原价 ¥168 · 实付 ¥168</strong>
-                </div>
-              </div>
-            </Card>
+          <Card variant="borderless" className="detail-card">
+            <div className="detail-card__header">
+              <h3>交易订单信息</h3>
+              <span>{order?.order_no ?? '—'}</span>
+            </div>
+            <Descriptions
+              column={{ xs: 1, sm: 2, lg: 3 }}
+              size="small"
+              colon={false}
+              bordered 
+              items={orderDescriptions}
+            />
+          </Card>
 
-            <Card variant="borderless" className="detail-card">
-              <div className="detail-card__header">
-                <h3>协作工单与履约进度</h3>
-                <span>工单号 GD202608070001 · 同步成功</span>
-              </div>
-              <div className="work-steps">
-                {workSteps.map((step, index) => {
-                  const done = index < 2
-                  const current = index === 2 && isPending
-                  return (
-                    <div
-                      key={step.key}
-                      className={`work-step${done ? ' is-done' : ''}${current ? ' is-current' : ''}`}
-                    >
-                      <i>{done ? <CheckOutlined /> : index + 1}</i>
-                      <strong>{step.title}</strong>
-                      <span>{step.time}</span>
-                    </div>
-                  )
-                })}
-              </div>
-              <div className="detail-grid detail-grid--meta">
-                <div className="detail-grid__item">
-                  <span>承接机构</span>
-                  <strong>{base.institutionName}</strong>
-                </div>
-                <div className="detail-grid__item">
-                  <span>工单来源</span>
-                  <strong>运营平台订单自动生成</strong>
-                </div>
-                <div className="detail-grid__item">
-                  <span>最近同步</span>
-                  <strong>2026-08-07 08:46:15</strong>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          <div className="order-detail__right">
-            <Card variant="borderless" className="detail-card">
-              <h3>当前可操作</h3>
-              {isPending ? (
-                <>
-                  <div className="action-tip">
-                    <strong>机构尚未接单</strong>
-                    <p>可先催办；超时后再更换承接机构。</p>
-                  </div>
-                  <Button
-                    type="primary"
-                    block
-                    onClick={() => message.success(`已催促 ${base.institutionName} 接单`)}
-                  >
-                    催促机构接单
-                  </Button>
-                  <div className="action-row">
-                    <Button block onClick={() => message.info('更换机构开发中')}>
-                      更换机构
-                    </Button>
-                    <Button block danger onClick={handleCancel}>
-                      取消订单
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <div className="action-tip action-tip--plain">
-                  <p>当前订单状态暂无可操作项，可在操作记录中查看履约进展。</p>
-                </div>
-              )}
-            </Card>
-
-            <Card variant="borderless" className="detail-card">
-              <h3>接单时效</h3>
-              <div className="countdown">00 : 18 : 24</div>
-              <p className="countdown-note">超过 30 分钟未接单将触发运营预警</p>
-            </Card>
-
-            <Card variant="borderless" className="detail-card">
-              <h3>服务备注</h3>
-              <p className="service-remark">
-                老人行动不便，需两名护理人员上门；到达前请提前 15 分钟电话联系。
-              </p>
-            </Card>
-          </div>
+          <Card variant="borderless" className="detail-card order-detail__work-orders">
+            <div className="detail-card__header">
+              <h3>工单列表</h3>
+              <span>{workOrderSummary} · 示例数据</span>
+            </div>
+            <Table<WorkOrderRow>
+              rowKey="id"
+              size="small"
+              columns={workOrderColumns}
+              dataSource={MOCK_WORK_ORDERS}
+              pagination={false}
+            />
+          </Card>
         </div>
-
-        <Card variant="borderless" className="detail-card order-detail__logs">
-          <div className="detail-card__header">
-            <h3>订单操作记录</h3>
-            <span>记录订单与协作工单的关键变更</span>
-          </div>
-          <Table<OrderLog>
-            rowKey="id"
-            size="small"
-            columns={logColumns}
-            dataSource={orderLogs}
-            pagination={false}
-          />
-        </Card>
-      </div>
+      </Spin>
     </PageContainer>
   )
 }
