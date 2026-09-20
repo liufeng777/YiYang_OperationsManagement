@@ -1,4 +1,4 @@
-/* 订单详情：状态摘要 + 交易订单信息（Descriptions）+ 工单列表 */
+/* 订单详情：状态摘要 + 交易订单信息（Descriptions）+ 工单列表（工单样式见 workOrderTable.less） */
 .order-detail {
   display: flex;
   flex-direction: column;
@@ -71,17 +71,8 @@
     }
   }
 
-  /* 工单列表卡片：表头与列表页保持一致的浅底样式 */
-  &__work-orders {
-    .ant-table-thead > tr > th {
-      .text-label();
-      background: @color-bg-active;
-    }
-  }
-
-  /* 状态 pill（订单 / 工单共用外观） */
-  .order-status,
-  .work-status {
+  /* 订单状态 pill（数值类）：1-待支付 2-待确认 3-生效中 4-已完成 5-已取消 6-已退款 */
+  .order-status {
     display: inline-flex;
     align-items: center;
     gap: @spacing-2xs;
@@ -89,17 +80,6 @@
     font-size: @font-size-auxiliary;
     border-radius: @radius-full;
 
-    // &::before {
-    //   width: 6px;
-    //   height: 6px;
-    //   border-radius: @radius-full;
-    //   background: currentColor;
-    //   content: '';
-    // }
-  }
-
-  /* 订单状态数值：1-待支付 2-待确认 3-生效中 4-已完成 5-已取消 6-已退款 */
-  .order-status {
     &--1,
     &--2 {
       color: darken(@color-warning, 18%);
@@ -122,32 +102,6 @@
     }
 
     &--6 {
-      color: @color-danger;
-      background: fade(@color-danger, 12%);
-    }
-  }
-
-  /* 工单状态数值（共通 §6.2）：1-待排单 2-待接单 3-已接单 4-已签到 5-服务中 6-已完成 7-已取消 */
-  .work-status {
-    &--1,
-    &--2 {
-      color: darken(@color-warning, 18%);
-      background: fade(@color-warning, 18%);
-    }
-
-    &--3,
-    &--4 {
-      color: @color-info;
-      background: fade(@color-info, 12%);
-    }
-
-    &--5,
-    &--6 {
-      color: @color-primary;
-      background: @color-primary-light;
-    }
-
-    &--7 {
       color: @color-danger;
       background: fade(@color-danger, 12%);
     }

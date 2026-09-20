@@ -5,7 +5,7 @@
  * 能力范围：订单列表 / 订单详情 / 订单导出（增删改与确认、取消、退款等流转操作暂不在此维护）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, DatePicker, Input, Radio, Select, Table } from 'antd'
+import { App, Button, Card, DatePicker, Input, Select, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -16,7 +16,6 @@ import type { OrderDetail, OrderListParams } from '@/api/modules/order'
 import { downloadBlob, formatAmount, formatDateTime } from '@/utils'
 import './list.less'
 
-/** 订单状态文案：1-待支付 2-待确认 3-生效中 4-已完成 5-已取消 6-已退款 */
 const ORDER_STATUS_TEXT: Record<number, string> = {
   1: '待支付',
   2: '待确认',
@@ -24,6 +23,8 @@ const ORDER_STATUS_TEXT: Record<number, string> = {
   4: '已完成',
   5: '已取消',
   6: '已退款',
+  7: '退款中',
+  8: '退款待审批'
 }
 
 /** 分 → 元 */
@@ -145,7 +146,7 @@ export default function OrderList() {
     void fetchStats()
   }, [fetchList, fetchStats])
 
-  /** 切换订单状态（Tabs 与下拉共用）：回到第 1 页 */
+  /** 切换订单状态（状态下拉使用）：回到第 1 页 */
   const changeStatus = (nextStatus: number | null) => {
     setStatus(nextStatus)
     const nextFilters: OrderFilters = { ...applied, order_status: nextStatus }
@@ -223,13 +224,6 @@ export default function OrderList() {
     { key: 'finished', label: '已完成', value: stats.finished, note: '服务已完成结算', tone: 'primary' },
   ]
 
-  const tabItems = [
-    { value: 'all', label: `全部 ${stats.all}` },
-    { value: '2', label: `待确认 ${stats.pending}` },
-    { value: '3', label: `生效中 ${stats.active}` },
-    { value: '4', label: `已完成 ${stats.finished}` },
-  ]
-
   const columns = useMemo<ColumnsType<OrderDetail>>(
     () => [
       {
@@ -285,7 +279,8 @@ export default function OrderList() {
         title: '下单时间',
         key: 'created_at',
         width: 150,
-        render: (_, record) => formatDateTime(record.created_at && record.created_at * 1000, 'YYYY-MM-DD HH:mm'),
+        render: (_, record) =>
+          formatDateTime(record.created_at && record.created_at * 1000, 'YYYY-MM-DD HH:mm'),
       },
       {
         title: '操作',
@@ -377,15 +372,6 @@ export default function OrderList() {
             >
               导出
             </Button>
-            {/* <Radio.Group
-              className="list-card__status-filter"
-              optionType="button"
-              value={applied.order_status == null ? 'all' : String(applied.order_status)}
-              onChange={(event) =>
-                changeStatus(event.target.value === 'all' ? null : Number(event.target.value))
-              }
-              options={tabItems}
-            /> */}
           </div>
           <Table<OrderDetail>
             rowKey="id"

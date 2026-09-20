@@ -1,146 +1,75 @@
 /**
  * 订单退款审核（运营后台端-API设计 §6.2）
  * 权限 order:refund（财务/运营）；退款状态枚举见共通 §6.4
- * 说明：上半部分为页面展示用类型（mock），下半部分 DTO 对齐文档契约。
+ * 能力范围：退款单列表 / 退款单详情 / 退款导出（审核类接口暂未纳入，页面只做只读展示）
+ * 说明：退款金额单位与订单保持一致，为「分」
  */
+import type { AxiosResponse } from 'axios'
 import { http } from '@/utils/request'
 import type { ApiPageParams, ApiPageResult } from '@/types/api'
-
-/* ------------------------------------------------------------------ */
-/* 页面展示类型（mock，接后端后逐步切换到下方 DTO）                       */
-/* ------------------------------------------------------------------ */
-
-/** 退款状态 */
-export type RefundStatus = 'pending' | 'cancelling' | 'refunding' | 'refunded' | 'rejected' | 'abnormal'
-/** 工单取消状态 */
-export type CancelStatus = 'pending' | 'cancelling' | 'done' | 'none' | 'failed'
-
-/** 退款列表项 */
-export interface RefundItem {
-  id: string
-  /** 退款单号，如 TK202608070001 */
-  refundNo: string
-  /** 关联订单号，如 DD202608070001 */
-  orderNo: string
-  /** 关联订单 ID，用于跳转原订单 */
-  orderId: string
-  userName: string
-  /** 脱敏手机号，如 138****1026 */
-  userPhone: string
-  institutionName: string
-  /** 整单退款金额（元） */
-  amount: number
-  status: RefundStatus
-  cancelStatus: CancelStatus
-  /** 申请时间展示，如 08-07 08:52 */
-  applyTime: string
-}
-
-/** 退款审核记录 */
-export interface RefundLog {
-  id: string
-  time: string
-  source: string
-  action: string
-  description: string
-  operator: string
-}
-
-/** 退款详情 */
-export interface RefundDetail extends RefundItem {
-  reason: string
-  applyNote: string
-  refundMethod: string
-  workOrderStatus: string
-  logs: RefundLog[]
-}
 
 /* ------------------------------------------------------------------ */
 /* §6.2 订单退款审核（权限 order:refund）                                */
 /* ------------------------------------------------------------------ */
 
-/**
- * 退款状态（共通 §6.4）：
- * 1-待审批 2-审批通过 3-退款中 4-已退款 5-已拒绝 6-退款失败
- */
-export type RefundStatusCode = 1 | 2 | 3 | 4 | 5 | 6
 
-/** 退款单 DTO */
-export interface RefundDTO {
-  id: number
-  refund_no: string
-  order_id: number
-  order_no: string
-  member_id: number
-  member_name: string
-  member_phone: string
-  institution_id: number
-  institution_name?: string
-  refund_amount: number
-  refund_status: RefundStatusCode
-  /** 退款原因 */
-  reason: string
-  /** 原路退回渠道，如 wxpay */
-  refund_channel: string | null
-  approved_by: number | null
-  approved_at: number | null
-  created_at: number
-}
-
-/** 退款审批入参 */
-export interface RefundApproveBody {
-  approve: boolean
-  /** 原路退回渠道，审核通过必填 */
-  refund_channel?: string
-  /** 实际退款金额，必填 */
-  refund_amount: number
-  opinion?: string
-}
-
-/** 退款审批留痕（refund_approval_records，见 §6.2 数据库补充建议） */
-export interface RefundApprovalLog {
-  id: number
+/** 退款单（列表项与详情字段一致） */
+export interface RefundItem {
   refund_id: number
-  approver_id: number
-  approver_name: string
-  /** 审批结果：2-通过 5-拒绝 */
-  approve_result: 2 | 5
-  /** 处理类型：approve 同意 / reject 驳回 */
-  approve_type: 'approve' | 'reject'
-  opinion: string
-  refund_channel: string | null
-  refund_amount: number
-  created_at: number
+  refund_no: string
+  refund_type: number // 1 用户申请 2.专业审核未通过 3.其他
+  refunded_at: number // 退款时间
+  status: number //  1-待审批 2-审批通过 3-退款中 4-已退款 5-已拒绝 6-退款失败 8.待财务审批
+  amount: number // 总金额
+  reason: string
+  member_id: number // 申请人
+  applied_at: number // 申请时间
+  approved_at: number // 通过时间
+  approved_by: number | null // 通过人
+  approved_by_name: string // 通过人名称
+  create_at: number // 创建时间
+  // 订单信息
+  order_id: number
+  order_type: number
 }
 
 /** 退款单列表 GET /api/admin/refunds（按状态/机构/时间） */
 export function getRefunds(
   params?: ApiPageParams & {
-    refund_status?: RefundStatusCode
+    refund_status?: number
     institution_id?: number
     start_time?: number
     end_time?: number
   },
 ) {
-  return http.get<ApiPageResult<RefundDTO>>('/admin/refunds', { ...params })
+  return http.get<ApiPageResult<RefundItem>>('/admin/refunds', { ...params })
 }
 
 /** 退款单详情 GET /api/admin/refunds/:id（含支付流水、订单信息） */
 export function getRefund(id: number) {
-  return http.get<RefundDTO>(`/admin/refunds/${id}`)
+  return http.get<RefundItem>(`/admin/refunds/${id}`)
 }
 
-/** 退款审批 POST /api/admin/refunds/:id/approve，出参 {refund_status: 2|5} */
-export function approveRefund(id: number, data: RefundApproveBody) {
-  return http.post<{ refund_status: 2 | 5 }>(`/admin/refunds/${id}/approve`, data)
+/**
+ * 退款导出 GET /api/admin/refunds/export
+ * 与订单导出一致：后端可能返回 JSON（{ download_url }）或文件流，故返回整个 AxiosResponse，
+ * 由页面判断 content-type 后分别处理
+ */
+export function exportRefunds(
+  params?: ApiPageParams & { refund_status?: number },
+): Promise<AxiosResponse<Blob>> {
+  return http.get<AxiosResponse<Blob>>('/admin/refunds/export', { ...params }, { responseType: 'blob' })
 }
 
-/** 退款审批留痕 GET /api/admin/refunds/:id/logs */
-export function getRefundLogs(id: number) {
-  return http.get<RefundApprovalLog[]>(`/admin/refunds/${id}/logs`)
-}
-
-/** 退款导出 GET /api/admin/refunds/export */
-export function exportRefunds(params?: ApiPageParams & { refund_status?: RefundStatusCode }) {
-  return http.get<Blob>('/admin/refunds/export', { ...params }, { responseType: 'blob' })
+/** 退款审批 */
+export function approveRefunds(
+  id: number,
+  data: {
+    approve: boolean, // true-通过 false-拒绝，必填
+    opinion: string, // 审批意见
+    refund_amount: number, // 实际退款金额，必填
+    refund_channel: string // 退款渠道
+  }
+) {
+  return http.post(`/admin/refunds/${id}/approve`, data)
 }

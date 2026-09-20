@@ -52,6 +52,8 @@ export function getWorkOrders(
     institution_id?: number
     wo_status?: WoStatus
     member_id?: number
+    member_name?: string
+    order_id?: string
     start_time?: number
     end_time?: number
   },

@@ -1,0 +1,61 @@
+/**
+ * 工单列表（订单详情 / 退款详情共用）
+ * 组件与列定义在 pages/order/workOrderTable.tsx 的 <WorkOrderTable />，本文件提供其专有样式
+ * （表头浅底、两行排版、工单状态 pill），避免各详情页重复维护
+ */
+.work-order-table {
+  /* 表头与列表页保持一致的浅底样式 */
+  .ant-table-thead > tr > th {
+    .text-label();
+    background: @color-bg-active;
+  }
+
+  /* 工单号 / 会员两列的上下两行排版 */
+  .order-service,
+  .order-user {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  /* 工单状态 pill（共通 §6.2）：1-待排单 2-待接单 3-已接单 4-已签到 5-服务中 6-已完成 7-已取消 */
+  .work-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &--1,
+    &--2 {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--3,
+    &--4 {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--5,
+    &--6 {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--7 {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+  }
+}

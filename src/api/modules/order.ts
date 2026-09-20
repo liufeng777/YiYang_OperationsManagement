@@ -7,9 +7,6 @@ import type { AxiosResponse } from 'axios'
 import { http } from '@/utils/request'
 import type { ApiPageParams, ApiPageResult } from '@/types/api'
 
-/** 订单状态（共通 §6.1）：1-待支付 2-待确认 3-生效中 4-已完成 5-已取消 6-已退款 */
-export type OrderStatusCode = 1 | 2 | 3 | 4 | 5 | 6
-
 /** 退款类型：1-全额退款 2-部分退款 */
 export type OrderRefundType = 1 | 2
 
