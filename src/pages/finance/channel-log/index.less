@@ -1,0 +1,58 @@
+/**
+ * 财务对账 - 渠道流水列表样式
+ * 筛选区 / 列表卡片复用公共类（filter-bar / list-card）
+ */
+
+.channel-log {
+  &__filter {
+    margin-top: 0;
+  }
+
+  .channel-pill {
+    display: inline-flex;
+    padding: @spacing-2xs @spacing-xs;
+    color: @color-info;
+    font-size: @font-size-auxiliary;
+    background: fade(@color-info, 12%);
+    border-radius: @radius-full;
+  }
+
+  .channel-log-order {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  /* 流水状态：1-交易成功 2-已退款 3-交易失败（契约未给出枚举，未命中值回显原始数字） */
+  .channel-log-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &--1 {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--2 {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--3 {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+  }
+}

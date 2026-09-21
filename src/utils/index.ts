@@ -33,8 +33,7 @@ export function formatAmount(value?: number | string) {
 }
 
 /** 触发浏览器下载 */
-export function downloadBlob(data: Blob, filename: string) {
-  const url = URL.createObjectURL(data)
+export function downloadBlob(url: string, filename: string) {
   const link = document.createElement('a')
   link.href = url
   link.download = filename

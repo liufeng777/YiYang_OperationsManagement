@@ -23,6 +23,7 @@ export interface RefundItem {
   amount: number // 总金额
   reason: string
   member_id: number // 申请人
+  member_name: string
   applied_at: number // 申请时间
   approved_at: number // 通过时间
   approved_by: number | null // 通过人
@@ -30,7 +31,42 @@ export interface RefundItem {
   create_at: number // 创建时间
   // 订单信息
   order_id: number
+  order_no: string
   order_type: number
+  approvals: {
+    approve_result: number
+    approve_step: number
+    approver_id: number
+    approver_name: string
+    approver_type: string
+    created_at: number
+    opinion: string
+    record_id: string
+    refund_amount: string
+    refund_channel: string
+  }[] // 审批记录 通常是2条数据
+  refund_channel_logs: {
+    amount: number
+    channel: string
+    create_at: number
+    fail_reason: string
+    finished_at: number
+    log_id: number
+    operator_id: number
+    operator_name: string
+    operator_type: string
+    order_id: number
+    order_type: number
+    out_refund_no: string
+    refund_id: number
+    refund_mode: number
+    refund_no: string
+    remark: string
+    status: number
+    transaction_id: string
+    triggered_at: number
+    wx_refund_id: string
+  }[] // 退款渠道记录，通常是1条
 }
 
 /** 退款单列表 GET /api/admin/refunds（按状态/机构/时间） */

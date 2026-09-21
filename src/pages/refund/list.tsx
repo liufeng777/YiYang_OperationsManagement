@@ -256,6 +256,7 @@ export default function RefundList() {
         title: '退款单',
         key: 'refund_no',
         dataIndex: 'refund_no',
+        ellipsis: true,
         // render: (_, record) => (
         //   <div className="refund-no">
         //     <strong>{record.refund_no}</strong>
@@ -265,9 +266,10 @@ export default function RefundList() {
       },
       {
         title: '申请人',
-        key: 'member',
+        key: 'member_name',
+        dataIndex: 'member_name',
         width: 150,
-        render: (_, record) => <div className="refund-user">{applicantText(record)}</div>,
+        ellipsis: true,
       },
       {
         title: '退款类型',

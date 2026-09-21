@@ -1,0 +1,63 @@
+/**
+ * 财务对账 - 账单汇总列表样式
+ * 筛选区 / 列表卡片 / 指标卡复用公共类（filter-bar / list-card / metric-cards）
+ */
+
+.reconcile-list {
+  &__filter {
+    margin-top: @spacing-md;
+  }
+
+  .reconcile-no {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  .channel-pill {
+    display: inline-flex;
+    padding: @spacing-2xs @spacing-xs;
+    color: @color-info;
+    font-size: @font-size-auxiliary;
+    background: fade(@color-info, 12%);
+    border-radius: @radius-full;
+  }
+
+  .diff-amount {
+    color: @color-danger;
+    font-weight: 600;
+  }
+
+  /* 对账状态（共通 §6.4）：1-对账中 2-已平账 3-有差异 */
+  .reconcile-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &--1 {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--2 {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--3 {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+  }
+}

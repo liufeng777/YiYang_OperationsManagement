@@ -1,0 +1,149 @@
+/**
+ * 财务对账 - 对账详情样式
+ */
+
+.reconcile-detail {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-md;
+
+  &__summary {
+    .card-surface();
+
+    .ant-card-body {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: @spacing-xl;
+      align-items: center;
+      padding: @spacing-md @spacing-lg;
+    }
+
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+
+      span {
+        .text-auxiliary();
+      }
+
+      strong {
+        margin-top: @spacing-2xs;
+        .text-body-medium();
+      }
+
+      em {
+        margin-top: @spacing-2xs;
+        font-style: normal;
+        .text-body-medium();
+      }
+    }
+  }
+
+  .detail-card {
+    .card-surface();
+
+    .ant-card-body {
+      padding: @spacing-md @spacing-lg;
+    }
+
+    &__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: @spacing-md;
+      margin-bottom: @spacing-md;
+
+      h3 {
+        margin: 0;
+        .text-title-card();
+      }
+
+      span {
+        .text-auxiliary();
+      }
+    }
+
+    &__filter {
+      margin-bottom: 0;
+    }
+  }
+
+  .diff-amount {
+    color: @color-danger;
+  }
+
+  /* 对账状态（共通 §6.4）：1-对账中 2-已平账 3-有差异 */
+  .reconcile-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &--1 {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--2 {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--3 {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+  }
+
+  /* 明细匹配状态：1-完全匹配 2-金额不一致 3-仅渠道有 4-仅平台有 */
+  .match-status {
+    display: inline-flex;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &--1 {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--2,
+    &--3,
+    &--4 {
+      color: @color-danger;
+      background: fade(@color-danger, 12%);
+    }
+  }
+
+  .line-order {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+}
+
+@media (max-width: 1200px) {
+  .reconcile-detail {
+    &__summary {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .reconcile-detail {
+    &__summary {
+      grid-template-columns: 1fr;
+    }
+  }
+}

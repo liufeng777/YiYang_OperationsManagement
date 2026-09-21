@@ -7,16 +7,13 @@
  * - §4.6 用户账号 users（user:view / user:manage）
  * - §4.7 用户绑定会员 user:binding
  */
+import type { AxiosResponse } from 'axios'
 import { http } from '@/utils/request'
 import type { ApiPageParams, ApiPageResult, BatchResult, CommonStatus } from '@/types/api'
 
 /* ------------------------------------------------------------------ */
 /* §4.1 会员档案（权限 member:view / member:manage）                     */
 /* ------------------------------------------------------------------ */
-
-/** 会员状态：1-未实名 2-已实名 9-禁用 */
-export type MemberStatus = 1 | 2 | 9
-
 /** 会员标签片段 */
 export interface MemberTagBrief {
   id: number
@@ -36,24 +33,19 @@ export interface MemberDTO {
   id_card: string
   /** 脱敏手机号 */
   phone: string
-  nursing_home_id: number | null
-  station_id: number | null
+  institution_id: number | null
   level_id: number
-  level_name: string
+  level: string
   level_code: string
   tags: MemberTagBrief[]
-  status: MemberStatus
-  created_at: number
+  status: number // 1-未实名 2-已实名 9-禁用
 }
 
 /** 会员列表 GET /api/admin/members（按名称/手机/机构/标签/风险等级筛选） */
 export function getMembers(
   params?: ApiPageParams & {
-    phone?: string
     institution_id?: number
-    tag_id?: number
-    risk_level?: number
-    status?: MemberStatus
+    status?: number
   },
 ) {
   return http.get<ApiPageResult<MemberDTO>>('/admin/members', { ...params })
@@ -65,14 +57,14 @@ export function getMember(id: number) {
 }
 
 /** 新增会员 POST /api/admin/members */
-export function createMember(data: Partial<MemberDTO>) {
-  return http.post<null>('/admin/members', data)
-}
+// export function createMember(data: Partial<MemberDTO>) {
+//   return http.post<null>('/admin/members', data)
+// }
 
 /** 编辑会员 PUT /api/admin/members/:id */
-export function updateMember(id: number, data: Partial<MemberDTO>) {
-  return http.put<null>(`/admin/members/${id}`, data)
-}
+// export function updateMember(id: number, data: Partial<MemberDTO>) {
+//   return http.put<null>(`/admin/members/${id}`, data)
+// }
 
 /** 会员标签打标 POST /api/admin/members/:id/tags（仅会员经营标签） */
 export function addMemberTags(id: number, tagIds: number[], note?: string) {
@@ -102,7 +94,7 @@ export function batchRemoveMemberTags(memberIds: number[], tagIds: number[]) {
 }
 
 /** 会员禁用 POST /api/admin/members/:id/status */
-export function updateMemberStatus(id: number, status: MemberStatus) {
+export function updateMemberStatus(id: number, status: number) {
   return http.post<null>(`/admin/members/${id}/status`, { status })
 }
 
@@ -122,9 +114,9 @@ export interface ImportResult {
   fail_list: Array<{ row: number; reason: string }>
 }
 
-/** 模板下载 GET /api/admin/members/import-template */
-export function getMemberImportTemplate() {
-  return http.get<Blob>('/admin/members/import-template', undefined, { responseType: 'blob' })
+/** 模板下载 GET /api/admin/members/import-template（responseType=blob 时拦截器返回完整 AxiosResponse） */
+export function getMemberImportTemplate(): Promise<AxiosResponse<Blob>> {
+  return http.get<AxiosResponse<Blob>>('/admin/members/import-template', undefined, { responseType: 'blob' })
 }
 
 /** Excel 导入 POST /api/admin/members/import（multipart/form-data） */

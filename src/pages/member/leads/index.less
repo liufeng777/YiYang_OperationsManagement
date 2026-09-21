@@ -1,0 +1,141 @@
+/**
+ * 会员管理 - 线索管理样式（列表 + 线索详情 Drawer）
+ * 筛选区 / 列表卡片 / 指标卡复用公共类（filter-bar / list-card / metric-cards）
+ */
+
+.lead-list {
+  &__filter {
+    margin-top: @spacing-md;
+  }
+
+  .lead-contact {
+    display: flex;
+    flex-direction: column;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      margin-top: 2px;
+      .text-auxiliary();
+    }
+  }
+
+  .lead-owner--empty {
+    color: @color-warning;
+  }
+
+  /* 线索状态（共通 §6.5）：1-新线索 2-已联系 3-有意向 4-洽谈中 5-已转化 6-已流失 9-已忽略 */
+  .lead-status {
+    display: inline-flex;
+    align-items: center;
+    gap: @spacing-2xs;
+    padding: @spacing-2xs @spacing-xs;
+    font-size: @font-size-auxiliary;
+    border-radius: @radius-full;
+
+    &--1 {
+      color: darken(@color-warning, 18%);
+      background: fade(@color-warning, 18%);
+    }
+
+    &--2,
+    &--4 {
+      color: @color-info;
+      background: fade(@color-info, 12%);
+    }
+
+    &--3 {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--5 {
+      color: @color-primary;
+      background: @color-primary-light;
+    }
+
+    &--6,
+    &--9 {
+      color: @color-text-secondary;
+      background: @color-bg-active;
+    }
+  }
+}
+
+/* ===== 线索详情 Drawer ===== */
+.lead-drawer {
+  &__subtitle {
+    margin: @spacing-2xs 0 0;
+    .text-auxiliary();
+  }
+
+  &__section {
+    padding: @spacing-md;
+    margin-bottom: @spacing-md;
+    border: 1px solid @color-border;
+    border-radius: @radius-md;
+
+    h4 {
+      margin: 0 0 @spacing-sm;
+      .text-title-card();
+    }
+
+    .ant-descriptions-item-label {
+      .text-auxiliary();
+    }
+  }
+
+  &__institution {
+    width: 100%;
+  }
+
+  &__tip {
+    margin: @spacing-xs 0 0;
+    .text-auxiliary();
+  }
+
+  &__timeline {
+    margin-top: @spacing-sm;
+  }
+
+  &__followup-form {
+    margin-top: @spacing-md;
+    padding-top: @spacing-md;
+    border-top: 1px dashed @color-border;
+  }
+
+  &__actions {
+    margin-bottom: 0;
+    background: fade(@color-info, 6%);
+  }
+}
+
+.followup-item {
+  &__meta {
+    display: flex;
+    align-items: baseline;
+    gap: @spacing-sm;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      .text-auxiliary();
+    }
+  }
+
+  p {
+    margin: @spacing-2xs 0 0;
+    .text-body();
+  }
+
+  em {
+    display: block;
+    margin-top: @spacing-2xs;
+    font-style: normal;
+    .text-auxiliary();
+  }
+}

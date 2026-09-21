@@ -1,7 +1,19 @@
+/**
+ * 会员管理 - 注册会员列表样式
+ * 筛选区 / 列表卡片 / 指标卡复用公共类（filter-bar / list-card / metric-cards）
+ */
+
 .member-list {
-  /* 筛选区与列表卡片复用公共类 .filter-bar / .list-card（src/styles/list-card.less） */
   &__filter {
     margin-top: @spacing-md;
+  }
+
+  /* 筛选栏右侧操作区：下载模板 / Excel 导入 */
+  &__actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: @spacing-xs;
   }
 
   .member-cell {
@@ -18,35 +30,30 @@
     }
   }
 
-  .follow-status {
-    display: inline-flex;
-    align-items: center;
-    gap: @spacing-2xs;
-    padding: @spacing-2xs @spacing-xs;
-    font-size: @font-size-auxiliary;
-    border-radius: @radius-full;
-
-    // &::before {
-    //   width: 6px;
-    //   height: 6px;
-    //   border-radius: @radius-full;
-    //   background: currentColor;
-    //   content: '';
-    // }
-
-    &--following {
-      color: @color-primary;
-      background: @color-primary-light;
+  .member-tags {
+    .ant-tag {
+      margin-inline-end: 4px;
     }
+  }
+}
 
-    &--uncontacted {
-      color: @color-danger;
-      background: fade(@color-danger, 12%);
-    }
+/* Excel 导入失败明细（渲染在全局 Modal 中，置于顶层作用域） */
+.import-fail-list {
+  margin: @spacing-xs 0 0;
+  padding-left: @spacing-lg;
+  max-height: 240px;
+  overflow: auto;
+  .text-auxiliary();
+  color: @color-text-primary;
+}
 
-    &--no_intent {
-      color: @color-text-secondary;
-      background: @color-bg-active;
-    }
+/* 会员详情 Drawer：证件号掩码 + 明文切换按钮（Drawer 渲染在 body 级，置于顶层作用域） */
+.id-card-field {
+  display: inline-flex;
+  align-items: center;
+  gap: @spacing-2xs;
+
+  .ant-btn {
+    color: @color-text-secondary;
   }
 }

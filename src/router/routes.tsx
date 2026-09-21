@@ -183,8 +183,18 @@ export const routes: RouteConfig[] = [
     children: [
       {
         path: '',
-        meta: { title: '财务对账' },
-        component: lazy(() => import('@/pages/finance/list')),
+        meta: { title: '账单汇总' },
+        component: lazy(() => import('@/pages/finance/reconcile')),
+      },
+      {
+        path: 'channel-log',
+        meta: { title: '渠道流水' },
+        component: lazy(() => import('@/pages/finance/channel-log')),
+      },
+      {
+        path: 'detail/:id',
+        meta: { title: '对账详情', hideInMenu: true },
+        component: lazy(() => import('@/pages/finance/reconcile/detail')),
       },
     ],
   },
@@ -224,14 +234,9 @@ export const routes: RouteConfig[] = [
         component: lazy(() => import('@/pages/member/list')),
       },
       {
-        path: 'points',
-        meta: { title: '积分明细' },
-        component: lazy(() => import('@/pages/member/points')),
-      },
-      {
-        path: 'verify',
-        meta: { title: '实名审核' },
-        component: lazy(() => import('@/pages/member/verify')),
+        path: 'leads',
+        meta: { title: '线索管理' },
+        component: lazy(() => import('@/pages/member/leads')),
       },
     ],
   },
