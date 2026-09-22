@@ -1,61 +1,43 @@
 /**
- * 新增用户 Drawer（账号 / 角色 / 头像 / 表单校验）
- * - 受控组件：open / onClose 由父组件 AccountList 管理
- * - 提交通过 onCreated 回调将新建的 AccountItem 上抛给父组件
+ * 新增 / 编辑用户 Drawer（账号 / 角色 / 头像 / 表单校验）
+ * - 数据来源：systemApi.createAdmin / updateAdmin / assignAdminRoles，角色下拉取自 systemApi.getRoles
+ * - 受控组件：open / onClose 由父组件 AccountList 管理，保存成功后通过 onSaved 回调通知父组件刷新
+ * - 密码规则：仅**新增**时必填；编辑不提交密码（改密请在用户列表使用「重置密码」）
  * - 头像通过共通上传接口（uploadApi.uploadFile）上传，成功后的服务器地址写入 avatar_url
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { App, Button, Drawer, Form, Input, Select, Switch, Upload } from 'antd'
 import type { UploadFile } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import { useImageUpload } from '@/hooks'
-import type { AccountItem } from '@/api/modules/system'
+import { systemApi } from '@/api'
+import type { AdminItem } from '@/api/modules/system'
+import type { CommonStatus } from '@/types/api'
 import './account.less'
 
-/** 角色字典：id → 名称/编码/权限摘要（1-超管 2-运营人员 3-财务人员 4-订单客服） */
-const roleDict: Record<
-  number,
-  { role_name: string; role_code: string; summary: string }
-> = {
-  1: {
-    role_name: '平台管理员',
-    role_code: 'super',
-    summary: '拥有全部平台功能权限，包含用户、角色与系统设置。',
-  },
-  2: {
-    role_name: '运营人员',
-    role_code: 'operator',
-    summary: '机构管理、服务项目、活动与内容；不包含退款审核、财务对账和系统设置。',
-  },
-  3: {
-    role_name: '财务人员',
-    role_code: 'finance',
-    summary: '订单查看、退款审核与财务对账；不包含机构与内容维护。',
-  },
-  4: {
-    role_name: '订单客服',
-    role_code: 'orderCustomerService',
-    summary: '订单查询与退款处理；不包含财务对账和系统设置。',
-  },
-}
+/** 账号状态：1 启用 / 9 停用（后端 CommonStatus） */
+const STATUS_ENABLED: CommonStatus = 1
+const STATUS_DISABLED: CommonStatus = 9
 
 interface AccountFormValues {
   avatar_url?: string
   nickname: string
   phone: string
   username: string
-  password: string
+  /** 仅新增时使用 */
+  password?: string
   email?: string
   role_ids: number[]
-  status: number // 1 启用 / 9 停用
+  status: CommonStatus
 }
 
 interface AddAccountProps {
   open: boolean
   /** 编辑态：传入待编辑账号；为空为新增 */
-  initial?: AccountItem | null
+  initial?: AdminItem | null
   onClose: () => void
-  onSaved: (account: AccountItem) => void
+  /** 保存成功后回调（父组件据此刷新列表） */
+  onSaved: () => void
 }
 
 export default function AddAccount({ open, initial = null, onClose, onSaved }: AddAccountProps) {
@@ -64,8 +46,34 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
   const isEdit = !!initial
   const [avatarUrl, setAvatarUrl] = useState<string>()
   const [avatarList, setAvatarList] = useState<UploadFile[]>([])
+  const [roleOptions, setRoleOptions] = useState<Array<{ label: string; value: number }>>([])
+  const [roleSummary, setRoleSummary] = useState<Map<number, string>>(new Map())
+  const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm<AccountFormValues>()
   const formRoleIds = Form.useWatch('role_ids', form) ?? []
+
+  /** 角色下拉：来自角色管理接口（?all=1 返回全部） */
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    systemApi
+      .getRoles({ all: 1, page: 1, page_size: 1000 })
+      .then((res) => {
+        if (cancelled) return
+        const list = res.list ?? []
+        setRoleOptions(list.map((role) => ({ label: role.name, value: role.id })))
+        setRoleSummary(new Map(list.map((role) => [role.id, role.description || '—'])))
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setRoleOptions([])
+          setRoleSummary(new Map())
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [open])
 
   /** 每次打开 Drawer 时：编辑回填 / 新增重置，并清空头像 */
   useEffect(() => {
@@ -74,18 +82,24 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
       form.setFieldsValue({
         username: initial.username,
         nickname: initial.nickname,
-        phone: initial.phone,
+        phone: initial.phone ?? undefined,
         email: initial.email ?? undefined,
-        status: initial.status,
-        role_ids: initial.roles.map((r) => r.id),
+        status: initial.status === STATUS_ENABLED ? STATUS_ENABLED : STATUS_DISABLED,
+        role_ids: initial.role_ids ?? [],
         password: undefined,
         avatar_url: undefined,
       })
+      setAvatarUrl(initial.avatar_url || undefined)
+      setAvatarList(
+        initial.avatar_url
+          ? [{ uid: '-1', name: 'avatar', status: 'done', url: initial.avatar_url }]
+          : [],
+      )
     } else {
       form.resetFields()
+      setAvatarUrl(undefined)
+      setAvatarList([])
     }
-    setAvatarUrl(undefined)
-    setAvatarList([])
   }, [open, isEdit, initial, form])
 
   /** 头像上传：本地预览 + 后台上传，成功后把服务器地址写入 avatar_url */
@@ -116,52 +130,54 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
     form.setFieldValue('avatar_url', undefined)
   }
 
-  const onStatusChecked = (checked: boolean) => (checked ? 1 : 9)
+  const onStatusChecked = (checked: boolean): CommonStatus =>
+    checked ? STATUS_ENABLED : STATUS_DISABLED
 
   const handleSubmit = async () => {
+    let values: AccountFormValues
     try {
-      const values = await form.validateFields()
-      const now = Math.floor(Date.now() / 1000)
-      const roles = values.role_ids.map((rid) => ({
-        id: rid,
-        role_name: roleDict[rid].role_name,
-        role_code: roleDict[rid].role_code,
-      }))
-      const common = {
+      values = await form.validateFields()
+    } catch {
+      return // 校验失败由 Form.Item 就地提示
+    }
+    setSubmitting(true)
+    try {
+      const body = {
         username: values.username.trim(),
         nickname: values.nickname.trim(),
         phone: values.phone.trim(),
-        email: values.email?.trim() || null,
-        status: values.status, // 1 启用 / 9 停用
-        roles,
+        email: values.email?.trim() || undefined,
+        status: values.status,
+        role_ids: values.role_ids,
+        avatar_url: values.avatar_url || undefined,
+        // 编辑不提交密码
+        ...(isEdit ? {} : { password: values.password }),
       }
-      const account: AccountItem = isEdit && initial
-        ? {
-            ...initial,
-            ...common,
-            // 编辑态未填写密码则保留原密码
-            password: values.password ? values.password : initial.password,
-          }
-        : {
-            id: Date.now(),
-            ...common,
-            password: values.password,
-            created_at: now,
-            last_login_at: now,
-            last_login_ip: '--',
-          }
-      message.success(
-        isEdit ? `用户 ${account.nickname} 已更新（mock）` : `用户 ${account.nickname} 已创建（mock）`,
-      )
-      onSaved(account)
+      if (isEdit && initial) {
+        await systemApi.updateAdmin(initial.id, body)
+        // 角色另走分配接口，避免后端编辑接口不处理 role_ids
+        await systemApi.assignAdminRoles(initial.id, values.role_ids)
+        message.success(`用户 ${body.nickname} 已更新`)
+      } else {
+        await systemApi.createAdmin(body)
+        message.success(`用户 ${body.nickname} 已创建`)
+      }
+      onSaved()
       setAvatarUrl(undefined)
       setAvatarList([])
       form.resetFields()
       onClose()
     } catch {
-      // 校验失败由 Form.Item 就地提示
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      setSubmitting(false)
     }
   }
+
+  const selectedRoles = useMemo(
+    () => formRoleIds.filter((id) => roleSummary.has(id)),
+    [formRoleIds, roleSummary],
+  )
 
   return (
     <Drawer
@@ -172,7 +188,7 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
       footer={
         <div className="account-drawer__footer">
           <Button onClick={onClose}>取消</Button>
-          <Button type="primary" onClick={handleSubmit}>
+          <Button type="primary" loading={submitting} onClick={handleSubmit}>
             {isEdit ? '保存' : '创建用户'}
           </Button>
         </div>
@@ -185,9 +201,9 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
         </div>
         <Form
           form={form}
-          labelCol={{ span: 5}}
+          labelCol={{ span: 5 }}
           wrapperCol={{ span: 19 }}
-          initialValues={{ status: 1, role_ids: [2] }}
+          initialValues={{ status: STATUS_ENABLED, role_ids: [] }}
         >
           <Form.Item
             name="username"
@@ -196,6 +212,7 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
           >
             <Input placeholder="请输入登录账号" />
           </Form.Item>
+          {/* 密码仅新增时填写；编辑改密请使用列表中的「重置密码」 */}
           {!isEdit && (
             <Form.Item
               name="password"
@@ -228,18 +245,9 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
           <Form.Item
             name="role_ids"
             label="所属角色"
-            rules={[
-              { required: true, message: '请选择所属角色' }
-            ]}
+            rules={[{ required: true, message: '请选择所属角色' }]}
           >
-            <Select
-              mode="multiple"
-              placeholder="请选择所属角色（可多选）"
-              options={Object.keys(roleDict).map((key) => {
-                const id = Number(key)
-                return { label: roleDict[id].role_name, value: id }
-              })}
-            />
+            <Select mode="multiple" placeholder="请选择所属角色（可多选）" options={roleOptions} />
           </Form.Item>
           <Form.Item
             name="email"
@@ -254,7 +262,7 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
             extra="启用后允许用户登录运营平台"
             valuePropName="checked"
             getValueFromEvent={onStatusChecked}
-            getValueProps={(value: number) => ({ checked: value === 1 })}
+            getValueProps={(value: CommonStatus) => ({ checked: value === STATUS_ENABLED })}
           >
             <Switch />
           </Form.Item>
@@ -268,14 +276,12 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
               beforeUpload={handleAvatarChange}
               onRemove={handleRemoveAvatar}
             >
-              {avatarUrl
-                ? null
-                : (
+              {avatarUrl ? null : (
                 <div>
                   <PlusOutlined />
                   <div className="account-drawer__avatar-tip">上传头像</div>
                 </div>
-                )}
+              )}
             </Upload>
             {/* avatar_url 为独立隐藏字段，仅由头像 handler 写入，避免被 Upload 的 onChange(fileList) 污染 */}
             <Form.Item name="avatar_url" hidden noStyle>
@@ -284,15 +290,16 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
           </Form.Item>
         </Form>
         <div className="account-drawer__summary">
-          <strong>所选角色 · 权限摘要</strong>
-          {formRoleIds.length > 0 ? (
-            formRoleIds.map((rid) => (
+          <strong>所选角色 · 说明</strong>
+          {selectedRoles.length > 0 ? (
+            selectedRoles.map((rid) => (
               <p key={rid}>
-                <b>{roleDict[rid].role_name}</b>：{roleDict[rid].summary}
+                <b>{roleOptions.find((item) => item.value === rid)?.label}</b>：
+                {roleSummary.get(rid)}
               </p>
             ))
           ) : (
-            <p className="account-drawer__summary-empty">请选择角色以查看权限摘要</p>
+            <p className="account-drawer__summary-empty">请选择角色以查看角色说明</p>
           )}
         </div>
       </div>

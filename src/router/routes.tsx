@@ -269,25 +269,15 @@ export const routes: RouteConfig[] = [
         meta: { title: '消息通知管理' },
         component: lazy(() => import('@/pages/system/Message/MessageManage')),
       },
-      {
-        path: 'payment',
-        meta: { title: '支付设置' },
-        component: lazy(() => import('@/pages/system/Payment/payment')),
-      },
+      // {
+      //   path: 'payment',
+      //   meta: { title: '支付设置' },
+      //   component: lazy(() => import('@/pages/system/Payment/payment')),
+      // },
       {
         path: 'log',
         meta: { title: '操作日志' },
         component: lazy(() => import('@/pages/system/Log/log')),
-      },
-      {
-        path: 'agreement/edit/:id',
-        meta: { title: '新建协议版本', hideInMenu: true },
-        component: lazy(() => import('@/pages/system/Agreement/agreement-edit')),
-      },
-      {
-        path: 'rich-text-demo',
-        meta: { title: '富文本编辑器 Demo', hideInMenu: true },
-        component: lazy(() => import('@/pages/demo/rich-text/index')),
       },
     ],
   },

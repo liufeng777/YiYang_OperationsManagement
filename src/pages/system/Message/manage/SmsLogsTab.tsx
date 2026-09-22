@@ -1,47 +1,98 @@
 /**
  * 消息通知管理 - 短信记录（§9.3 / system:sms-log，仅查看）
- * 接口已封装 messageApi.getSmsLogs，后端就绪后替换本地 mock
+ * 数据来源：messageApi.getSmsLogs（服务端分页）
+ * 说明：后端当前无数据返回，字段按接口文档契约（phone / content / status / fail_reason / created_at）；
+ *       手机号与状态筛选全部下推后端（前端不做本地过滤）
  */
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Card, Input, Select, Table, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { messageApi } from '@/api'
 import type { SmsLogDTO } from '@/api/modules/message'
 import { formatDateTime } from '@/utils'
 
+/** 短信状态：1-成功 2-失败 9-未送达 */
 const smsStatusMap: Record<number, { text: string; color: string }> = {
   1: { text: '成功', color: 'success' },
   2: { text: '失败', color: 'error' },
   9: { text: '未送达', color: 'warning' },
 }
 
-/** mock 短信记录（对齐 SmsLogDTO） */
-const mockSmsLogs: SmsLogDTO[] = [
-  { id: 1, phone: '138****1026', content: '【幸福颐养】预约已确认，请提前准备。', status: 1, created_at: 1787875200 },
-  { id: 2, phone: '136****5381', content: '【幸福颐养】您的验证码为 246810，5 分钟内有效。', status: 1, created_at: 1787792400 },
-  { id: 3, phone: '159****2218', content: '【幸福颐养】您预约的服务将于 2 小时后开始。', status: 2, fail_reason: '运营商网关拒绝', created_at: 1787706000 },
-  { id: 4, phone: '137****6632', content: '【幸福颐养】订单退款 300 元已原路退回。', status: 1, created_at: 1787619600 },
-]
+interface SmsFilters {
+  phone: string
+  status: 'all' | string
+}
+
+const emptyFilters: SmsFilters = { phone: '', status: 'all' }
+
+const PAGE_SIZE = 10
 
 export default function SmsLogsTab() {
-  const [data] = useState(mockSmsLogs)
+  const [rows, setRows] = useState<SmsLogDTO[]>([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
   const [phone, setPhone] = useState('')
-  const [status, setStatus] = useState('all')
+  const [status, setStatus] = useState<string>('all')
+  const [applied, setApplied] = useState<SmsFilters>(emptyFilters)
   const [page, setPage] = useState(1)
-  const pageSize = 10
 
-  const filtered = useMemo(
-    () =>
-      data.filter((item) => {
-        const phoneHit = !phone.trim() || item.phone.includes(phone.trim())
-        const statusHit = status === 'all' || item.status === Number(status)
-        return phoneHit && statusHit
-      }),
-    [data, phone, status],
+  /** 组装查询参数：筛选条件全部下推后端 */
+  const buildParams = useCallback(
+    (targetPage: number, filters: SmsFilters) => ({
+      page: targetPage,
+      page_size: PAGE_SIZE,
+      phone: filters.phone || undefined,
+      status: filters.status === 'all' ? undefined : Number(filters.status),
+    }),
+    [],
   )
+
+  const fetchList = useCallback(
+    async (targetPage: number, filters: SmsFilters) => {
+      setLoading(true)
+      try {
+        const res = await messageApi.getSmsLogs(buildParams(targetPage, filters))
+        setRows(res.list ?? [])
+        setTotal(res.total ?? 0)
+      } catch {
+        /* 错误提示由 request 拦截器统一处理 */
+        setRows([])
+        setTotal(0)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [buildParams],
+  )
+
+  useEffect(() => {
+    void fetchList(1, emptyFilters)
+  }, [fetchList])
+
+  const applyFilters = () => {
+    const nextFilters: SmsFilters = { phone: phone.trim(), status }
+    setApplied(nextFilters)
+    setPage(1)
+    void fetchList(1, nextFilters)
+  }
+
+  const handleReset = () => {
+    setPhone('')
+    setStatus('all')
+    setApplied(emptyFilters)
+    setPage(1)
+    void fetchList(1, emptyFilters)
+  }
 
   const columns = useMemo<ColumnsType<SmsLogDTO>>(
     () => [
-      { title: '手机号', dataIndex: 'phone', key: 'phone', width: 140 },
+      {
+        title: '手机号',
+        dataIndex: 'phone',
+        key: 'phone',
+        width: 140,
+        render: (v?: string) => v || '—',
+      },
       { title: '短信内容', dataIndex: 'content', key: 'content', ellipsis: true },
       {
         title: '状态',
@@ -64,7 +115,7 @@ export default function SmsLogsTab() {
         dataIndex: 'created_at',
         key: 'created_at',
         width: 170,
-        render: (value: number) => formatDateTime(value * 1000),
+        render: (value: number) => (value ? formatDateTime(value * 1000) : '—'),
       },
     ],
     [],
@@ -78,6 +129,7 @@ export default function SmsLogsTab() {
           placeholder="搜索手机号"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
+          onPressEnter={applyFilters}
         />
         <Select
           value={status}
@@ -89,27 +141,34 @@ export default function SmsLogsTab() {
             { label: '未送达', value: '9' },
           ]}
         />
-        <Button>重置</Button>
-        <Button type="primary">查询</Button>
+        <Button onClick={handleReset}>重置</Button>
+        <Button type="primary" onClick={applyFilters}>
+          查询
+        </Button>
       </Card>
 
       <Card variant="borderless" className="list-card">
         <div className="list-card__header">
           <div>
             <span className="list-card__header__title">短信发送记录</span>
+            <span className="list-card__header__tips">共 {total} 条记录</span>
           </div>
         </div>
         <Table<SmsLogDTO>
           rowKey="id"
           size="small"
+          loading={loading}
           columns={columns}
-          dataSource={filtered}
+          dataSource={rows}
           pagination={{
             current: page,
-            pageSize,
-            total: filtered.length,
-            onChange: setPage,
-            showTotal: (total) => `共 ${total} 条`
+            pageSize: PAGE_SIZE,
+            total,
+            onChange: (nextPage) => {
+              setPage(nextPage)
+              void fetchList(nextPage, applied)
+            },
+            showTotal: (count) => `共 ${count} 条`,
           }}
         />
       </Card>

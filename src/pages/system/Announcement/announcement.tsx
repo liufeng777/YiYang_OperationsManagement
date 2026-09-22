@@ -9,8 +9,21 @@ import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import type { AnnouncementItem } from '@/api/modules/system'
 import './announcement.less'
+
+/** 公告展示项（本页为本地展示版，与「消息通知管理-系统公告」的接口形态不同） */
+interface AnnouncementItem {
+  id: string
+  title: string
+  summary: string
+  type: string
+  /** 影响范围，如 全部患者端用户 */
+  scope: string
+  /** 患者端展示时段，如 2026-08-12 00:00 至 23:59 */
+  displayPeriod: string
+  status: 'showing' | 'scheduled' | 'draft' | 'finished'
+  updater: string
+}
 
 const statusText: Record<AnnouncementItem['status'], string> = {
   showing: '展示中',

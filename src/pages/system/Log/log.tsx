@@ -1,51 +1,72 @@
 /**
  * 系统设置 - 操作日志
- * 视觉对齐系统设置其他页面：筛选栏 + 日志表格
- * 当前为 mock 数据，后端就绪后替换为 systemApi.getOperationLogs
+ * 数据来源：systemApi.getOperationLogs
+ * 字段按后端实测：operator / module / action / target / params / path / ip / operated_at / create_at / error_message
+ * 筛选：关键字 / 模块 / 动作 / 时间范围全部下推后端（前端不做本地过滤）
+ * 请求参数：JSON 字符串，列内以「查看」按钮触发 Popover 展示格式化后的 JSON
  */
-import { useMemo, useState } from 'react'
-import { Button, Card, DatePicker, Input, Select, Space, Table, Tag } from 'antd'
+import { useCallback, useEffect, useState } from 'react'
+import { Button, Card, DatePicker, Input, Popover, Select, Space, Table, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { SearchOutlined, UndoOutlined } from '@ant-design/icons'
 import type { Dayjs } from 'dayjs'
 import PageContainer from '@/components/PageContainer'
+import { systemApi } from '@/api'
 import type { OperationLogItem } from '@/api/modules/system'
 import { formatDateTime } from '@/utils'
 import './log.less'
 
 const { RangePicker } = DatePicker
 
+/** 请求参数（JSON 字符串）→ 缩进后的 JSON 文本；非 JSON 内容原样返回 */
+function formatParams(raw?: string): string {
+  const text = (raw ?? '').trim()
+  if (!text) return ''
+  try {
+    return JSON.stringify(JSON.parse(text), null, 2)
+  } catch {
+    return text
+  }
+}
+
 /** 操作动作 → 展示文案 / 标签色 */
 const actionMeta: Record<string, { text: string; color: string }> = {
-  create: { text: '新增', color: 'default' },
-  update: { text: '修改', color: 'default' },
-  delete: { text: '删除', color: 'default' },
-  login: { text: '登录', color: 'default' },
+  create: { text: '新增', color: 'blue' },
+  update: { text: '修改', color: 'cyan' },
+  delete: { text: '删除', color: 'red' },
+  login: { text: '登录', color: 'green' },
   logout: { text: '登出', color: 'default' },
-  export: { text: '导出', color: 'default' },
-  import: { text: '导入', color: 'default' },
-  review: { text: '审核', color: 'default' },
-  dispatch: { text: '派单', color: 'default' },
+  export: { text: '导出', color: 'geekblue' },
+  import: { text: '导入', color: 'geekblue' },
+  review: { text: '审核', color: 'orange' },
+  dispatch: { text: '派单', color: 'purple' },
+  run: { text: '执行', color: 'magenta' },
+  publish: { text: '发布', color: 'green' },
+  offline: { text: '下线', color: 'default' },
+  assign: { text: '分配', color: 'gold' },
+  reset: { text: '重置', color: 'volcano' },
 }
 
-const resourceMeta: Record<string, { text: string; color: string }> = {
-  institution: { text: '机构管理', color: 'green' },
-  refund: { text: '退款管理', color: 'blue' },
-  order: { text: '订单管理', color: 'cyan' },
-  consumable: { text: '服务管理', color: 'lime' },
-  'work-order': { text: '排班管理', color: 'volcano' },
-  role: { text: '角色管理', color: 'magenta' },
-  member: { text: '用户管理', color: 'purple' },
-  auth: { text: '权限管理', color: 'orange' },
+/** 业务模块 → 展示文案 / 标签色（覆盖后端 /admin/permissions/modules 返回的模块） */
+const moduleMeta: Record<string, { text: string; color: string }> = {
   activity: { text: '活动管理', color: 'geekblue' },
-}
-
-/** 状态码 → 标签色 */
-const statusColor = (status: number): string => {
-  if (status >= 500) return 'error'
-  if (status >= 400) return 'warning'
-  if (status >= 200) return 'success'
-  return 'default'
+  admin: { text: '管理员', color: 'orange' },
+  consultation: { text: '咨询管理', color: 'cyan' },
+  content: { text: '内容管理', color: 'lime' },
+  dashboard: { text: '数据看板', color: 'blue' },
+  institution: { text: '机构管理', color: 'green' },
+  lead: { text: '线索管理', color: 'purple' },
+  log: { text: '操作日志', color: 'default' },
+  member: { text: '会员管理', color: 'magenta' },
+  message: { text: '消息通知', color: 'gold' },
+  order: { text: '订单/工单', color: 'cyan' },
+  payment: { text: '支付配置', color: 'volcano' },
+  reconciliation: { text: '财务对账', color: 'gold' },
+  role: { text: '角色管理', color: 'purple' },
+  service: { text: '服务项目', color: 'lime' },
+  setting: { text: '系统设置', color: 'default' },
+  staff: { text: '员工管理', color: 'blue' },
+  user: { text: '用户管理', color: 'orange' },
 }
 
 const actionOptions = Object.keys(actionMeta).map((key) => ({
@@ -53,148 +74,163 @@ const actionOptions = Object.keys(actionMeta).map((key) => ({
   value: key,
 }))
 
-/** mock 操作日志（接口未实现，先本地造数） */
-const now = Math.floor(Date.now() / 1000)
-const mockLogs: OperationLogItem[] = [
-  { id: 1, admin_id: 1, admin_name: 'admin', action: 'login', resource: 'auth', resource_id: 0, ip_address: '127.0.0.1', request_method: 'POST', request_url: '/api/admin/auth/login', request_params: null, response_status: 200, duration_ms: 18, created_at: now - 3600 },
-  { id: 2, admin_id: 1, admin_name: 'admin', action: 'create', resource: 'institution', resource_id: 8, ip_address: '127.0.0.1', request_method: 'POST', request_url: '/api/admin/institutions', request_params: { name: '幸福护理院' }, response_status: 201, duration_ms: 32, created_at: now - 3200 },
-  { id: 3, admin_id: 2, admin_name: 'li.caiwu', action: 'review', resource: 'refund', resource_id: 12, ip_address: '10.0.1.23', request_method: 'POST', request_url: '/api/admin/refunds/12/approve', request_params: { approve: true }, response_status: 200, duration_ms: 41, created_at: now - 2800 },
-  { id: 4, admin_id: 3, admin_name: 'wang.kefu', action: 'update', resource: 'order', resource_id: 96, ip_address: '10.0.1.31', request_method: 'PUT', request_url: '/api/admin/orders/96', request_params: null, response_status: 200, duration_ms: 25, created_at: now - 2400 },
-  { id: 5, admin_id: 1, admin_name: 'admin', action: 'export', resource: 'order', resource_id: 0, ip_address: '127.0.0.1', request_method: 'GET', request_url: '/api/admin/orders/export', request_params: null, response_status: 200, duration_ms: 156, created_at: now - 2000 },
-  { id: 6, admin_id: 2, admin_name: 'li.caiwu', action: 'delete', resource: 'consumable', resource_id: 5, ip_address: '10.0.1.23', request_method: 'DELETE', request_url: '/api/admin/consumables/5', request_params: null, response_status: 400, duration_ms: 19, created_at: now - 1600 },
-  { id: 7, admin_id: 3, admin_name: 'wang.kefu', action: 'dispatch', resource: 'work-order', resource_id: 33, ip_address: '10.0.1.31', request_method: 'POST', request_url: '/api/admin/work-orders/33/dispatch', request_params: { staff_id: 12 }, response_status: 200, duration_ms: 37, created_at: now - 1200 },
-  { id: 8, admin_id: 1, admin_name: 'admin', action: 'create', resource: 'role', resource_id: 9, ip_address: '127.0.0.1', request_method: 'POST', request_url: '/api/admin/roles', request_params: { role_name: '财务专员' }, response_status: 201, duration_ms: 28, created_at: now - 800 },
-  { id: 9, admin_id: 2, admin_name: 'li.caiwu', action: 'import', resource: 'member', resource_id: 0, ip_address: '10.0.1.23', request_method: 'POST', request_url: '/api/admin/members/import', request_params: null, response_status: 200, duration_ms: 212, created_at: now - 600 },
-  { id: 10, admin_id: 3, admin_name: 'wang.kefu', action: 'logout', resource: 'auth', resource_id: 0, ip_address: '10.0.1.31', request_method: 'POST', request_url: '/api/admin/auth/logout', request_params: null, response_status: 500, duration_ms: 12, created_at: now - 300 },
-  { id: 11, admin_id: 1, admin_name: 'admin', action: 'update', resource: 'activity', resource_id: 4, ip_address: '127.0.0.1', request_method: 'PUT', request_url: '/api/admin/activities/4', request_params: { title: '社区讲座' }, response_status: 200, duration_ms: 22, created_at: now - 120 },
-  { id: 12, admin_id: 1, admin_name: 'admin', action: 'create', resource: 'member', resource_id: 101, ip_address: '127.0.0.1', request_method: 'POST', request_url: '/api/admin/members', request_params: { name: '张大爷' }, response_status: 201, duration_ms: 20, created_at: now - 60 },
-]
-
-const resourceOptions = Object.keys(resourceMeta).map(v => ({
-  label: resourceMeta[v].text,
-  value: v
+const moduleOptions = Object.keys(moduleMeta).map((key) => ({
+  label: moduleMeta[key].text,
+  value: key,
 }))
 
 interface LogFilters {
   keyword: string
   action: string
-  resource: string
+  module: string
   range: [Dayjs | null, Dayjs | null] | null
 }
 
-const emptyFilters: LogFilters = { keyword: '', action: 'all', resource: 'all', range: null }
+const emptyFilters: LogFilters = { keyword: '', action: 'all', module: 'all', range: null }
+
+const PAGE_SIZE = 10
 
 export default function SystemLog() {
+  const [rows, setRows] = useState<OperationLogItem[]>([])
+  const [total, setTotal] = useState(0)
+  const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
   const [action, setAction] = useState('all')
-  const [resource, setResource] = useState('all')
+  const [module, setModule] = useState('all')
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null)
   const [applied, setApplied] = useState<LogFilters>(emptyFilters)
   const [page, setPage] = useState(1)
-  const pageSize = 10
 
-  /** 筛选 + 分页 */
-  const { list, total } = useMemo(() => {
-    const filtered = mockLogs.filter((item) => {
-      const keywordHit =
-        !applied.keyword ||
-        item.admin_name.toLowerCase().includes(applied.keyword.toLowerCase()) ||
-        item.ip_address.includes(applied.keyword) ||
-        item.request_url.toLowerCase().includes(applied.keyword.toLowerCase())
-      const actionHit = applied.action === 'all' || item.action === applied.action
-      const resourceHit = applied.resource === 'all' || item.resource === applied.resource
-      const timeHit =
-        !applied.range ||
-        !applied.range[0] ||
-        !applied.range[1] ||
-        (item.created_at >= Math.floor(applied.range[0].startOf('day').valueOf() / 1000) &&
-          item.created_at <= Math.floor(applied.range[1].endOf('day').valueOf() / 1000))
-      return keywordHit && actionHit && resourceHit && timeHit
-    })
-    const start = (page - 1) * pageSize
-    return { list: filtered.slice(start, start + pageSize), total: filtered.length }
-  }, [applied, page])
+  /** 组装查询参数（筛选全部下推；时间范围按操作时间转 UTC 秒） */
+  const buildParams = useCallback(
+    (targetPage: number, filters: LogFilters) => ({
+      page: targetPage,
+      page_size: PAGE_SIZE,
+      keyword: filters.keyword || undefined,
+      action: filters.action === 'all' ? undefined : filters.action,
+      module: filters.module === 'all' ? undefined : filters.module,
+      start_time: filters.range?.[0] ? filters.range[0].startOf('day').unix() : undefined,
+      end_time: filters.range?.[1] ? filters.range[1].endOf('day').unix() : undefined,
+    }),
+    [],
+  )
+
+  /** 拉取操作日志 */
+  const fetchList = useCallback(
+    async (targetPage: number, filters: LogFilters) => {
+      setLoading(true)
+      try {
+        const res = await systemApi.getOperationLogs(buildParams(targetPage, filters))
+        setRows(res.list ?? [])
+        setTotal(res.total ?? 0)
+      } catch {
+        /* 错误提示由 request 拦截器统一处理 */
+        setRows([])
+        setTotal(0)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [buildParams],
+  )
+
+  useEffect(() => {
+    void fetchList(1, emptyFilters)
+  }, [fetchList])
 
   const applyFilters = () => {
-    setApplied({ keyword: keyword.trim(), action, resource, range })
+    const nextFilters: LogFilters = { keyword: keyword.trim(), action, module, range }
+    setApplied(nextFilters)
     setPage(1)
+    void fetchList(1, nextFilters)
   }
 
   const handleReset = () => {
     setKeyword('')
     setAction('all')
-    setResource('all')
+    setModule('all')
     setRange(null)
     setApplied(emptyFilters)
     setPage(1)
+    void fetchList(1, emptyFilters)
   }
 
-  const columns: ColumnsType<OperationLogItem> = useMemo(
-    () => [
-      {
-        title: '操作人',
-        key: 'admin_name',
-        dataIndex: 'admin_name',
+  const columns: ColumnsType<OperationLogItem> = [
+    {
+      title: '操作人',
+      dataIndex: 'operator',
+      key: 'operator',
+      width: 130,
+      render: (value: string) => value || '—',
+    },
+    {
+      title: '业务模块',
+      dataIndex: 'module',
+      key: 'module',
+      width: 150,
+      render: (value: string) => {
+        const meta = moduleMeta[value]
+        return (
+          <Tag variant="outlined" color={meta?.color ?? 'default'}>
+            {meta?.text ?? value ?? '—'}
+          </Tag>
+        )
       },
-      {
-        title: '业务对象',
-        key: 'resource',
-        dataIndex: 'resource',
-        width: 170,
-        render: (value) => {
-          const meta = resourceMeta[value]
-          return <Tag color={meta.color} variant='outlined' >{meta?.text}</Tag>
-        },
+    },
+    {
+      title: '动作',
+      dataIndex: 'action',
+      key: 'action',
+      width: 100,
+      render: (value: string) => {
+        const meta = actionMeta[value]
+        return <Tag color={meta?.color ?? 'default'}>{meta?.text ?? value ?? '—'}</Tag>
       },
-      {
-        title: '动作',
-        dataIndex: 'action',
-        key: 'action',
-        width: 90,
-        render: (value: string) => {
-          const meta = actionMeta[value]
-          return <Tag color={meta?.color ?? 'default'}>{meta?.text ?? value}</Tag>
-        },
+    },
+    {
+      title: '操作对象',
+      dataIndex: 'target',
+      key: 'target',
+      width: 160,
+      render: (value: string) => value || '—',
+    },
+    {
+      title: '请求参数',
+      dataIndex: 'params',
+      key: 'params',
+      width: 110,
+      render: (value: string) => {
+        const formatted = formatParams(value)
+        if (!formatted) return '—'
+        return (
+          <Popover
+            trigger="click"
+            placement="left"
+            title="请求参数"
+            content={<pre className="log-params">{formatted}</pre>}
+          >
+            <Button type="link" size="small">
+              查看
+            </Button>
+          </Popover>
+        )
       },
-      {
-        title: '请求',
-        key: 'request',
-        render: (_, record) => (
-          <span className="log-request">
-            <Tag>{record.request_method}</Tag>
-            <span className="log-request__url">{record.request_url}</span>
-          </span>
-        ),
-      },
-      {
-        title: 'IP 地址',
-        dataIndex: 'ip_address',
-        key: 'ip_address',
-        width: 130,
-      },
-      {
-        title: '状态',
-        dataIndex: 'response_status',
-        key: 'response_status',
-        width: 80,
-        render: (value: number) => <Tag color={statusColor(value)} variant='solid'>{value}</Tag>,
-      },
-      {
-        title: '耗时',
-        key: 'duration',
-        width: 90,
-        render: (_, record) => `${record.duration_ms}ms`,
-      },
-      {
-        title: '操作时间',
-        dataIndex: 'created_at',
-        key: 'created_at',
-        width: 170,
-        render: (value: number) => formatDateTime(value * 1000),
-      },
-    ],
-    [],
-  )
+    },
+    {
+      title: 'IP 地址',
+      dataIndex: 'ip',
+      key: 'ip',
+      width: 130,
+      render: (value: string) => value || '—',
+    },
+    {
+      title: '操作时间',
+      key: 'operated_at',
+      width: 170,
+      render: (_, record) =>
+        record.operated_at || formatDateTime((record.create_at ?? 0) * 1000),
+    },
+  ]
 
   return (
     <PageContainer title="操作日志" description="查看系统操作记录，追踪每个管理员的审计动作">
@@ -202,17 +238,17 @@ export default function SystemLog() {
         <Card variant="borderless" className="filter-bar log-page__filter">
           <Input
             allowClear
-            placeholder="按操作人 / IP / 请求地址搜索"
+            placeholder="按操作人 / IP / 操作对象 / 请求地址搜索"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             onPressEnter={applyFilters}
           />
           <Select
-            value={resource}
-            onChange={setResource}
+            value={module}
+            onChange={setModule}
             allowClear
             placeholder="业务模块"
-            options={[{ label: '全部模块', value: 'all' }, ...resourceOptions]}
+            options={[{ label: '全部模块', value: 'all' }, ...moduleOptions]}
           />
           <Select
             value={action}
@@ -221,7 +257,6 @@ export default function SystemLog() {
             placeholder="操作类型"
             options={[{ label: '全部类型', value: 'all' }, ...actionOptions]}
           />
-          
           <RangePicker value={range} onChange={(value) => setRange(value)} />
           <Space>
             <Button type="primary" icon={<SearchOutlined />} onClick={applyFilters}>
@@ -237,20 +272,25 @@ export default function SystemLog() {
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">操作记录</span>
+              <span className="list-card__header__tips">共 {total} 条操作记录</span>
             </div>
           </div>
           <Table<OperationLogItem>
             rowKey="id"
             size="small"
+            loading={loading}
             columns={columns}
-            dataSource={list}
+            dataSource={rows}
             pagination={{
               current: page,
-              pageSize,
+              pageSize: PAGE_SIZE,
               total,
               showSizeChanger: false,
               showTotal: (t) => `共 ${t} 条`,
-              onChange: (nextPage) => setPage(nextPage),
+              onChange: (nextPage) => {
+                setPage(nextPage)
+                void fetchList(nextPage, applied)
+              },
             }}
           />
         </Card>

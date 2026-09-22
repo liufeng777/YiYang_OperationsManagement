@@ -4,6 +4,13 @@
  * - §9.2 消息模板 system:message-template
  * - §9.3 短信记录 system:sms-log
  * - §9.4 系统公告（预留） system:announcement
+ * 说明：DTO 按后端**实测返回**对齐；未返回数据的接口（messages / sms-logs / announcements）字段沿用接口文档契约。
+ *
+ * 实测要点：
+ * - 消息模板列表实测字段为 id / name / code / content / channel(数字) / type(数字) / status / variables，
+ *   与文档中的 template_name / template_code 命名不同，此处按实测。
+ *
+ * 筛选约定：列表页筛选条件**全部下推后端**（前端不做本地过滤），相关入参已在此声明。
  */
 import { http } from '@/utils/request'
 import type { ApiPageParams, ApiPageResult, BatchResult, CommonStatus } from '@/types/api'
@@ -12,7 +19,7 @@ import type { ApiPageParams, ApiPageResult, BatchResult, CommonStatus } from '@/
 /* §9.1 站内消息（权限 system:message）                                  */
 /* ------------------------------------------------------------------ */
 
-/** 站内消息 DTO */
+/** 站内消息 DTO（后端当前列表为空，字段按接口文档契约） */
 export interface MessageDTO {
   id: number
   title: string
@@ -36,10 +43,17 @@ export interface MessageSendBody {
   receiver_ids?: number[]
 }
 
+/** 消息列表筛选入参 */
+export interface MessageListParams extends ApiPageParams {
+  receiver_id?: number
+  message_type?: number
+  is_read?: 0 | 1
+  /** 标题 / 接收者关键字 */
+  keyword?: string
+}
+
 /** 消息列表 GET /api/admin/messages（接收者/类型/是否已读/时间） */
-export function getMessages(
-  params?: ApiPageParams & { receiver_id?: number; message_type?: number; is_read?: 0 | 1 },
-) {
+export function getMessages(params?: MessageListParams) {
   return http.get<ApiPageResult<MessageDTO>>('/admin/messages', { ...params })
 }
 
@@ -67,32 +81,33 @@ export function batchPushMessages(messageIds: number[]) {
 /* §9.2 消息模板管理（权限 system:message-template）                     */
 /* ------------------------------------------------------------------ */
 
-/** 消息模板 DTO */
+/** 消息模板 DTO（字段按后端实测） */
 export interface MessageTemplateDTO {
   id: number
-  template_name: string
-  template_code: string
-  /** 模板类型 */
-  template_type: number
-  /** 业务类型 */
-  business_type?: string
-  /** 触发节点 */
-  trigger_node?: string
-  /** 接收对象 */
-  receiver_targets?: string[]
-  /** 微信服务消息模板ID */
-  wx_template_id?: string
+  /** 模板名称 */
+  name: string
+  /** 模板编码，如 ORDER_PAID / WORK_START */
+  code: string
   content: string
-  /** 启用渠道：站内 / 微信 / 短信 */
-  channels: string[]
+  /** 发送渠道（后端返回数字：1-站内 2-微信 3-短信） */
+  channel: number
+  /** 模板类型（后端返回数字：1-订单支付成功 2-服务开始提醒） */
+  type: number
   status: CommonStatus
-  updated_at: number
+  /** 模板变量说明（后端当前为空字符串） */
+  variables?: string
+}
+
+/** 模板列表筛选入参 */
+export interface MessageTemplateParams extends ApiPageParams {
+  template_type?: number
+  status?: CommonStatus
+  /** 模板名称 / 编码关键字 */
+  keyword?: string
 }
 
 /** 模板列表 GET /api/admin/message-templates（按类型/状态） */
-export function getMessageTemplates(
-  params?: ApiPageParams & { template_type?: number; status?: CommonStatus },
-) {
+export function getMessageTemplates(params?: MessageTemplateParams) {
   return http.get<ApiPageResult<MessageTemplateDTO>>('/admin/message-templates', { ...params })
 }
 
@@ -102,15 +117,12 @@ export function getMessageTemplate(id: number) {
 }
 
 /** 新增模板 POST /api/admin/message-templates */
-export function createMessageTemplate(data: Omit<MessageTemplateDTO, 'id' | 'updated_at'>) {
+export function createMessageTemplate(data: Omit<MessageTemplateDTO, 'id'>) {
   return http.post<null>('/admin/message-templates', data)
 }
 
 /** 编辑模板 PUT /api/admin/message-templates/:id */
-export function updateMessageTemplate(
-  id: number,
-  data: Partial<Omit<MessageTemplateDTO, 'id' | 'updated_at'>>,
-) {
+export function updateMessageTemplate(id: number, data: Partial<Omit<MessageTemplateDTO, 'id'>>) {
   return http.put<null>(`/admin/message-templates/${id}`, data)
 }
 
@@ -128,19 +140,28 @@ export function deleteMessageTemplate(id: number) {
 /* §9.3 短信记录（权限 system:sms-log，仅查看）                          */
 /* ------------------------------------------------------------------ */
 
-/** 短信发送记录 DTO */
+/** 短信发送记录 DTO（后端当前列表为空，字段按接口文档契约） */
 export interface SmsLogDTO {
   id: number
   phone: string
   content: string
-  /** 发送状态 */
+  /** 发送状态：1-成功 2-失败 9-未送达 */
   status: number
   fail_reason?: string
   created_at: number
 }
 
+/** 短信记录筛选入参 */
+export interface SmsLogParams extends ApiPageParams {
+  /** 手机号关键字 */
+  phone?: string
+  status?: number
+  start_time?: number
+  end_time?: number
+}
+
 /** 短信发送记录 GET /api/admin/sms-logs（按手机号/状态/时间） */
-export function getSmsLogs(params?: ApiPageParams & { phone?: string; status?: number }) {
+export function getSmsLogs(params?: SmsLogParams) {
   return http.get<ApiPageResult<SmsLogDTO>>('/admin/sms-logs', { ...params })
 }
 
@@ -148,7 +169,7 @@ export function getSmsLogs(params?: ApiPageParams & { phone?: string; status?: n
 /* §9.4 系统公告（预留，权限 system:announcement）                       */
 /* ------------------------------------------------------------------ */
 
-/** 系统公告 DTO */
+/** 系统公告 DTO（后端当前列表为空，字段按接口文档契约） */
 export interface AnnouncementDTO {
   id: number
   title: string
@@ -167,10 +188,16 @@ export interface AnnouncementDTO {
 /** 公告新增 / 编辑入参 */
 export type AnnouncementSaveBody = Omit<AnnouncementDTO, 'id' | 'publish_status' | 'published_at'>
 
+/** 公告列表筛选入参 */
+export interface AnnouncementParams extends ApiPageParams {
+  announcement_type?: number
+  publish_status?: number
+  /** 公告标题关键字 */
+  keyword?: string
+}
+
 /** 公告列表 GET /api/admin/announcements（按类型/发布状态） */
-export function getAnnouncements(
-  params?: ApiPageParams & { announcement_type?: number; publish_status?: number },
-) {
+export function getAnnouncements(params?: AnnouncementParams) {
   return http.get<ApiPageResult<AnnouncementDTO>>('/admin/announcements', { ...params })
 }
 

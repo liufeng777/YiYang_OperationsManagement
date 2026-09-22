@@ -1,21 +1,23 @@
 /**
  * 角色编辑 Drawer（新增 / 编辑共用）
- * - 受控组件：open / onClose 由父组件 RoleManage 管理
- * - 新增：role_name 必填、role_code 必填且唯一、description 选填
- * - 编辑：role_code 只读不可改；提交通过 onSaved 回调上抛
+ * - 数据来源：systemApi.createRole / updateRole（字段按后端实测：role_name / role_code / description 必填项）
+ * - 受控组件：open / onClose 由父组件 RoleManage 管理，保存成功后通过 onSaved 回调通知父组件刷新
+ * - 编辑：role_code 只读不可改（后端以 code 作为鉴权标识）
  */
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { App, Button, Drawer, Form, Input } from 'antd'
-import type { RoleRow } from './role'
+import { systemApi } from '@/api'
+import type { RoleItem } from '@/api/modules/system'
 
 interface RoleEditorProps {
   open: boolean
   /** 编辑态：传入待编辑角色；为空为新增 */
-  initial?: RoleRow | null
+  initial?: RoleItem | null
   /** 用于 role_code 唯一性校验的其它角色编码（剔除自身） */
   otherCodes: string[]
   onClose: () => void
-  onSaved: (role: RoleRow) => void
+  /** 保存成功后回调（父组件据此刷新列表） */
+  onSaved: () => void
 }
 
 interface RoleFormValues {
@@ -24,17 +26,24 @@ interface RoleFormValues {
   description?: string
 }
 
-export default function RoleEditor({ open, initial = null, otherCodes, onClose, onSaved }: RoleEditorProps) {
+export default function RoleEditor({
+  open,
+  initial = null,
+  otherCodes,
+  onClose,
+  onSaved,
+}: RoleEditorProps) {
   const { message } = App.useApp()
   const isEdit = !!initial
+  const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm<RoleFormValues>()
 
   useEffect(() => {
     if (!open) return
     if (isEdit && initial) {
       form.setFieldsValue({
-        role_name: initial.role_name,
-        role_code: initial.role_code,
+        role_name: initial.name,
+        role_code: initial.code,
         description: initial.description || undefined,
       })
     } else {
@@ -43,32 +52,36 @@ export default function RoleEditor({ open, initial = null, otherCodes, onClose, 
   }, [open, isEdit, initial, form])
 
   const handleSubmit = async () => {
+    let values: RoleFormValues
     try {
-      const values = await form.validateFields()
-      const role: RoleRow = isEdit && initial
-        ? {
-            ...initial,
-            role_name: values.role_name.trim(),
-            description: values.description?.trim() || '',
-          }
-        : {
-            id: Date.now(),
-            role_name: values.role_name.trim(),
-            role_code: values.role_code.trim(),
-            built_in: false,
-            description: values.description?.trim() || '',
-            status: 1,
-            userCount: 0,
-            permissions: [],
-          }
-      message.success(
-        isEdit ? `角色「${role.role_name}」已更新（mock）` : `角色「${role.role_name}」已创建（mock）`,
-      )
-      onSaved(role)
+      values = await form.validateFields()
+    } catch {
+      return // 校验失败由 Form.Item 就地提示
+    }
+    setSubmitting(true)
+    try {
+      const roleName = values.role_name.trim()
+      if (isEdit && initial) {
+        await systemApi.updateRole(initial.id, {
+          role_name: roleName,
+          description: values.description?.trim() || undefined,
+        })
+        message.success(`角色「${roleName}」已更新`)
+      } else {
+        await systemApi.createRole({
+          role_name: roleName,
+          role_code: values.role_code.trim(),
+          description: values.description?.trim() || undefined,
+        })
+        message.success(`角色「${roleName}」已创建`)
+      }
+      onSaved()
       form.resetFields()
       onClose()
     } catch {
-      // 校验失败由 Form.Item 就地提示
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -81,17 +94,13 @@ export default function RoleEditor({ open, initial = null, otherCodes, onClose, 
       footer={
         <div className="role-editor__footer">
           <Button onClick={onClose}>取消</Button>
-          <Button type="primary" onClick={handleSubmit}>
+          <Button type="primary" loading={submitting} onClick={handleSubmit}>
             {isEdit ? '保存' : '创建角色'}
           </Button>
         </div>
       }
     >
-      <Form
-        form={form}
-        labelCol={{ span: 5 }}
-        wrapperCol={{ span: 19 }}
-      >
+      <Form form={form} labelCol={{ span: 5 }} wrapperCol={{ span: 19 }}>
         <Form.Item
           name="role_name"
           label="角色名称"

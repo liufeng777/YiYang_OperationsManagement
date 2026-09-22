@@ -4,85 +4,26 @@
  * - §2.2 角色管理 system:role
  * - §2.3 权限管理（按模块扁平化） system:permission
  * - §2.4 操作日志 system:operation-log
- * 说明：文件上半部分为页面展示用类型（当前页面使用本地 mock 数据），
- *       下半部分 DTO 与接口函数严格对齐 API 文档契约（snake_case / UTC 秒）。
+ * 说明：DTO 与接口函数按后端**实测返回**对齐（已在测试环境逐接口验证）。
+ *       无对应后端接口的页面（帮助/FAQ、协议）仍保留本地展示类型。
+ *
+ * 实测要点：
+ * - 管理员：字段为 real_name / mobile / phone / role_ids / role_names，created_at、last_login_at 为
+ *   'YYYY-MM-DD HH:mm:ss' 字符串；PUT 复用创建校验，username、password 均为必填。
+ * - 角色：列表项为 id / name / code / description / status / built_in，不含已分配权限（后端无该接口）。
+ * - 权限：GET /admin/permissions 返回 { list, modules }，支持 module 过滤。
+ * - 操作日志：字段为 operator / module / action / target / params / path / ip / operated_at(字符串) /
+ *   create_at(秒) / error_message。
+ *
+ * 筛选约定：列表页筛选条件**全部下推后端**（前端不做本地过滤），相关入参已在此声明，
+ *           后端补齐实现后即生效。
  */
 import { http } from '@/utils/request'
-import type { ApiPageParams, ApiPageResult, CommonStatus } from '@/types/api'
+import type { ApiPageParams, ApiPageResult } from '@/types/api'
 
 /* ------------------------------------------------------------------ */
-/* 页面展示类型（mock，接后端后逐步切换到下方 DTO）                       */
+/* 无后端接口的页面展示类型（帮助 / 协议，仍为本地数据）                    */
 /* ------------------------------------------------------------------ */
-
-/** 平台用户 */
-export interface AccountItem {
-  id: number
-  /** 登录账号，如 chen.yunying */
-  username: string
-  password: string
-  nickname: string
-  /** 脱敏手机号，如 138****1026 */
-  phone: string
-  email: string | null
-  status: number // 1 启用，2 停用
-  // 角色
-  roles: {
-    id: number,
-    role_name: string
-    role_code: string
-  }[]
-  created_at: number // 时间戳
-  last_login_at: number
-  last_login_ip: string
-}
-
-/** 角色 */
-export interface RoleItem {
-  id: string
-  name: string
-  userCount: number
-  description: string
-  /** 系统内置 / 自定义角色 */
-  builtIn: boolean
-  /** 已启用权限 key 列表 */
-  permissions: string[]
-}
-
-/** 操作日志 */
-export interface LogItem {
-  id: string
-  operator: string
-  action: string
-  ip: string
-  createdAt: string
-}
-
-/** 业务消息模板 */
-export interface MessageTemplateItem {
-  id: string
-  name: string
-  /** 固定触发事件，如 用户提交服务订单后 */
-  triggerEvent: string
-  /** 启用渠道：站内 / 微信 / 短信 */
-  channels: string[]
-  enabled: boolean
-  updatedAt: string
-  updater: string
-}
-
-/** 系统公告 */
-export interface AnnouncementItem {
-  id: string
-  title: string
-  summary: string
-  type: string
-  /** 影响范围，如 全部患者端用户 */
-  scope: string
-  /** 患者端展示时段，如 2026-08-12 00:00 至 23:59 */
-  displayPeriod: string
-  status: 'showing' | 'scheduled' | 'draft' | 'finished'
-  updater: string
-}
 
 /** 常见问题 */
 export interface FaqItem {
@@ -111,36 +52,59 @@ export interface AgreementItem {
 /* §2.1 管理员账号管理（权限 system:admin）                              */
 /* ------------------------------------------------------------------ */
 
-/** 管理员列表项 */
+/** 管理员列表项 / 详情（GET /admin/admins） */
 export interface AdminItem {
   id: number
   username: string
+  /** 昵称（后端字段名 real_name） */
   nickname: string
-  /** 脱敏手机号 */
-  phone: string | null
-  email: string | null
-  status: CommonStatus
-  last_login_at: number | null
-  last_login_ip: string | null
-  roles: Array<{ id: number; role_name: string; role_code: string }>
-  created_at: number
+  status: number
+  /** 手机号：后端同时返回 mobile 与 phone，取值时优先 mobile */
+  mobile?: string | null
+  phone?: string | null
+  email?: string | null
+  avatar_url?: string
+  /** 最近登录时间（字符串 'YYYY-MM-DD HH:mm:ss'） */
+  last_login_at?: string | null
+  last_login_ip: string
+  /** 已分配角色（后端当前恒为空数组） */
+  role_ids?: number[]
+  role_names?: string[]
+  /** 创建时间（字符串 'YYYY-MM-DD HH:mm:ss'） */
+  created_at?: string | null
 }
 
-/** 新增 / 编辑管理员入参 */
+/**
+ * 新增 / 编辑管理员入参
+ * 注意：`password` 仅**新增**时必填；编辑不提交密码（改密走 POST /:id/reset-password）
+ */
 export interface AdminSaveBody {
   username: string
-  /** 仅新增时必填 */
+  /** 登录密码：仅新增时必填；编辑不传 */
   password?: string
-  nickname: string
+  nickname?: string
   phone?: string
   email?: string
   avatar_url?: string
-  status?: CommonStatus
+  status?: number
   role_ids?: number[]
 }
 
+/** 管理员列表筛选入参 */
+export interface AdminListParams extends ApiPageParams {
+  /** 姓名 / 手机号 / 登录账号模糊搜索 */
+  keyword?: string
+  /** 所属角色 ID */
+  role_id?: number
+  /** 账号状态：1 启用 / 9 停用 */
+  status?: number
+  /** 最近登录时间范围（UTC 秒），用于「今日登录 / 7 日内登录」筛选 */
+  login_start_time?: number
+  login_end_time?: number
+}
+
 /** 管理员列表 GET /api/admin/admins */
-export function getAdminList(params?: ApiPageParams) {
+export function getAdminList(params?: AdminListParams) {
   return http.get<ApiPageResult<AdminItem>>('/admin/admins', { ...params })
 }
 
@@ -154,18 +118,18 @@ export function createAdmin(data: AdminSaveBody) {
   return http.post<null>('/admin/admins', data)
 }
 
-/** 编辑管理员 PUT /api/admin/admins/:id */
-export function updateAdmin(id: number, data: Partial<AdminSaveBody>) {
+/** 编辑管理员 PUT /api/admin/admins/:id（携带 username 等资料；不提交密码） */
+export function updateAdmin(id: number, data: AdminSaveBody) {
   return http.put<null>(`/admin/admins/${id}`, data)
 }
 
-/** 重置密码 POST /api/admin/admins/:id/reset-password（重置为初始密码） */
-export function resetAdminPassword(id: number) {
-  return http.post<null>(`/admin/admins/${id}/reset-password`)
+/** 重置密码 POST /api/admin/admins/:id/reset-password（重置为初始密码；后端要求 JSON body） */
+export function resetAdminPassword(id: number, data: {new_password: string }) {
+  return http.post<null>(`/admin/admins/${id}/reset-password`, data)
 }
 
 /** 启用/禁用 POST /api/admin/admins/:id/status */
-export function updateAdminStatus(id: number, status: CommonStatus) {
+export function updateAdminStatus(id: number, status: number) {
   return http.post<null>(`/admin/admins/${id}/status`, { status })
 }
 
@@ -189,40 +153,48 @@ export interface PermissionItem {
   /** 功能模块，如 order / member / staff / institution */
   module: string
   /** view 只读 / edit 可读增改 / manage 全部 */
-  action: 'view' | 'edit' | 'manage'
+  action: string
   /** 权限码，如 order:view */
   code: string
   name: string
+  description?: string
+  parent_id?: number
+  status?: number
 }
 
-/** 角色详情（含已分配权限） */
-export interface RoleDetail {
+/** 角色列表项 / 详情（GET /admin/roles） */
+export interface RoleItem {
   id: number
-  role_name: string
-  role_code: string
+  name: string
+  code: string
   description: string
-  status: CommonStatus
-  permissions: PermissionItem[]
+  status: number
+  /** 1-系统内置（不可删除） 0-自定义 */
+  built_in: number
 }
+
+/** 兼容旧命名 */
+export type RoleDetail = RoleItem
 
 /** 角色新增 / 编辑入参 */
 export interface RoleSaveBody {
   role_name: string
   /** 唯一，新增必填 */
-  role_code?: string
+  role_code: string
   description?: string
-  status?: CommonStatus
+  status?: number
+  /** 已选权限 id（后端支持在新增/编辑时一并下发） */
   permission_ids?: number[]
 }
 
 /** 角色列表 GET /api/admin/roles（?all=1 返回全部） */
-export function getRoles(params?: ApiPageParams & { all?: 0 | 1 }) {
-  return http.get<ApiPageResult<RoleDetail>>('/admin/roles', { ...params })
+export function getRoles(params?: ApiPageParams & { all?: 0 | 1; keyword?: string }) {
+  return http.get<ApiPageResult<RoleItem>>('/admin/roles', { ...params })
 }
 
 /** 角色详情 GET /api/admin/roles/:id */
 export function getRoleDetail(id: number) {
-  return http.get<RoleDetail>(`/admin/roles/${id}`)
+  return http.get<RoleItem>(`/admin/roles/${id}`)
 }
 
 /** 新增角色 POST /api/admin/roles */
@@ -241,7 +213,7 @@ export function assignRolePermissions(id: number, permissionIds: number[]) {
 }
 
 /** 启用/禁用角色 POST /api/admin/roles/:id/status */
-export function updateRoleStatus(id: number, status: CommonStatus) {
+export function updateRoleStatus(id: number, status: number) {
   return http.post<null>(`/admin/roles/${id}/status`, { status })
 }
 
@@ -254,54 +226,65 @@ export function deleteRole(id: number) {
 /* §2.3 权限管理（按模块扁平化，权限 system:permission）                   */
 /* ------------------------------------------------------------------ */
 
-/** 权限列表（按模块分组）出参 */
+/** 权限列表出参：list 为扁平权限项，modules 为出现过的模块顺序 */
 export interface PermissionGroups {
   modules: string[]
   list: PermissionItem[]
 }
 
-/** 权限列表 GET /api/admin/permissions（扁平列表，按 module 分组） */
-export function getPermissions() {
-  return http.get<PermissionGroups>('/admin/permissions')
+/** 权限列表 GET /api/admin/permissions（可按 module 过滤） */
+export function getPermissions(params?: { module?: string }) {
+  return http.get<PermissionGroups>('/admin/permissions', { ...params })
 }
 
 /** 权限模块列表 GET /api/admin/permissions/modules */
 export function getPermissionModules() {
-  return http.get<string[]>('/admin/permissions/modules')
+  return http.get<{ list: string[] }>('/admin/permissions/modules')
 }
 
 /* ------------------------------------------------------------------ */
 /* §2.4 操作日志（权限 system:operation-log）                            */
 /* ------------------------------------------------------------------ */
 
-/** 操作日志列表项 */
+/** 操作日志列表项（字段按后端实测） */
 export interface OperationLogItem {
   id: number
   admin_id: number
-  admin_name: string
+  /** 操作人账号 */
+  operator: string
+  /** 业务模块，如 order / reconciliation / service */
+  module: string
+  /** 操作动作，如 create / update / delete / run */
   action: string
-  resource: string
-  resource_id: number
-  ip_address: string
-  request_method: string
-  request_url: string
-  request_params: Record<string, unknown> | null
-  response_status: number
-  duration_ms: number
-  created_at: number
+  /** 操作对象 */
+  target: string
+  remark: string
+  /** 请求参数（JSON 字符串） */
+  params: string
+  path: string
+  ip: string
+  /** 操作时间（字符串 'YYYY-MM-DD HH:mm:ss'） */
+  operated_at: string
+  /** 创建时间（UTC 秒） */
+  create_at: number
+  error_message: string
+}
+
+/** 操作日志筛选入参 */
+export interface OperationLogParams extends ApiPageParams {
+  admin_id?: number
+  /** 业务模块 */
+  module?: string
+  /** 操作动作 */
+  action?: string
+  /** 操作人 / IP / 操作对象 / 请求路径模糊搜索 */
+  keyword?: string
+  start_time?: number
+  end_time?: number
 }
 
 /** 操作日志列表 GET /api/admin/operation-logs */
-export function getOperationLogs(
-  params?: ApiPageParams & {
-    admin_id?: number
-    action?: string
-    resource?: string
-    resource_id?: number
-    start_time?: number
-    end_time?: number
-  },
-) {
+export function getOperationLogs(params?: OperationLogParams) {
   return http.get<ApiPageResult<OperationLogItem>>('/admin/operation-logs', { ...params })
 }
 

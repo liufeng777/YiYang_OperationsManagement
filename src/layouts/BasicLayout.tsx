@@ -1,17 +1,17 @@
 /**
  * 基础布局：侧边栏 + 顶部导航 + 内容区
+ * 说明：侧边栏底部「当前登录用户信息」区块当前处于注释停用状态；如需恢复展示，
+ *       请自行重新引入 antd 的 Avatar 与 @ant-design/icons 的 UserOutlined。
  */
 import { useEffect } from 'react'
-import { Layout, Avatar, Tooltip } from 'antd'
-import { GitlabFilled, UserOutlined } from '@ant-design/icons'
+import { Layout, Tooltip } from 'antd'
+import { GitlabFilled } from '@ant-design/icons'
 import { Outlet, useLocation } from 'react-router-dom'
 import SiderMenu from './SiderMenu'
 import HeaderBar from './HeaderBar'
 import { useAppStore } from '@/store/modules/app'
 import { useNavigationStore } from '@/store/modules/navigation'
-import { useUserStore } from '@/store/modules/user'
 import { routes } from '@/router/routes';
-import { roleOptions } from '@/pages/system/Account/account'
 import './layout.less'
 
 const { Sider, Content } = Layout
@@ -22,7 +22,6 @@ const sectionPaths = routes.map((route) => route.path)
 export default function BasicLayout() {
   const collapsed = useAppStore((state) => state.collapsed)
   const remember = useNavigationStore((state) => state.remember)
-  const userInfo = useUserStore((state) => state.userInfo)
   const location = useLocation()
 
   // 记录各一级导航下最近访问的页面（含查询参数），供侧边栏点击时恢复
@@ -34,15 +33,6 @@ export default function BasicLayout() {
       remember(section, location.pathname + location.search)
     }
   }, [location, remember])
-
-  const getUserRoles = () => {
-    if (!userInfo?.roles?.length) return '';
-    const roleArr = userInfo.roles.map(v => {
-      const item = roleOptions.find(i => i.value === v);
-      return item?.label
-    })
-    return roleArr.join('、')
-  }
 
   return (
     <Layout className="basic-layout">
@@ -72,12 +62,13 @@ export default function BasicLayout() {
           )}
         </div>
         <SiderMenu />
-        {/* <div className='basic-layout__user'>
+        {/* 侧边栏底部用户信息（停用中，恢复时需引入 Avatar 与 UserOutlined）
+        <div className='basic-layout__user'>
           {collapsed ? (
             <Tooltip
               placement="right"
               title={`${userInfo?.username || ''}${
-                userInfo?.roles?.length ? `（${getUserRoles()}）` : ''
+                userInfo?.roles?.length ? `（${(userInfo?.roles ?? []).join('、')}）` : ''
               }`}
             >
               <Avatar size={28} icon={<UserOutlined />} style={{ background: '#27866B' }} />
@@ -87,7 +78,7 @@ export default function BasicLayout() {
               <Avatar size={28} icon={<UserOutlined />} style={{ background: '#27866B' }} />
               <span className='user-info'>
                 <span className='user-name'>{userInfo?.username}</span>
-                <span className='user-roles'>{getUserRoles()}</span>
+                <span className='user-roles'>{(userInfo?.roles ?? []).join('、')}</span>
               </span>
             </>
           )}
