@@ -107,9 +107,10 @@
   }
 
   &__content {
-    /* 固定视口高度，让内部 PageContainer 的 height:100% 可解析、溢出滚动 */
+    /* 固定视口高度，让内部 PageContainer 的 height:100% 可解析；
+       不再整体滚动——默认模式由 PageContainer 自滚，fixed 模式由数据卡片内滚 */
     height: calc(100vh - @header-height);
-    overflow: auto;
+    overflow: hidden;
   }
 }
 

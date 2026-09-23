@@ -4,7 +4,8 @@
  * 当前为 mock 数据，后端就绪后替换为 systemApi.getAgreementList
  */
 import { useMemo, useState } from 'react'
-import { App, Button, Card, Input, Modal, Select, Table } from 'antd'
+import { App, Button, Card, Input, Modal, Select } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -168,6 +169,7 @@ export default function AgreementList() {
 
   return (
     <PageContainer
+      fixed
       title="协议与授权内容"
       description="维护患者端协议文本与版本，已生效版本保留历史记录"
       extra={
@@ -233,7 +235,7 @@ export default function AgreementList() {
           <Button type="primary">查询</Button>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">协议版本列表</span>
@@ -243,7 +245,7 @@ export default function AgreementList() {
               查看全部历史版本
             </Button>
           </div>
-          <Table<AgreementItem>
+          <FillTable<AgreementItem>
             rowKey="id"
             size="small"
             columns={columns}

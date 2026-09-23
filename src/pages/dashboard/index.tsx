@@ -7,7 +7,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Card, Col, Row, Table } from 'antd'
+import { Button, Card, Col, Row } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { ArrowUpOutlined, BarChartOutlined, RightOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
@@ -190,6 +191,7 @@ export default function Dashboard() {
       {
         title: '操作',
         key: 'action',
+        width: 90,
         render: (_, record) => (
           <Button
             type="link"
@@ -209,7 +211,7 @@ export default function Dashboard() {
   const maxTrend = Math.max(...daily.map((d) => d.value), 1)
 
   return (
-    <PageContainer title="运营首页" description="欢迎回来，以下是今日平台经营概览">
+    <PageContainer fixed title="运营首页" description="欢迎回来，以下是今日平台经营概览">
       {/* 经营指标卡 */}
       <Row gutter={[16, 16]}>
         {metricCards.map((card) => (
@@ -305,7 +307,7 @@ export default function Dashboard() {
       {/* 近期订单 */}
           <Card
             variant="borderless"
-            className="list-card"
+            className="list-card list-card--fill"
           >
             <div className="list-card__header">
               <span className='list-card__header__title'>近期订单</span>
@@ -317,7 +319,7 @@ export default function Dashboard() {
                 进入订单中心 <RightOutlined />
               </Button>
             </div>
-            <Table
+            <FillTable
               rowKey="orderNo"
               columns={columns}
               dataSource={recentOrders}

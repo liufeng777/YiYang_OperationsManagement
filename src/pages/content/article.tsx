@@ -5,7 +5,8 @@
  */
 import { useMemo, useState } from 'react'
 import type { Key } from 'react'
-import { App, Button, Card, Input, Select, Table } from 'antd'
+import { App, Button, Card, Input, Select } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -232,6 +233,7 @@ export default function ArticleList() {
 
   return (
     <PageContainer
+      fixed
       title="科普内容管理"
       description="维护患者端健康科普文章，支持分类、发布及首页推荐"
       extra={
@@ -304,7 +306,7 @@ export default function ArticleList() {
           </div>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">科普内容列表</span>
@@ -327,7 +329,7 @@ export default function ArticleList() {
               </Button>
             </div>
           </div>
-          <Table<ArticleItem>
+          <FillTable<ArticleItem>
             rowKey="id"
             size="small"
             columns={columns}

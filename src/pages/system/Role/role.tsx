@@ -188,6 +188,7 @@ export default function RoleManage() {
 
   return (
     <PageContainer
+      fixed
       title="角色管理"
       description="先建立角色并配置菜单与操作权限，再到用户管理中分配给用户"
       extra={

@@ -4,7 +4,8 @@
  * 当前为 mock 数据，后端就绪后替换为 systemApi.getAnnouncementList
  */
 import { useMemo, useState } from 'react'
-import { App, Button, Card, Input, Select, Table } from 'antd'
+import { App, Button, Card, Input, Select } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -191,6 +192,7 @@ export default function AnnouncementList() {
 
   return (
     <PageContainer
+      fixed
       title="系统公告"
       description="发布服务暂停、系统维护和节假日服务调整等运营通知"
       extra={
@@ -268,7 +270,7 @@ export default function AnnouncementList() {
           <Button type="primary">查询</Button>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">系统公告列表</span>
@@ -276,7 +278,7 @@ export default function AnnouncementList() {
             </div>
             <span className="announcement-table__note">仅展示有效时间内公告</span>
           </div>
-          <Table<AnnouncementItem>
+          <FillTable<AnnouncementItem>
             rowKey="id"
             size="small"
             columns={columns}

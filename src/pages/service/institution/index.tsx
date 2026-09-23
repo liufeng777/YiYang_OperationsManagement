@@ -8,7 +8,8 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Key } from 'react'
-import { App, Button, Card, Input, Select, Spin, Table, Tag, Tooltip } from 'antd'
+import { App, Button, Card, Input, Select, Spin, Tag, Tooltip } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 // 注：ArrowRightOutlined 仅供已注释的「进入机构详情」按钮使用，恢复该按钮时需一并加回导入
 import { BankOutlined, SearchOutlined } from '@ant-design/icons'
@@ -377,6 +378,7 @@ export default function ServiceInstitutionPage() {
 
   return (
     <PageContainer
+      fixed
       title="机构服务上下架"
       description="以机构为主体管理已接入的服务项目；选择左侧机构后查看其服务，并进行上架 / 下架运营"
     >
@@ -460,7 +462,7 @@ export default function ServiceInstitutionPage() {
             </div>
           </Card>
 
-          <Card variant="borderless" className="list-card inst-service__detail">
+          <Card variant="borderless" className="list-card list-card--fill inst-service__detail">
             <div className="list-card__header">
               <div>
                 <span className="list-card__header__title">{current?.name ?? '—'}</span>
@@ -488,7 +490,7 @@ export default function ServiceInstitutionPage() {
                 </Tooltip>
               </div>
             </div>
-            <Table<InstitutionServiceRow>
+            <FillTable<InstitutionServiceRow>
               size="small"
               rowKey="id"
               loading={serviceLoading}

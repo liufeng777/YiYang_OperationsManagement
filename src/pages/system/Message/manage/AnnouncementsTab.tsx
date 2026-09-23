@@ -5,7 +5,8 @@
  * 说明：后端当前列表为空，字段按接口文档契约；关键字 / 类型 / 发布状态全部下推后端（前端不做本地过滤）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, DatePicker, Drawer, Form, Input, Select, Space, Table, Tag, Upload } from 'antd'
+import { App, Button, Card, DatePicker, Drawer, Form, Input, Select, Space, Tag, Upload } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons'
 import dayjs, { type Dayjs } from 'dayjs'
@@ -398,14 +399,14 @@ export default function AnnouncementsTab() {
         </Button>
       </Card>
 
-      <Card variant="borderless" className="list-card">
+      <Card variant="borderless" className="list-card list-card--fill">
         <div className="list-card__header">
           <div>
             <span className="list-card__header__title">系统公告</span>
             <span className="list-card__header__tips">共 {total} 条</span>
           </div>
         </div>
-        <Table<AnnouncementDTO>
+        <FillTable<AnnouncementDTO>
           rowKey="id"
           size="small"
           loading={loading}

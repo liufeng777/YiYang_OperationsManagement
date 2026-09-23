@@ -5,7 +5,8 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Key } from 'react'
-import { App, Button, Card, Col, Input, Row, Select, Table, Tag, Space, Tooltip, Modal } from 'antd'
+import { App, Button, Card, Col, Input, Row, Select, Tag, Space, Tooltip, Modal } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -240,7 +241,7 @@ export default function InstitutionList() {
       {
         title: '操作',
         key: 'action',
-        width: 180,
+        width: 200,
         render: (_, record) => (
           <Space>
             <Button type="link" size="small" onClick={() => navigate(`/institution/detail/${record.id}`)}>
@@ -320,6 +321,7 @@ export default function InstitutionList() {
 
   return (
     <PageContainer
+      fixed
       title="机构管理"
       description="护理院与健康驿站作为自营机构参与平台经营，机构信息由平台直接维护"
       extra={
@@ -380,7 +382,7 @@ export default function InstitutionList() {
           <Button type="primary" onClick={handleQuery}>查询</Button>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <span className='list-card__header__title'>机构列表</span>
             <Tooltip title={batchTooltip}>
@@ -392,7 +394,7 @@ export default function InstitutionList() {
               </span>
             </Tooltip>
           </div>
-          <Table<InstitutionItem>
+          <FillTable<InstitutionItem>
             rowKey="id"
             size='small'
             loading={loading}

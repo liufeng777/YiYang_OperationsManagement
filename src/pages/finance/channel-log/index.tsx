@@ -5,7 +5,8 @@
  * 说明：渠道枚举契约未给出，筛选仅提供状态与时间；关键字由当前页本地兜底过滤
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, DatePicker, Input, Select, Table } from 'antd'
+import { Button, Card, DatePicker, Input, Select } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import type { Dayjs } from 'dayjs'
 import PageContainer from '@/components/PageContainer'
@@ -185,6 +186,7 @@ export default function ChannelLogList() {
 
   return (
     <PageContainer
+      fixed
       title="渠道流水"
       description="查看支付渠道侧的交易流水，用于与平台账单核对（只读）"
     >
@@ -218,13 +220,13 @@ export default function ChannelLogList() {
           </Button>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">渠道流水</span>
             </div>
           </div>
-          <Table<PaymentChannelLog>
+          <FillTable<PaymentChannelLog>
             rowKey="id"
             size="small"
             loading={loading}

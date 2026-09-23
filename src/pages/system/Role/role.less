@@ -1,21 +1,47 @@
+/* PageContainer fixed 模式下：Spin 包装层透传高度，.role-manage 撑满内容区 */
+.page-container--fixed .page-container__body .ant-spin-container {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .role-manage {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
   gap: @spacing-md;
-  align-items: start;
+  align-items: stretch;
+  overflow: hidden;
 
-  .role-list {
+  /* 左右两张卡片：整列等高，内部各自竖向滚动 */
+  .role-list,
+  .role-panel {
     .card-surface();
-    .ant-card-body {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    > .ant-card-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
       padding: @spacing-md;
     }
-    
+  }
+
+  .role-list {
 
     &__header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: @spacing-sm;
+      flex-shrink: 0;
 
       h3 {
         margin: 0;
@@ -29,9 +55,14 @@
       background: @color-bg-page;
       border-radius: @radius-sm;
       .text-auxiliary();
+      flex-shrink: 0;
     }
 
+    /* 角色列表项区域：独立竖向滚动 */
     &__items {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: @spacing-sm;
@@ -103,17 +134,13 @@
   }
 
   .role-panel {
-    .card-surface();
-    .ant-card-body {
-      padding: @spacing-md;
-    }
-    
 
     &__header {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
       margin-bottom: @spacing-sm;
+      flex-shrink: 0;
 
       h3 {
         margin: 0 0 @spacing-2xs;
@@ -132,15 +159,21 @@
       background: fade(@color-info, 8%);
       border-radius: @radius-sm;
       .text-body();
+      flex-shrink: 0;
     }
 
+    /* 权限分组区域：独立竖向滚动 */
     &__groups {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: @spacing-sm;
     }
 
     &__footer {
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -219,7 +252,9 @@
 
 @media (max-width: 1200px) {
   .role-manage {
+    /* 窄屏堆叠：上下两行各占可用高度，仍保持各自内部滚动 */
     grid-template-columns: 1fr;
+    grid-template-rows: minmax(160px, 1fr) minmax(240px, 2fr);
 
     .perm-group {
       grid-template-columns: 1fr;

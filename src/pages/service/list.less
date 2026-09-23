@@ -265,6 +265,30 @@
   }
 }
 
+/* PageContainer fixed 模式：主从区撑满剩余高度，分类侧栏 / 服务表各自内部滚动 */
+.page-container--fixed .service-pool {
+  .service-pool__main {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .pool-category {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    > .ant-card-body {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .pool-category__list {
+      min-height: 0;
+    }
+  }
+}
+
 /* 服务分类行（全部 + 可编辑业务分类，右侧 ⋯ 菜单） */
 .pool-category__list {
   .pool-category__level,

@@ -17,6 +17,7 @@ export default function MessageManage() {
 
   return (
     <PageContainer
+      fixed
       title="消息通知管理"
       description="管理站内消息、业务消息模板、短信发送记录与系统公告"
     >

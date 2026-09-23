@@ -6,7 +6,8 @@
  * 请求参数：JSON 字符串，列内以「查看」按钮触发 Popover 展示格式化后的 JSON
  */
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Card, DatePicker, Input, Popover, Select, Space, Table, Tag } from 'antd'
+import { Button, Card, DatePicker, Input, Popover, Select, Space, Tag } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { SearchOutlined, UndoOutlined } from '@ant-design/icons'
 import type { Dayjs } from 'dayjs'
@@ -233,7 +234,7 @@ export default function SystemLog() {
   ]
 
   return (
-    <PageContainer title="操作日志" description="查看系统操作记录，追踪每个管理员的审计动作">
+    <PageContainer fixed title="操作日志" description="查看系统操作记录，追踪每个管理员的审计动作">
       <div className="log-page">
         <Card variant="borderless" className="filter-bar log-page__filter">
           <Input
@@ -268,14 +269,13 @@ export default function SystemLog() {
           </Space>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">操作记录</span>
-              <span className="list-card__header__tips">共 {total} 条操作记录</span>
             </div>
           </div>
-          <Table<OperationLogItem>
+          <FillTable<OperationLogItem>
             rowKey="id"
             size="small"
             loading={loading}

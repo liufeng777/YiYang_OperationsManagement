@@ -1,7 +1,7 @@
 .page-container {
   /* 底部留白由 __body::after 承担（见下方注释），容器自身底部 padding 置 0 */
-  padding: @spacing-xl @spacing-xl 0;
-  /* 高度继承内容区（__content 固定视口高度），内容超出时内部滚动 */
+  padding: @spacing-lg;
+  /* 高度继承内容区（__content 固定视口高度），默认模式内容超出时整页内部滚动 */
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -11,22 +11,24 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: @spacing-md;
+    margin-bottom: @spacing-sm;
     background: #fff;
-    padding: @spacing-md @spacing-lg;
+    padding: @spacing-sm @spacing-lg;
     border-radius: @radius-md;
   }
 
   &__title {
     margin: 0;
-    .text-title-page();
+    font-size: @font-size-title-module;
+    line-height: @line-height-title-module;
+    font-weight: @font-weight-title-page;
+    color: @color-text-primary;
   }
 
   &__desc {
-    margin: @spacing-2xs 0 0;
-    font-size: @font-size-body;
-    line-height: @line-height-body;
-    font-weight: @font-weight-body;
+    margin: 2px 0 0;
+    font-size: @font-size-auxiliary;
+    line-height: @line-height-auxiliary;
     color: @color-text-secondary;
   }
 
@@ -45,6 +47,40 @@
       content: '';
       display: block;
       height: @spacing-xl;
+    }
+  }
+
+  /*
+   * 固定高度模式：整页不滚动，数据卡片（list-card--fill 等）撑满剩余空间并内部滚动。
+   * body 直接子元素（统计行 / 筛选卡等）不压缩；若页面只有一个根容器（如 .xxx-page），
+   * 根容器自动撑满并转为纵向 flex，其内部的数据卡片即可填充剩余高度。
+   */
+  &--fixed {
+    overflow: hidden;
+
+    .page-container__body {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+
+      &::after {
+        display: none;
+      }
+
+      > * {
+        flex-shrink: 0;
+      }
+
+      > *:only-child {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+
+        > * {
+          flex-shrink: 0;
+        }
+      }
     }
   }
 }

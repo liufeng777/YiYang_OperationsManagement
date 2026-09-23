@@ -5,7 +5,8 @@
  * 状态枚举（共通 §6.5）：1-新线索 2-已联系 3-有意向 4-洽谈中 5-已转化 6-已流失 9-已忽略
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, Input, Select, Table } from 'antd'
+import { Button, Card, Input, Select } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
@@ -193,6 +194,7 @@ export default function LeadList() {
 
   return (
     <PageContainer
+      fixed
       title="线索管理"
       description="客服指定机构，健管师跟进；运营查看业务进度与转化结果"
     >
@@ -246,7 +248,7 @@ export default function LeadList() {
           </Button>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">运营线索列表</span>
@@ -256,7 +258,7 @@ export default function LeadList() {
               </span>
             </div>
           </div>
-          <Table<LeadDTO>
+          <FillTable<LeadDTO>
             rowKey="id"
             size="small"
             loading={loading}

@@ -166,3 +166,35 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* PageContainer fixed 模式：主从区撑满剩余高度，左机构列表 / 右服务表各自内部滚动 */
+.page-container--fixed .inst-service {
+  .inst-service__main {
+    flex: 1;
+    min-height: 0;
+    align-items: stretch;
+  }
+
+  .inst-panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    > .ant-card-body {
+      flex: 1;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .inst-panel__list {
+      flex: 1;
+      min-height: 0;
+      max-height: none;
+    }
+  }
+
+  .inst-service__detail {
+    height: 100%;
+  }
+}

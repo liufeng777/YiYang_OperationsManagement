@@ -4,7 +4,8 @@
  * 当前为 mock 数据，后端就绪后替换为 systemApi.saveHelpConfig / getFaqList
  */
 import { useMemo, useState } from 'react'
-import { App, Button, Card, Input, Select, Table } from 'antd'
+import { App, Button, Card, Input, Select } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { CustomerServiceOutlined, PlusOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
@@ -115,6 +116,7 @@ export default function HelpConfig() {
 
   return (
     <PageContainer
+      fixed
       title="帮助与电话配置"
       description="维护平台客服电话、联系规则及患者端常见问题"
       extra={
@@ -199,7 +201,7 @@ export default function HelpConfig() {
           </Card>
         </div>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">常见问题</span>
@@ -229,7 +231,7 @@ export default function HelpConfig() {
               />
             </div>
           </div>
-          <Table<FaqItem>
+          <FillTable<FaqItem>
             rowKey="id"
             size="small"
             columns={columns}

@@ -105,6 +105,41 @@
   }
 }
 
+/* ===== 填充剩余高度的列表卡片（搭配 PageContainer fixed 模式） =====
+ * 卡片撑满页面剩余高度；表格使用 @/components/FillTable，
+ * 由组件测量容器剩余高度并注入 scroll.y：表头固定、表格体内部滚动、分页固定底部。
+ */
+.list-card--fill {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+
+  > .ant-card-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .list-card__header {
+    flex-shrink: 0;
+  }
+
+  /* FillTable 容器：撑满卡片剩余空间，组件据此计算 scroll.y */
+  .fill-table {
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* 分页固定在卡片底部 */
+  .ant-pagination {
+    flex-shrink: 0;
+    margin-bottom: 0;
+  }
+}
+
 /* ===== 列表卡片状态筛选（胶囊单选组 Radio.Group，对齐设计稿：全部 / 草稿 3 / 待发布 3 …） ===== */
 .list-card__status-filter {
   display: inline-flex;

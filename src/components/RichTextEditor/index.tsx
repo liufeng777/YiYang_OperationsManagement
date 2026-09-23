@@ -34,7 +34,7 @@ import {
   UndoOutlined,
 } from '@ant-design/icons'
 import { uploadApi } from '@/api'
-import './RichTextEditor.less'
+import './index.less'
 
 export type { JSONContent }
 

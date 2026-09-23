@@ -7,7 +7,8 @@
  * 聚合字段 institution_count / total_registered / total_max_participants（列表接口返回，不含 institutions）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Dropdown, Input, Select, Table, Col, Row, Tag, Divider, Tooltip } from 'antd'
+import { App, Button, Card, Dropdown, Input, Select, Col, Row, Tag, Divider, Tooltip } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { MenuProps } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons'
@@ -432,6 +433,7 @@ export default function ActivityList() {
 
   return (
     <PageContainer
+      fixed
       title="活动管理"
       description="平台统一创建活动与康养旅游，选择可承接机构并管理报名与发布"
       extra={
@@ -505,7 +507,7 @@ export default function ActivityList() {
           </Button>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">活动列表</span>
@@ -519,7 +521,7 @@ export default function ActivityList() {
               options={tabItems.map((item) => ({ value: item.key, label: item.label }))}
             /> */}
           </div>
-          <Table<ActivityItem>
+          <FillTable<ActivityItem>
             rowKey="id"
             size="small"
             loading={loading}

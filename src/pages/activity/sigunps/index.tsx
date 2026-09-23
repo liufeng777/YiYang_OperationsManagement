@@ -8,7 +8,8 @@
  * 字段以后端实测返回为准：name / phone / registered_source / unregistered_at / remark
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Col, Input, Modal, Radio, Row, Select, Space, Table } from 'antd'
+import { App, Button, Card, Col, Input, Modal, Radio, Row, Select, Space } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { ArrowLeftOutlined, BarChartOutlined, DownloadOutlined, EditOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -409,6 +410,7 @@ export default function ActivitySignups() {
 
   return (
     <PageContainer
+      fixed
       title={activity?.title ?? '报名查询'}
       description={`活动编号 ${activity?.code ?? '-'} · ${activity?.location || '区域待完善'} · 报名 ${formatDateTime(
         activity?.start_date && activity.start_date * 1000,
@@ -487,7 +489,7 @@ export default function ActivitySignups() {
           </Button>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">报名记录</span>
@@ -505,7 +507,7 @@ export default function ActivitySignups() {
               </Button>
             </Space>
           </div>
-          <Table<ActivityRegistrationDTO>
+          <FillTable<ActivityRegistrationDTO>
             rowKey="id"
             size="small"
             loading={loading}

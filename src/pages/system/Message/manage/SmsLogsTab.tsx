@@ -5,7 +5,8 @@
  *       手机号与状态筛选全部下推后端（前端不做本地过滤）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, Input, Select, Table, Tag } from 'antd'
+import { Button, Card, Input, Select, Tag } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { messageApi } from '@/api'
 import type { SmsLogDTO } from '@/api/modules/message'
@@ -147,14 +148,14 @@ export default function SmsLogsTab() {
         </Button>
       </Card>
 
-      <Card variant="borderless" className="list-card">
+      <Card variant="borderless" className="list-card list-card--fill">
         <div className="list-card__header">
           <div>
             <span className="list-card__header__title">短信发送记录</span>
             <span className="list-card__header__tips">共 {total} 条记录</span>
           </div>
         </div>
-        <Table<SmsLogDTO>
+        <FillTable<SmsLogDTO>
           rowKey="id"
           size="small"
           loading={loading}

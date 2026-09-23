@@ -5,7 +5,8 @@
  * 能力范围：退款列表 / 退款详情 / 退款导出
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, DatePicker, Input, Select, Table, Space } from 'antd'
+import { App, Button, Card, DatePicker, Input, Select, Space } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -351,6 +352,7 @@ export default function RefundList() {
 
   return (
     <PageContainer
+      fixed
       title="退款管理"
       description="查看订单退款单及款项退回进度，支持按条件检索与导出"
       extra={
@@ -410,13 +412,13 @@ export default function RefundList() {
           </Button>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">退款列表</span>
             </div>
           </div>
-          <Table<RefundItem>
+          <FillTable<RefundItem>
             rowKey="refund_id"
             size="small"
             loading={loading}

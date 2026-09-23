@@ -37,9 +37,13 @@
   }
 }
 
-/* ===== 指标卡 ===== */
+/* ===== 指标卡（紧凑化：减小内边距与间距，把更多空间留给数据区） ===== */
 .metric-card {
   .card-surface();
+
+  > .ant-card-body {
+    padding: @spacing-md;
+  }
 
   /* 头部：标签 + 彩色图标 */
   &__head {
@@ -54,22 +58,25 @@
     color: @color-text-secondary;
   }
 
-  /* 彩色图标块（默认 36px 圆角矩形；--round 为 40px 圆形，用于机构管理） */
+  /* 彩色图标块（32px 圆角矩形；--round 为圆形，用于机构管理） */
   &__icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     font-style: normal;
     border-radius: @radius-sm;
   }
 
-  /* 指标数值 28/36 Bold */
+  /* 指标数值 24/32 Bold（较原 28/36 紧凑） */
   &__value {
     display: block;
-    margin-top: @spacing-sm;
-    .text-metric();
+    margin-top: @spacing-2xs;
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: @font-weight-metric;
+    color: @color-text-primary;
   }
 
   /* 数值与辅助信息同行（报名查询） */
@@ -77,7 +84,7 @@
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    margin-top: @spacing-sm;
+    margin-top: @spacing-2xs;
 
     .metric-card__value {
       margin-top: 0;
@@ -93,8 +100,8 @@
   &__note {
     display: inline-flex;
     align-items: center;
-    padding: 4px 8px;
-    margin-top: 12px;
+    padding: 2px 8px;
+    margin-top: @spacing-xs;
     font-style: normal;
     font-size: @font-size-auxiliary;
     line-height: @line-height-auxiliary;

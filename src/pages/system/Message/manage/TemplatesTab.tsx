@@ -6,7 +6,8 @@
  * 筛选：关键字 / 类型 / 状态全部下推后端（前端不做本地过滤）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Drawer, Form, Input, Select, Space, Table, Tag } from 'antd'
+import { App, Button, Card, Drawer, Form, Input, Select, Space, Tag } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import { messageApi } from '@/api'
@@ -312,14 +313,14 @@ export default function TemplatesTab() {
         </Button>
       </Card>
 
-      <Card variant="borderless" className="list-card">
+      <Card variant="borderless" className="list-card list-card--fill">
         <div className="list-card__header">
           <div>
             <span className="list-card__header__title">消息模板</span>
             <span className="list-card__header__tips">共 {total} 个模板</span>
           </div>
         </div>
-        <Table<MessageTemplateDTO>
+        <FillTable<MessageTemplateDTO>
           rowKey="id"
           size="small"
           loading={loading}

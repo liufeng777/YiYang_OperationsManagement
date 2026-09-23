@@ -6,7 +6,8 @@
  * 入口：列表「查看详情」进入对账详情页（detail_lines 仅在详情页展示）
  */
 import { useCallback, useEffect, useState } from 'react'
-import { App, Button, Card, DatePicker, Select, Table } from 'antd'
+import { App, Button, Card, DatePicker, Select } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -261,6 +262,7 @@ export default function ReconcileList() {
 
   return (
     <PageContainer
+      fixed
       title="账单汇总"
       description="按支付渠道与周期汇总平台与渠道的收款差异，差异明细见对账详情"
     >
@@ -312,13 +314,13 @@ export default function ReconcileList() {
           </Button>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">账单汇总</span>
             </div>
           </div>
-          <Table<ReconcileItem>
+          <FillTable<ReconcileItem>
             rowKey="id"
             size="small"
             loading={loading}

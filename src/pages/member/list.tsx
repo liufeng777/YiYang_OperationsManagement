@@ -7,7 +7,8 @@
  * Excel 导入：下载模板（getMemberImportTemplate）+ 上传导入（importMembers，multipart/form-data）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Input, Select, Space, Table, Tag, Upload } from 'antd'
+import { App, Button, Card, Input, Select, Space, Tag, Upload } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
@@ -290,6 +291,7 @@ export default function MemberList() {
 
   return (
     <PageContainer
+      fixed
       title="注册会员"
       description="管理平台注册会员的实名状态、等级、标签与启停用"
     >
@@ -340,7 +342,7 @@ export default function MemberList() {
           </Button>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">注册会员列表</span>
@@ -368,7 +370,7 @@ export default function MemberList() {
               </Upload>
             </div>
           </div>
-          <Table<MemberDTO>
+          <FillTable<MemberDTO>
             rowKey="id"
             size="small"
             loading={loading}

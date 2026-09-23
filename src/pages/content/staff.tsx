@@ -5,7 +5,8 @@
  */
 import { useMemo, useState } from 'react'
 import type { Key } from 'react'
-import { App, Button, Card, Drawer, Input, InputNumber, Select, Switch, Table } from 'antd'
+import { App, Button, Card, Drawer, Input, InputNumber, Select, Switch } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { SyncOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
@@ -233,6 +234,7 @@ export default function StaffList() {
 
   return (
     <PageContainer
+      fixed
       title="专业人员展示"
       description="同步医养服务工作台人员资料，控制患者端展示与推荐"
       extra={
@@ -304,7 +306,7 @@ export default function StaffList() {
           </div>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">专业人员列表</span>
@@ -333,7 +335,7 @@ export default function StaffList() {
               </Button>
             </div>
           </div>
-          <Table<StaffItem>
+          <FillTable<StaffItem>
             rowKey="id"
             size="small"
             columns={columns}

@@ -4,7 +4,8 @@
  * 说明：后端未提供服务分类删除端点，停用通过 status 接口实现
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Table } from 'antd'
+import { App, Button, Card } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -152,6 +153,7 @@ export default function ServiceCategoryPage() {
 
   return (
     <PageContainer
+      fixed
       title="服务分类"
       description="维护集团服务池分类，停用后新建服务不可再选择该分类"
       extra={
@@ -165,12 +167,12 @@ export default function ServiceCategoryPage() {
         </div>
       }
     >
-      <Card variant="borderless" className="list-card">
+      <Card variant="borderless" className="list-card list-card--fill">
         <div className="list-card__header">
           <span className="list-card__header__title">分类列表</span>
           <span className="list-card__header__tips">共 {data.length} 个分类</span>
         </div>
-        <Table<ServiceCategory>
+        <FillTable<ServiceCategory>
           rowKey="id"
           columns={columns}
           dataSource={data}

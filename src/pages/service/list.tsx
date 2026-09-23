@@ -5,7 +5,8 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Key } from 'react'
-import { App, Button, Card, Dropdown, Input, Select, Table, Tag, Tooltip, Space } from 'antd'
+import { App, Button, Card, Dropdown, Input, Select, Tag, Tooltip, Space } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { DeleteOutlined, EditOutlined, EllipsisOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -421,6 +422,7 @@ export default function ServicePoolList() {
 
   return (
     <PageContainer
+      fixed
       title="集团服务池"
       description="统一定义服务基础信息与集团定价，机构从服务池选择项目后再配置线上履约规则"
       extra={
@@ -536,7 +538,7 @@ export default function ServicePoolList() {
             </div> */}
           </Card>
 
-          <Card variant="borderless" className="list-card" style={{marginTop: 0}}>
+          <Card variant="borderless" className="list-card list-card--fill" style={{marginTop: 0}}>
             <div className="list-card__header">
               <div>
                 <span className="list-card__header__title">服务项目</span>
@@ -550,7 +552,7 @@ export default function ServicePoolList() {
                 </span>
               </Tooltip>
             </div>
-            <Table<ServiceItem>
+            <FillTable<ServiceItem>
               size="small"
               rowKey="id"
               loading={loading}

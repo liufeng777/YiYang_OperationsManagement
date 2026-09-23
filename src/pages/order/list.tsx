@@ -5,7 +5,8 @@
  * 能力范围：订单列表 / 订单详情 / 订单导出（增删改与确认、取消、退款等流转操作暂不在此维护）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, DatePicker, Input, Select, Table } from 'antd'
+import { App, Button, Card, DatePicker, Input, Select } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -301,6 +302,7 @@ export default function OrderList() {
 
   return (
     <PageContainer
+      fixed
       title="订单中心"
       description="统一查看交易订单与机构履约进度，支持按条件检索与导出"
     >
@@ -358,7 +360,7 @@ export default function OrderList() {
           </Button>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">订单列表</span>
@@ -373,7 +375,7 @@ export default function OrderList() {
               导出
             </Button>
           </div>
-          <Table<OrderDetail>
+          <FillTable<OrderDetail>
             rowKey="id"
             size="small"
             loading={loading}

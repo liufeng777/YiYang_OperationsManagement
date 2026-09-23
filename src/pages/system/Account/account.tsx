@@ -7,7 +7,8 @@
  * 重置密码：弹框填写 new_password 后调用 systemApi.resetAdminPassword
  */
 import { useCallback, useEffect, useState } from 'react'
-import { App, Button, Card, Form, Input, Modal, Select, Space, Table, Tag } from 'antd'
+import { App, Button, Card, Form, Input, Modal, Select, Space, Tag } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, PlusOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
@@ -294,6 +295,7 @@ export default function AccountList() {
 
   return (
     <PageContainer
+      fixed
       title="用户管理"
       description="创建运营平台用户并分配角色，用户权限全部继承所属角色"
       extra={
@@ -354,13 +356,13 @@ export default function AccountList() {
           </Button>
         </Card>
 
-        <Card variant="borderless" className="list-card">
+        <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">用户列表</span>
             </div>
           </div>
-          <Table<AdminItem>
+          <FillTable<AdminItem>
             rowKey="id"
             size="small"
             loading={loading}

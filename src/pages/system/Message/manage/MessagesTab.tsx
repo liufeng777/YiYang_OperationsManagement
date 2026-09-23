@@ -4,7 +4,8 @@
  * 说明：后端当前列表为空，字段按接口文档契约；关键字 / 类型 / 已读状态全部下推后端（前端不做本地过滤）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Drawer, Form, Input, Radio, Select, Space, Table, Tag } from 'antd'
+import { App, Button, Card, Drawer, Form, Input, Radio, Select, Space, Tag } from 'antd'
+import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import { memberApi, messageApi } from '@/api'
@@ -273,14 +274,14 @@ export default function MessagesTab() {
         </Button>
       </Card>
 
-      <Card variant="borderless" className="list-card">
+      <Card variant="borderless" className="list-card list-card--fill">
         <div className="list-card__header">
           <div>
             <span className="list-card__header__title">站内消息</span>
             <span className="list-card__header__tips">共 {total} 条消息</span>
           </div>
         </div>
-        <Table<MessageDTO>
+        <FillTable<MessageDTO>
           rowKey="id"
           size="small"
           loading={loading}
