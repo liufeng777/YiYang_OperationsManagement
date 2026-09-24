@@ -272,7 +272,7 @@ export default function ServiceInstitutionPage() {
               size="small"
               onClick={() => navigate(`/institution/detail/${selectedId}?tab=services`)}
             >
-              查看
+              机构详情
             </Button>
             {record.status === 1 ? (
               <Button type="link" danger size="small" onClick={() => openOfflineModal(record)}>

@@ -200,13 +200,9 @@ export default function ServiceEditorPage() {
   useEffect(() => {
     if (!detail) return
     form.setFieldsValue({
-      name: detail.name,
-      category_id: detail.category_id,
-      service_type: detail.service_type,
-      price: detail.price?.toFixed(2),
-      duration: detail.duration,
+      ...detail,
       consumable: detail.support_consum === 1 ? '1' : '2',
-      publishStatus: detail.status === 1 ? 'on' : 'draft',
+      publishStatus: detail.status === 1 ? 'on' : 'draft'
     })
     setCoverUrl(detail.cover_url || undefined)
     setCoverServerUrl(detail.cover_url ?? '')
@@ -417,9 +413,12 @@ export default function ServiceEditorPage() {
                   >
                     <Select
                       placeholder="请选择服务分类"
-                      options={catList
-                        .filter((item) => item.status === 1)
-                        .map((item) => ({ label: item.name, value: item.id }))}
+                      /* 已停用的分类同样展示，但不可选择并注明停用状态 */
+                      options={catList.map((item) => ({
+                        label: item.status === 1 ? item.name : `${item.name}（已停用）`,
+                        value: item.id,
+                        disabled: item.status !== 1,
+                      }))}
                     />
                   </Form.Item>
                   <Form.Item

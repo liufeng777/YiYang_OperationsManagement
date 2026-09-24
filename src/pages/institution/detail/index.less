@@ -257,6 +257,60 @@
       gap: @spacing-sm;
     }
   }
+
+  /*
+   * 内容区不整体滚动：Drawer body 改为 flex 列，顶部提示 / 搜索 / 分类保持固定，
+   * 滚动交给下方的服务池列表（数据较多时只有列表内部滚动）。
+   */
+  .ant-drawer-body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    > .ant-table-wrapper {
+      flex: 1;
+      min-height: 0;
+    }
+  }
+
+  /* 服务池列表：占满剩余高度，表体滚动、表头吸顶 */
+  .ant-table-wrapper {
+    .ant-spin,
+    .ant-spin-nested-loading,
+    .ant-spin-container,
+    .ant-table {
+      height: 100%;
+      min-height: 0;
+    }
+
+    .ant-table-container {
+      flex: 1;
+      min-height: 0;
+      .ant-table-content {
+        height: 100%;
+        overflow: auto;
+      }
+    }
+
+    .ant-table {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ant-table-content,
+    .ant-table-body {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      max-height: none;
+    }
+
+    .ant-table-thead > tr > th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+  }
 }
 
 /* ===== 删除确认弹窗 ===== */

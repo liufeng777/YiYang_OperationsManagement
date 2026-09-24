@@ -1,10 +1,12 @@
 /**
  * 机构详情 - 服务项目 Tab
  * 机构已添加服务 + 添加服务项目 Drawer（从集团服务池勾选）+ 删除确认
- * 数据来源：institutionApi.getInstitutionServiceList / createInstitutionService / deleteInstitutionService
+ * 数据来源：institutionApi.getInstitutionServiceList / batchCreateInstitutionService / deleteInstitutionService
  *           serviceApi.getServices / getServiceCategories（服务池与分类）
- * 说明：后端活动与机构服务为「关联表」模型（institution_service），
- *       添加 = 新增关联，删除 = 删除关联（不删除集团服务定义）
+ * 说明：
+ * - 后端活动与机构服务为「关联表」模型（institution_service），添加 = 新增关联，删除 = 删除关联；
+ * - 机构已添加服务为**服务端分页**列表（Tab 角标取接口 total）；
+ * - 服务池仅在点击「添加服务项目」时**一次性拉取全量**，抽屉内的搜索与分类为前端过滤。
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useServiceInstitutionStore } from '@/store/modules/serviceInstitution'
@@ -24,12 +26,18 @@ interface ServicesTabProps {
   onCountChange?: (count: number) => void
 }
 
+/** 已添加服务列表分页大小 */
+const PAGE_SIZE = 10
+/** 服务池一次性拉取条数（点击「添加服务项目」时请求全量，抽屉内本地筛选） */
+const POOL_PAGE_SIZE = 1000
 
 export default function ServicesTab({ detail, onCountChange }: ServicesTabProps) {
   const navigate = useNavigate()
   const { message } = App.useApp()
 
   const [rows, setRows] = useState<InstitutionServiceRow[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState<InstitutionServiceRow | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -43,54 +51,81 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
   const [selectedServiceIds, setSelectedServiceIds] = useState<number[]>([])
   const [categories, setCategories] = useState<ServiceCategory[]>([])
 
-  /** 已添加服务：关联记录 + 服务池明细拼装为可读行 */
-  const fetchRows = useCallback(async () => {
-    if (!detail?.id) return
-    setLoading(true)
-    try {
-      const link = await institutionApi.getInstitutionServiceList(detail.id, { page: 1, page_size: 100 })
-      const linkList: InstitutionServiceRow[] = link.list ?? []
-      const catRes = await serviceApi.getServiceCategories({ page: 1, page_size: 100 })
-      const catList = catRes.list ?? []
-      setCategories(catList)
-
-      setRows(linkList)
-      onCountChange?.(linkList.length)
-    } catch {
-      /* 错误提示由 request 拦截器统一处理 */
-      setRows([])
-      onCountChange?.(0)
-    } finally {
-      setLoading(false)
-    }
-  }, [detail?.id, onCountChange])
+  /** 已添加服务：服务端分页查询（角标取 total） */
+  const fetchRows = useCallback(
+    async (targetPage = 1) => {
+      if (!detail?.id) return
+      setLoading(true)
+      try {
+        const res = await institutionApi.getInstitutionServiceList(detail.id, {
+          page: targetPage,
+          page_size: PAGE_SIZE,
+        })
+        setRows(res.list ?? [])
+        setTotal(res.total ?? 0)
+        onCountChange?.(res.total ?? 0)
+      } catch {
+        /* 错误提示由 request 拦截器统一处理 */
+        setRows([])
+        setTotal(0)
+        onCountChange?.(0)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [detail?.id, onCountChange],
+  )
 
   useEffect(() => {
-    void fetchRows()
+    setPage(1)
+    void fetchRows(1)
   }, [fetchRows])
 
-  /** 拉取服务池（打开 Drawer 时按关键字/分类筛选） */
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await serviceApi.getServiceCategories({ page: 1, page_size: 100 })
+      setCategories(res.list ?? [])
+    } catch {
+      setCategories([])
+    } finally {
+    }
+  }, [])
+
+  /** 服务池：仅在点击「添加服务项目」时请求一次（全量） */
   const fetchPool = useCallback(async () => {
     setPoolLoading(true)
     try {
-      const res = await serviceApi.getServices({
-        page: 1,
-        page_size: 100,
-        keyword: poolKeyword.trim() || undefined,
-        category: poolCategory === 'all' ? undefined : (poolCategory as never),
-      })
+      const res = await serviceApi.getServices({ page: 1, page_size: POOL_PAGE_SIZE })
       setPool(res.list ?? [])
     } catch {
       setPool([])
     } finally {
       setPoolLoading(false)
     }
-  }, [poolKeyword, poolCategory])
+  }, [])
 
-  useEffect(() => {
-    if (!drawerOpen) return
+  /** 打开「添加服务项目」Drawer：重置勾选与筛选，并拉取全量服务池 */
+  const openPoolDrawer = () => {
+    setSelectedServiceIds([])
+    setPoolKeyword('')
+    setPoolCategory('all')
+    setDrawerOpen(true)
     void fetchPool()
-  }, [drawerOpen, fetchPool])
+    void fetchCategories()
+  }
+
+  /** 服务池前端过滤：名称 / 编码 + 分类 */
+  const filteredPool = useMemo(() => {
+    const kw = poolKeyword.trim().toLowerCase()
+    return pool.filter((item) => {
+      const keywordHit =
+        !kw ||
+        String(item.name ?? '').toLowerCase().includes(kw) ||
+        String(item.code ?? '').toLowerCase().includes(kw)
+      const categoryHit = poolCategory === 'all' || item.category_id === poolCategory
+      return keywordHit && categoryHit
+    })
+  }, [pool, poolKeyword, poolCategory])
 
   const existingServiceIds = useMemo(() => new Set(rows.map((item) => item.service_id)), [rows])
 
@@ -120,7 +155,8 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
       message.success(`已添加 ${targets.length} 项服务`)
       setDrawerOpen(false)
       setSelectedServiceIds([])
-      void fetchRows()
+      setPage(1)
+      void fetchRows(1)
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
     } finally {
@@ -138,7 +174,10 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
       /* 错误提示由 request 拦截器统一处理 */
     }
     setDeleting(null)
-    void fetchRows()
+    // 删除后如当前页已空则回退一页
+    const nextPage = rows.length === 1 && page > 1 ? page - 1 : page
+    setPage(nextPage)
+    void fetchRows(nextPage)
   }
 
   /** 上架/下架机构服务（关联维度） */
@@ -156,7 +195,7 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
   //       } catch {
   //         /* 错误提示由 request 拦截器统一处理 */
   //       }
-  //       void fetchRows()
+  //       void fetchRows(page)
   //     },
   //   })
   // }
@@ -237,9 +276,7 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
         render: (_: unknown, record: ServiceItem) => (
           <div className="service-cell">
             <strong>{record.name}</strong>
-            <span>
-              {categories.find((item) => item.id === record.category_id)?.name ?? '—'}
-            </span>
+            <span>{categories.find((item) => item.id === record.category_id)?.name ?? '—'}</span>
           </div>
         ),
       },
@@ -295,7 +332,7 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
               <ArrowRightOutlined />
             </Button>
           </div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setDrawerOpen(true)}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openPoolDrawer}>
             添加服务项目
           </Button>
         </div>
@@ -305,13 +342,24 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
           loading={loading}
           columns={serviceColumns}
           dataSource={rows}
-          pagination={false}
+          pagination={{
+            current: page,
+            pageSize: PAGE_SIZE,
+            total,
+            showSizeChanger: false,
+            showTotal: (count) => `共 ${count} 条`,
+            onChange: (nextPage) => {
+              setPage(nextPage)
+              void fetchRows(nextPage)
+            },
+          }}
         />
       </Card>
 
       <Drawer
         width={720}
         open={drawerOpen}
+        rootClassName="service-drawer"
         onClose={() => setDrawerOpen(false)}
         title={
           <div className="service-drawer__title">
@@ -336,60 +384,59 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
           </div>
         }
       >
-        <Alert
-          className="service-drawer__alert"
-          type="info"
-          showIcon
-          message={
-            <span>
-              <strong>{detail.name}</strong> 所选服务将自动继承机构默认预约配置与线上履约范围
-            </span>
-          }
-        />
-        <div className="service-drawer__search">
-          <Input
-            allowClear
-            placeholder="搜索服务名称、项目编码"
-            value={poolKeyword}
-            onChange={(event) => setPoolKeyword(event.target.value)}
-            onPressEnter={() => void fetchPool()}
+          <Alert
+            className="service-drawer__alert"
+            type="info"
+            showIcon
+            message={
+              <span>
+                <strong>{detail.name}</strong> 所选服务将自动继承机构默认预约配置与线上履约范围
+              </span>
+            }
           />
-          <Select
-            value={poolCategory}
-            onChange={setPoolCategory}
-            options={[
-              { label: '全部分类', value: 'all' as const },
-              ...categories.map((item) => ({ label: item.name, value: item.id })),
-            ]}
-          />
-        </div>
-        <div className="service-drawer__categories">
-          <button
-            type="button"
-            className={poolCategory === 'all' ? 'is-active' : ''}
-            onClick={() => setPoolCategory('all')}
-          >
-            全部
-          </button>
-          {categories.map((item) => (
+          <div className="service-drawer__search">
+            <Input
+              allowClear
+              placeholder="搜索服务名称、项目编码"
+              value={poolKeyword}
+              onChange={(event) => setPoolKeyword(event.target.value)}
+            />
+            <Select
+              value={poolCategory}
+              onChange={setPoolCategory}
+              options={[
+                { label: '全部分类', value: 'all' as const },
+                ...categories.map((item) => ({ label: item.name, value: item.id })),
+              ]}
+            />
+          </div>
+          <div className="service-drawer__categories">
             <button
               type="button"
-              key={item.id}
-              className={poolCategory === item.id ? 'is-active' : ''}
-              onClick={() => setPoolCategory(item.id)}
+              className={poolCategory === 'all' ? 'is-active' : ''}
+              onClick={() => setPoolCategory('all')}
             >
-              {item.name}
+              全部
             </button>
-          ))}
-        </div>
-        <Table<ServiceItem>
-          rowKey="id"
-          size="small"
-          loading={poolLoading}
-          columns={poolColumns}
-          dataSource={pool}
-          pagination={false}
-        />
+            {categories.map((item) => (
+              <button
+                type="button"
+                key={item.id}
+                className={poolCategory === item.id ? 'is-active' : ''}
+                onClick={() => setPoolCategory(item.id)}
+              >
+                {item.name}
+              </button>
+            ))}
+          </div>
+          <Table<ServiceItem>
+            rowKey="id"
+            size="small"
+            loading={poolLoading}
+            columns={poolColumns}
+            dataSource={filteredPool}
+            pagination={false}
+          />
       </Drawer>
 
       <Modal

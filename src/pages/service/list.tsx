@@ -2,13 +2,21 @@
  * 服务项目 - 集团服务池
  * 视觉对齐设计稿：顶部统计 + 筛选 + 左侧服务分类 + 右侧服务项目表格
  * 数据来源：serviceApi.getServices / getServiceCategories / updateServiceStatus / batchUpdateServiceStatus / deleteService
+ * 服务分类：支持新增 / 编辑 / 启用停用（启停均展示，停用项带标识） / 删除（需分类下无服务）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Key } from 'react'
 import { App, Button, Card, Dropdown, Input, Select, Tag, Tooltip, Space } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
-import { DeleteOutlined, EditOutlined, EllipsisOutlined, PlusOutlined } from '@ant-design/icons'
+import {
+  CheckCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  EllipsisOutlined,
+  PlusOutlined,
+  StopOutlined,
+} from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import type { MenuProps } from 'antd'
@@ -50,6 +58,9 @@ export interface StatusTarget {
   action: 'online' | 'offline'
 }
 
+/** 统计分类下服务数量时拉取的服务条数（后端未返回分类计数，且 category 过滤未生效，故前端统计） */
+const COUNT_PAGE_SIZE = 1000
+
 export default function ServicePoolList() {
   const navigate = useNavigate()
   const { message, modal } = App.useApp()
@@ -72,6 +83,8 @@ export default function ServicePoolList() {
   const pageSize = 10
   /** 服务分类（来自后端 /admin/service-categories） */
   const [catList, setCatList] = useState<ServiceCategory[]>([])
+  /** 各分类下的服务数量：用于「删除分类」前置校验（有服务则置灰） */
+  const [categoryServiceCount, setCategoryServiceCount] = useState<Map<number, number>>(new Map())
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<ServiceCategory | null>(null)
 
@@ -110,13 +123,32 @@ export default function ServicePoolList() {
     }
   }, [])
 
+  /**
+   * 统计各分类下的服务数量
+   * 后端分类列表未返回 service_count，且 /admin/services?category= 过滤未生效，
+   * 故拉取全量服务在前端按 category_id 汇总（服务删除后需重新统计）。
+   */
+  const fetchCategoryServiceCount = useCallback(async () => {
+    try {
+      const res = await serviceApi.getServices({ page: 1, page_size: COUNT_PAGE_SIZE })
+      const map = new Map<number, number>()
+      ;(res.list ?? []).forEach((item) => {
+        map.set(item.category_id, (map.get(item.category_id) ?? 0) + 1)
+      })
+      setCategoryServiceCount(map)
+    } catch {
+      setCategoryServiceCount(new Map())
+    }
+  }, [])
+
   useEffect(() => {
     void fetchList(page)
   }, [fetchList, page])
 
   useEffect(() => {
     void fetchCategories()
-  }, [fetchCategories])
+    void fetchCategoryServiceCount()
+  }, [fetchCategories, fetchCategoryServiceCount])
 
   /** 服务方式（type）后端不支持筛选，仅对当前页做过滤 */
   const filteredData = useMemo(() => {
@@ -161,7 +193,7 @@ export default function ServicePoolList() {
     setPage(1)
   }
 
-  /* ---- 服务分类：新增 / 编辑 / 停用 ---- */
+  /* ---- 服务分类：新增 / 编辑 / 启用停用 / 删除 ---- */
   const openCategoryCreate = () => {
     setEditingCategory(null)
     setCategoryEditorOpen(true)
@@ -190,22 +222,52 @@ export default function ServicePoolList() {
         message.success('服务分类已创建')
       }
       void fetchCategories()
+      void fetchCategoryServiceCount()
     } catch {
       /* 错误提示由 request 拦截器统一提示 */
     }
   }
-  /** 停用分类：后端无删除端点，改为禁用（status=9） */
-  const confirmCategoryDelete = (item: ServiceCategory) => {
+
+  /** 分类启用 / 停用（二次确认有） */
+  const confirmCategoryStatus = (item: ServiceCategory, nextStatus: CommonStatus) => {
+    const toDisable = nextStatus === 9
     modal.confirm({
-      title: '确认停用分类',
-      content: `确认停用服务分类“${item.name}”？停用后不影响已有服务，仅在新建服务时不再可选。`,
-      okText: '确认停用',
+      title: toDisable ? '确认停用分类' : '确认启用分类',
+      content: toDisable
+        ? `确认停用服务分类“${item.name}”？停用后在建服务时不再可选，且移动端不可见。`
+        : `确认启用服务分类“${item.name}”？启用后可在新建服务时选择。`,
+      okText: toDisable ? '确认停用' : '确认启用',
+      okButtonProps: toDisable ? { danger: true } : undefined,
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await serviceApi.updateServiceCategoryStatus(item.id, nextStatus)
+          message.success(`已${toDisable ? '停用' : '启用'}分类“${item.name}”`)
+        } catch {
+          /* 错误提示由 request 拦截器统一提示 */
+        }
+        void fetchCategories()
+      },
+    })
+  }
+
+  /** 删除分类：仅当分类下没有服务时可删（二次确认） */
+  const confirmCategoryDelete = (item: ServiceCategory) => {
+    const count = categoryServiceCount.get(item.id) ?? item.service_count ?? 0
+    if (count > 0) {
+      message.warning(`“${item.name}”下已有 ${count} 项服务，请先将服务迁移到其他分类`)
+      return
+    }
+    modal.confirm({
+      title: '确认删除分类',
+      content: `确认删除服务分类“${item.name}”？删除后不可恢复。`,
+      okText: '确认删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
       onOk: async () => {
         try {
-          await serviceApi.updateServiceCategoryStatus(item.id, 9)
-          message.success(`已停用分类“${item.name}”`)
+          await serviceApi.deleteServiceCategory(item.id)
+          message.success(`已删除分类“${item.name}”`)
         } catch {
           /* 错误提示由 request 拦截器统一提示 */
         }
@@ -214,27 +276,59 @@ export default function ServicePoolList() {
           setApplied((prev) => ({ ...prev, category: null }))
         }
         void fetchCategories()
+        void fetchCategoryServiceCount()
       },
     })
   }
-  const buildCategoryMenu = (item: ServiceCategory): MenuProps => ({
-    items: [
-      {
-        key: 'edit',
-        icon: <EditOutlined />,
-        label: '编辑',
-        onClick: () => openCategoryEdit(item),
-      },
-      { type: 'divider' },
-      {
-        key: 'delete',
-        icon: <DeleteOutlined />,
-        label: '停用',
-        danger: true,
-        onClick: () => confirmCategoryDelete(item),
-      },
-    ],
-  })
+
+  /** 分类操作菜单：编辑 / 启用或停用 / 删除（有服务时删除置灰并 Tooltip 说明） */
+  const buildCategoryMenu = (item: ServiceCategory): MenuProps => {
+    const serviceCount = categoryServiceCount.get(item.id) ?? item.service_count ?? 0
+    const deleteDisabled = serviceCount > 0
+    return {
+      items: [
+        {
+          key: 'edit',
+          icon: <EditOutlined />,
+          label: '编辑',
+          onClick: () => openCategoryEdit(item),
+        },
+        item.status === 9
+          ? {
+              key: 'enable',
+              icon: <CheckCircleOutlined />,
+              label: '启用',
+              onClick: () => confirmCategoryStatus(item, 1),
+            }
+          : {
+              key: 'disable',
+              icon: <StopOutlined />,
+              label: '停用',
+              onClick: () => confirmCategoryStatus(item, 9),
+            },
+        { type: 'divider' },
+        {
+          key: 'delete',
+          icon: <DeleteOutlined />,
+          danger: true,
+          disabled: deleteDisabled,
+          // 置灰的菜单项不触发鼠标事件，label 用 span 包一层以便 Tooltip 正常展示
+          label: (
+            <Tooltip
+              title={
+                deleteDisabled
+                  ? `该分类下有 ${serviceCount} 项服务，请先将服务迁移到其他分类后再删除`
+                  : ''
+              }
+            >
+              <span>删除</span>
+            </Tooltip>
+          ),
+          onClick: () => confirmCategoryDelete(item),
+        },
+      ],
+    }
+  }
 
   /* 勾选服务的 status 一致性：一致才可批量启用/停用 */
   const selectedItems = useMemo(
@@ -339,6 +433,8 @@ export default function ServicePoolList() {
           /* 错误提示由 request 拦截器统一提示 */
         }
         void fetchList(page)
+        // 服务删除后分类下的服务数量会变化，需重新统计
+        void fetchCategoryServiceCount()
       },
     })
   }
@@ -394,7 +490,7 @@ export default function ServicePoolList() {
       {
         title: '操作',
         key: 'action',
-        width: 180,
+        width: 200,
         render: (_, record) => (
           <Space>
             <Button type="link" size="small" onClick={() => navigate(`/service/list/detail/${record.id}`)}>
@@ -458,7 +554,7 @@ export default function ServicePoolList() {
             placeholder="服务类型"
             onChange={(value) => setCategory(value ?? 0)}
             options={catList.map((item) => ({
-              label: item.status === 9 ? `${item.name}（禁用）` : item.name,
+              label: item.status === 9 ? `${item.name}（已停用）` : item.name,
               value: item.id,
             }))}
           />
@@ -505,11 +601,12 @@ export default function ServicePoolList() {
               {catList.map((item) => (
                 <div
                   key={item.id}
-                  className={`pool-category__row${category === item.id ? ' is-active' : ''}`}
+                  className={`pool-category__row${category === item.id ? ' is-active' : ''}${item.status === 9 ? ' is-disabled' : ''}`}
                   onClick={() => handleCategoryClick(item.id)}
                 >
                   <span className="pool-category__name">
-                    {item.brief ? <Tooltip>{item.name}</Tooltip> : <span>{item.name}</span>}
+                    {item.brief ? <Tooltip title={item.brief}><span className='name-value'>{item.name}</span></Tooltip> : <span className='name-value'>{item.name}</span>}
+                    <span className='name-code'>{item.code} {item.status === 9 && <Tag style={{fontSize: 12, marginLeft: 4, marginRight: 0}}>已停用</Tag>}</span>
                   </span>
                   <Dropdown
                     menu={buildCategoryMenu(item)}
@@ -525,17 +622,6 @@ export default function ServicePoolList() {
                 </div>
               ))}
             </div>
-            {/* <div className="pool-category__tip">
-              <h4>集团服务池定义什么？</h4>
-              <ul>
-                <li>服务名称、编码与分类</li>
-                <li>服务方式、集团价格与单位</li>
-                <li>患者端封面、摘要和详情</li>
-                <li>适用人群、服务时长与须知</li>
-              </ul>
-              <h4 className="is-danger">不在这里配置</h4>
-              <p>机构服务半径、日容量、接单时间与预约上停用状态。</p>
-            </div> */}
           </Card>
 
           <Card variant="borderless" className="list-card list-card--fill" style={{marginTop: 0}}>

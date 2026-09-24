@@ -32,7 +32,7 @@ export interface ServiceItem {
   duration?: number // 单次服务时长
   /** 是否可选配耗材：后端字段名为 support_consum（0-否 1-是） */
   support_consum: number
-  price: number // 单价
+  price: string // 单价
   unit: string // 计价单位
   /** 服务流程（后端存储 / 返回均为 JSON 字符串，需 JSON.parse 后使用） */
   service_process?: string
@@ -65,6 +65,8 @@ export interface ServiceCategory {
   brief_en: string
   sort_order?: number
   status: number // 1-启用 9-禁用
+  /** 分类下的服务数量（后端暂未返回，前端拉取全量服务自行统计，用于删除前置校验） */
+  service_count?: number
 }
 
 /** 服务接入机构 */
@@ -155,6 +157,10 @@ export function updateServiceCategory(id: number, data: Omit<ServiceCategory, 'i
 /** 启用/禁用服务分类 POST /api/admin/service-categories/:id/status */
 export function updateServiceCategoryStatus(id: number, status: CommonStatus) {
   return http.post<null>(`/admin/service-categories/${id}/status`, { status })
+}
+
+export function deleteServiceCategory(id: number) {
+  return http.delete<null>(`/admin/service-categories/${id}`)
 }
 
 /* ------------------------------------------------------------------ */
