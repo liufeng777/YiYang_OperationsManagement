@@ -1,11 +1,14 @@
 /**
- * 线索详情 Drawer（线索管理列表共用）
+ * 会员管理 - 线索详情（路由页 /member/leads/detail/:id，从线索列表「详情」进入）
  * 权威依据：《线索-前端对接与测试指南》§4/§5
  * 详情 GET /admin/leads/:id：基础字段 + 反查增强（user_nickname/member_name/source_name/followup_records/transfer_records）
  * 操作前置（指南 §5.2）：认领仅 1/4 →2；跟进仅 2；转派仅 1/2/4 →2；转化复核仅 1/2；流失仅 1/2/4；3/9 终态全部禁用
  */
 import { useCallback, useEffect, useState } from 'react'
-import { App, Button, Descriptions, Drawer, Empty, Form, Input, Modal, Select, Space, Spin, Timeline } from 'antd'
+import { App, Button, Card, Descriptions, Empty, Form, Input, Modal, Select, Space, Spin, Timeline } from 'antd'
+import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons'
+import { useNavigate, useParams } from 'react-router-dom'
+import PageContainer from '@/components/PageContainer'
 import { leadApi, staffApi } from '@/api'
 import type { LeadDetailDTO, LeadFollowupType } from '@/api/modules/lead'
 import type { StaffDTO } from '@/api/modules/staff'
@@ -16,15 +19,7 @@ import {
   LEAD_STATUS_TEXT,
   LEAD_TASK_TYPE_TEXT,
 } from '../constants'
-
-export interface LeadDetailDrawerProps {
-  /** 当前查看的线索 id（null 时关闭） */
-  leadId: number | null
-  open: boolean
-  onClose: () => void
-  /** 线索发生变化后的回调（父级刷新列表与统计） */
-  onChanged: () => void
-}
+import './index.less'
 
 /** 跟进方式选项（指南 §2.4） */
 const FOLLOWUP_TYPE_OPTIONS = Object.entries(LEAD_FOLLOWUP_TYPE_TEXT).map(([key, label]) => ({
@@ -38,8 +33,11 @@ const sourceText = (value?: number) => (value == null ? '—' : (LEAD_SOURCE_TEX
 /** UTC 秒格式化 */
 const fmtTime = (ts?: number) => (ts ? formatDateTime(ts * 1000, 'YYYY-MM-DD HH:mm') : '—')
 
-export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: LeadDetailDrawerProps) {
+export default function LeadDetail() {
   const { message, modal } = App.useApp()
+  const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
+  const leadId = Number(id) || 0
 
   const [detail, setDetail] = useState<LeadDetailDTO | null>(null)
   const [loading, setLoading] = useState(false)
@@ -75,12 +73,9 @@ export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: L
     }
   }, [leadId])
 
-  /** 打开抽屉：重置并拉取详情 + 在职员工选项（认领/转派共用） */
+  /** 进入页面：拉取详情 + 在职员工选项（认领/转派共用） */
   useEffect(() => {
-    if (!open || leadId == null) return
-    setDetail(null)
-    setAssignStaffId(null)
-    followupForm.resetFields()
+    if (!leadId) return
     void fetchDetail()
     void (async () => {
       try {
@@ -90,7 +85,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: L
         setStaffList([])
       }
     })()
-  }, [open, leadId, fetchDetail, followupForm])
+  }, [leadId, fetchDetail])
 
   /** 操作前置（指南 §5.2 迁移规则表；3/9 为终态） */
   const status = detail?.status
@@ -117,7 +112,6 @@ export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: L
       await leadApi.assignLead(detail.id, assignStaffId)
       message.success('认领成功')
       await fetchDetail()
-      onChanged()
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
     } finally {
@@ -144,7 +138,6 @@ export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: L
       message.success('跟进记录已添加')
       followupForm.resetFields()
       await fetchDetail()
-      onChanged()
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
     } finally {
@@ -168,7 +161,6 @@ export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: L
       setTransferOpen(false)
       transferForm.resetFields()
       await fetchDetail()
-      onChanged()
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
     } finally {
@@ -192,7 +184,6 @@ export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: L
       setLostOpen(false)
       lostForm.resetFields()
       await fetchDetail()
-      onChanged()
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
     } finally {
@@ -214,7 +205,6 @@ export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: L
           const res = await leadApi.convertLead(detail.id)
           message.success(res?.note || '转化复核完成')
           await fetchDetail()
-          onChanged()
         } catch {
           /* 错误提示由 request 拦截器统一处理 */
         }
@@ -226,79 +216,70 @@ export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: L
   const transfers = detail?.transfer_records ?? []
 
   return (
-    <>
-      <Drawer
-        title={
-          <div>
-            <strong>线索详情</strong>
-            <p className="lead-drawer__subtitle">
-              线索 {detail?.lead_no ?? ''}
-              {detail ? ` · ${LEAD_STATUS_TEXT[detail.status] ?? detail.status}` : ''}
-            </p>
-          </div>
-        }
-        open={open}
-        onClose={onClose}
-        width={560}
-        footer={
-          <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Button onClick={onClose}>关闭</Button>
-          </Space>
-        }
-      >
-        <Spin spinning={loading}>
-          <div className="lead-drawer">
-            <section className="lead-drawer__section">
-              <h4>线索信息</h4>
-              <Descriptions
-                column={2}
-                size="small"
-                colon={false}
-                items={[
-                  { key: 'name', label: '联系人', children: detail?.name || '—' },
-                  { key: 'phone', label: '联系电话', children: detail?.phone || '—' },
-                  {
-                    key: 'task_type',
-                    label: '任务类型',
-                    children: detail ? (LEAD_TASK_TYPE_TEXT[detail.task_type] ?? detail.task_type) : '—',
-                  },
-                  {
-                    key: 'source',
-                    label: '线索来源',
-                    children: detail
-                      ? `${sourceText(detail.source_type)}${detail.source_name ? ` · ${detail.source_name}` : ''}`
-                      : '—',
-                  },
-                  { key: 'assignee', label: '负责人', children: detail?.assignee_name || '待认领' },
-                  { key: 'assign_at', label: '认领时间', children: fmtTime(detail?.assign_at) },
-                  {
-                    key: 'status',
-                    label: '线索状态',
-                    children: detail ? (LEAD_STATUS_TEXT[detail.status] ?? detail.status) : '—',
-                  },
-                  { key: 'created_at', label: '创建时间', children: fmtTime(detail?.created_at) },
-                  { key: 'user', label: '关联用户', children: detail?.user_nickname || '—' },
-                  { key: 'member', label: '关联会员', children: detail?.member_name || '—' },
-                  {
-                    key: 'converted_at',
-                    label: '转化时间',
-                    children: fmtTime(detail?.converted_at),
-                  },
-                  {
-                    key: 'remark',
-                    label: '备注',
-                    span: 2,
-                    children: detail?.remark || '—',
-                  },
-                ]}
-              />
-            </section>
+    <PageContainer
+      title="线索详情"
+      description={
+        detail ? `线索 ${detail.lead_no} · ${LEAD_STATUS_TEXT[detail.status] ?? detail.status}` : undefined
+      }
+      extra={
+        <Button color="primary" variant='outlined' icon={<ArrowLeftOutlined />} onClick={() => navigate('/member/leads')}>
+          返回列表
+        </Button>
+      }
+    >
+      <Spin spinning={loading}>
+        <div className="lead-detail">
+          <Card variant="borderless" className="lead-detail__section">
+            <h4>线索信息</h4>
+            <Descriptions
+              column={3}
+              size="small"
+              colon={false}
+              items={[
+                { key: 'name', label: '联系人', children: detail?.name || '—' },
+                { key: 'phone', label: '联系电话', children: detail?.phone || '—' },
+                {
+                  key: 'task_type',
+                  label: '任务类型',
+                  children: detail ? (LEAD_TASK_TYPE_TEXT[detail.task_type] ?? detail.task_type) : '—',
+                },
+                {
+                  key: 'source',
+                  label: '线索来源',
+                  children: detail
+                    ? `${sourceText(detail.source_type)}${detail.source_name ? ` · ${detail.source_name}` : ''}`
+                    : '—',
+                },
+                { key: 'assignee', label: '负责人', children: detail?.assignee_name || '待认领' },
+                { key: 'assign_at', label: '认领时间', children: fmtTime(detail?.assign_at) },
+                {
+                  key: 'status',
+                  label: '线索状态',
+                  children: detail ? (LEAD_STATUS_TEXT[detail.status] ?? detail.status) : '—',
+                },
+                { key: 'created_at', label: '创建时间', children: fmtTime(detail?.created_at) },
+                {
+                  key: 'converted_at',
+                  label: '转化时间',
+                  children: fmtTime(detail?.converted_at),
+                },
+                { key: 'user', label: '关联用户', children: detail?.user_nickname || '—' },
+                { key: 'member', label: '关联会员', children: detail?.member_name || '—' },
+                {
+                  key: 'remark',
+                  label: '备注',
+                  children: detail?.remark || '—',
+                },
+              ]}
+            />
+          </Card>
 
-            {!isTerminal && (
-              <section className="lead-drawer__section">
-                <h4>线索认领</h4>
+          {!isTerminal && detail && (
+            <Card variant="borderless" className="lead-detail__section">
+              <h4>线索认领</h4>
+              <div className="lead-detail__assign">
                 <Select
-                  className="lead-drawer__assignee"
+                  className="lead-detail__assignee"
                   value={assignStaffId}
                   onChange={(value) => setAssignStaffId(value ?? null)}
                   options={staffOptions}
@@ -308,57 +289,57 @@ export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: L
                   optionFilterProp="label"
                   disabled={!canAssign}
                 />
-                <Button
-                  className="lead-drawer__assign-btn"
-                  type="primary"
-                  size="small"
-                  loading={assigning}
-                  disabled={!canAssign}
-                  onClick={handleAssign}
-                >
+                <Button type="primary" loading={assigning} disabled={!canAssign} onClick={handleAssign}>
                   确认认领
                 </Button>
-                <p className="lead-drawer__tip">
-                  {canAssign
-                    ? '仅「待跟进 / 转化失败」的线索可认领，认领后进入「跟进中」。'
-                    : '仅「待跟进 / 转化失败」的线索可认领；跟进中的线索如需换人请使用转派。'}
-                </p>
-              </section>
-            )}
+              </div>
+              <p className="lead-detail__tip">
+                {canAssign
+                  ? '仅「待跟进 / 转化失败」的线索可认领，认领后进入「跟进中」。'
+                  : '仅「待跟进 / 转化失败」的线索可认领；跟进中的线索如需换人请使用转派。'}
+              </p>
+            </Card>
+          )}
 
-            <section className="lead-drawer__section">
-              <h4>跟进记录</h4>
-              {followups.length > 0 ? (
-                <Timeline
-                  className="lead-drawer__timeline"
-                  items={followups.map((item, index) => ({
-                    key: index,
-                    children: (
-                      <div className="followup-item">
-                        <div className="followup-item__meta">
-                          <strong>{item.operator_name || item.operator || '—'}</strong>
-                          <span>
-                            {LEAD_FOLLOWUP_TYPE_TEXT[item.action] ?? '跟进'} · {fmtTime(item.ts)}
-                          </span>
-                        </div>
-                        <p>{item.remark || '—'}</p>
-                        {item.next_followup ? <em>下次跟进：{fmtTime(item.next_followup)}</em> : null}
+          <Card variant="borderless" className="lead-detail__section">
+            <h4>跟进记录</h4>
+            {followups.length > 0 ? (
+              <Timeline
+                className="lead-detail__timeline"
+                items={followups.map((item, index) => ({
+                  key: index,
+                  children: (
+                    <div className="followup-item">
+                      <div className="followup-item__meta">
+                        <strong>{item.operator_name || item.operator || '—'}</strong>
+                        <span>
+                          {LEAD_FOLLOWUP_TYPE_TEXT[item.action] ?? '跟进'} · {fmtTime(item.ts)}
+                        </span>
                       </div>
-                    ),
-                  }))}
-                />
-              ) : (
-                <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无跟进记录" />
-              )}
-              {canFollowup ? (
-                <Form form={followupForm} layout="vertical" className="lead-drawer__followup-form">
-                  <Form.Item
-                    name="followup_type"
-                    label="跟进方式"
-                    rules={[{ required: true, message: '请选择跟进方式' }]}
-                  >
-                    <Select options={FOLLOWUP_TYPE_OPTIONS} placeholder="请选择跟进方式" />
-                  </Form.Item>
+                      <p>{item.remark || '—'}</p>
+                      {item.next_followup ? <em>下次跟进：{fmtTime(item.next_followup)}</em> : null}
+                    </div>
+                  ),
+                }))}
+              />
+            ) : (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无跟进记录" />
+            )}
+            {detail &&
+              (canFollowup ? (
+                <Form form={followupForm} layout="vertical" className="lead-detail__followup-form">
+                  <div className="lead-detail__followup-grid">
+                    <Form.Item
+                      name="followup_type"
+                      label="跟进方式"
+                      rules={[{ required: true, message: '请选择跟进方式' }]}
+                    >
+                      <Select options={FOLLOWUP_TYPE_OPTIONS} placeholder="请选择跟进方式" />
+                    </Form.Item>
+                    <Form.Item name="result" label="跟进结果（选填）">
+                      <Input maxLength={100} placeholder="如：已接通 / 未接通 / 已到店" />
+                    </Form.Item>
+                  </div>
                   <Form.Item
                     name="content"
                     label="跟进内容"
@@ -371,69 +352,65 @@ export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: L
                       placeholder="记录本次联系情况，如：电话回访已接通，客户表示近期到店考察"
                     />
                   </Form.Item>
-                  <Form.Item name="result" label="跟进结果（选填）">
-                    <Input maxLength={100} placeholder="如：已接通 / 未接通 / 已到店" />
-                  </Form.Item>
-                  <Button size="small" loading={followupSubmitting} onClick={handleAddFollowup}>
+                  <Button color="primary" variant='outlined' size="small" icon={<PlusOutlined />} loading={followupSubmitting} onClick={handleAddFollowup}>
                     添加跟进记录
                   </Button>
                 </Form>
               ) : (
-                <p className="lead-drawer__tip">
+                <p className="lead-detail__tip">
                   {isTerminal
                     ? '已转化 / 流失的线索为终态，不可再跟进。'
                     : '仅「跟进中」的线索可添加跟进记录，请先认领或接受转派。'}
                 </p>
-              )}
-            </section>
+              ))}
+          </Card>
 
-            {transfers.length > 0 && (
-              <section className="lead-drawer__section">
-                <h4>转派记录</h4>
-                <Timeline
-                  className="lead-drawer__timeline"
-                  items={transfers.map((item, index) => ({
-                    key: index,
-                    children: (
-                      <div className="followup-item">
-                        <div className="followup-item__meta">
-                          <strong>
-                            {item.from_staff_name || '—'} → {item.to_staff_name || '—'}
-                          </strong>
-                          <span>
-                            操作人：{item.operator_name || '—'} · {fmtTime(item.time)}
-                          </span>
-                        </div>
-                        {item.reason ? <p>{item.reason}</p> : null}
+          {transfers.length > 0 && (
+            <Card variant="borderless" className="lead-detail__section">
+              <h4>转派记录</h4>
+              <Timeline
+                className="lead-detail__timeline"
+                items={transfers.map((item, index) => ({
+                  key: index,
+                  children: (
+                    <div className="followup-item">
+                      <div className="followup-item__meta">
+                        <strong>
+                          {item.from_staff_name || '—'} → {item.to_staff_name || '—'}
+                        </strong>
+                        <span>
+                          操作人：{item.operator_name || '—'} · {fmtTime(item.time)}
+                        </span>
                       </div>
-                    ),
-                  }))}
-                />
-              </section>
-            )}
+                      {item.reason ? <p>{item.reason}</p> : null}
+                    </div>
+                  ),
+                }))}
+              />
+            </Card>
+          )}
 
-            <section className="lead-drawer__section lead-drawer__actions">
-              <h4>线索操作</h4>
-              <Space wrap>
-                <Button disabled={!canTransfer} onClick={() => setTransferOpen(true)}>
-                  转派
-                </Button>
-                <Button disabled={!canTransfer} onClick={() => setLostOpen(true)}>
-                  标记流失
-                </Button>
-                <Button type="primary" variant="outlined" disabled={!canConvert} onClick={handleConvert}>
-                  转化复核
-                </Button>
-              </Space>
-              <p className="lead-drawer__tip">
-                {isTerminal
-                  ? '已转化 / 流失的线索为终态，不可再认领、转派、转化或变更状态。'
-                  : '转派后线索统一进入「跟进中」；转化复核由系统按任务类型自动判定，非手动置状态。'}
-              </p>
-            </section>
-          </div>
-        </Spin>
-      </Drawer>
+          <Card variant="borderless" className="lead-detail__section lead-detail__actions">
+            <h4>线索操作</h4>
+            <Space wrap>
+              <Button disabled={!canTransfer} onClick={() => setTransferOpen(true)}>
+                转派
+              </Button>
+              <Button disabled={!canTransfer} onClick={() => setLostOpen(true)}>
+                标记流失
+              </Button>
+              <Button type="primary" variant="outlined" disabled={!canConvert} onClick={handleConvert}>
+                转化复核
+              </Button>
+            </Space>
+            <p className="lead-detail__tip">
+              {isTerminal
+                ? '已转化 / 流失的线索为终态，不可再认领、转派、转化或变更状态。'
+                : '转派后线索统一进入「跟进中」；转化复核由系统按任务类型自动判定，非手动置状态。'}
+            </p>
+          </Card>
+        </div>
+      </Spin>
 
       {/* 转派弹窗（指南 §4.5） */}
       <Modal
@@ -482,6 +459,6 @@ export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: L
           </Form.Item>
         </Form>
       </Modal>
-    </>
+    </PageContainer>
   )
 }

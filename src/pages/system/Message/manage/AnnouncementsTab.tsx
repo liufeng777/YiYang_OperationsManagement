@@ -104,6 +104,7 @@ export default function AnnouncementsTab() {
   const [status, setStatus] = useState<number | null>(null)
   const [applied, setApplied] = useState<AnnouncementFilters>(emptyFilters)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
   const [editOpen, setEditOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -112,9 +113,9 @@ export default function AnnouncementsTab() {
 
   /** 组装查询参数：筛选条件全部下推后端 */
   const buildParams = useCallback(
-    (targetPage: number, filters: AnnouncementFilters) => ({
+    (targetPage: number, filters: AnnouncementFilters, size: number = PAGE_SIZE) => ({
       page: targetPage,
-      page_size: PAGE_SIZE,
+      page_size: size,
       keyword: filters.keyword || undefined,
       announcement_type: filters.announcement_type ?? undefined,
       publish_status: filters.publish_status ?? undefined,
@@ -123,10 +124,10 @@ export default function AnnouncementsTab() {
   )
 
   const fetchList = useCallback(
-    async (targetPage: number, filters: AnnouncementFilters) => {
+    async (targetPage: number, filters: AnnouncementFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
       try {
-        const res = await messageApi.getAnnouncements(buildParams(targetPage, filters))
+        const res = await messageApi.getAnnouncements(buildParams(targetPage, filters, size))
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
       } catch {
@@ -414,11 +415,12 @@ export default function AnnouncementsTab() {
           dataSource={rows}
           pagination={{
             current: page,
-            pageSize: PAGE_SIZE,
+            pageSize,
             total,
-            onChange: (nextPage) => {
+            onChange: (nextPage, nextPageSize) => {
               setPage(nextPage)
-              void fetchList(nextPage, applied)
+              setPageSize(nextPageSize)
+              void fetchList(nextPage, applied, nextPageSize)
             },
             showTotal: (count) => `共 ${count} 条`,
           }}

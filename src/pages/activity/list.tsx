@@ -133,7 +133,7 @@ export default function ActivityList() {
   const [status, setStatus] = useState<number | null>(null)
   const [applied, setApplied] = useState<ActivityFilters>(emptyFilters)
   const [page, setPage] = useState(1)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
   /** 配置机构抽屉：目标活动 + 抽屉内编辑的行 + 落库中 */
   const [configTarget, setConfigTarget] = useState<ActivityItem | null>(null)
   const [configRows, setConfigRows] = useState<ActivityInstitutionRow[]>([])
@@ -183,7 +183,7 @@ export default function ActivityList() {
         setLoading(false)
       }
     },
-    [applied, page],
+    [applied, page, pageSize],
   )
 
   useEffect(() => {
@@ -531,7 +531,10 @@ export default function ActivityList() {
               current: page,
               pageSize,
               total,
-              onChange: setPage,
+              onChange: (nextPage, nextPageSize) => {
+                setPage(nextPage)
+                setPageSize(nextPageSize)
+              },
               showTotal: (total) => `共 ${total} 条`
             }}
           />

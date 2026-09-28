@@ -79,14 +79,10 @@
     }
   }
 
-  .edit-field__row {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: @spacing-md;
-
-    .edit-field {
-      margin-bottom: @spacing-md;
-    }
+  /* 表单字段网格：已迁移至公共样式 @/styles/form-grid.less（.form-grid）；
+     网格内 .edit-field 包装层底距归零，行距统一由网格承担 */
+  .form-grid .edit-field {
+    margin-bottom: 0;
   }
 
   .edit-upload-btn {
@@ -264,7 +260,7 @@
   .article-edit {
     grid-template-columns: 1fr;
 
-    .edit-field__row {
+    .form-grid--four {
       grid-template-columns: 1fr 1fr;
     }
   }
@@ -272,7 +268,7 @@
 
 @media (max-width: 720px) {
   .article-edit {
-    .edit-field__row {
+    .form-grid--four {
       grid-template-columns: 1fr;
     }
   }

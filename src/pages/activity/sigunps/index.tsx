@@ -67,6 +67,7 @@ export default function ActivitySignups() {
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
   /** 顶部统计：报名人数 / 待签到 / 已签到 / 已取消（接口 total） */
   const [stats, setStats] = useState({ total: 0, signed: 0, checked: 0, cancelled: 0 })
 
@@ -135,14 +136,14 @@ export default function ActivitySignups() {
 
   /** 报名列表：分页与报名状态下推接口（跨活动接口 + activity_id） */
   const fetchList = useCallback(
-    async (targetPage: number, filters: SignupFilters) => {
+    async (targetPage: number, filters: SignupFilters, size: number = PAGE_SIZE) => {
       if (!activityId) return
       setLoading(true)
       try {
         const res = await activityApi.getActivityRegistrations({
           activity_id: activityId,
           page: targetPage,
-          page_size: PAGE_SIZE,
+          page_size: size,
           status: filters.status ?? undefined,
         })
         setRows(res.list ?? [])
@@ -515,11 +516,12 @@ export default function ActivitySignups() {
             dataSource={filteredRows}
             pagination={{
               current: page,
-              pageSize: PAGE_SIZE,
+              pageSize,
               total,
-              onChange: (nextPage) => {
+              onChange: (nextPage, nextPageSize) => {
                 setPage(nextPage)
-                void fetchList(nextPage, applied)
+                setPageSize(nextPageSize)
+                void fetchList(nextPage, applied, nextPageSize)
               },
               showTotal: (count) => `共 ${count} 条`,
             }}

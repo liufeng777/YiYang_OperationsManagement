@@ -238,6 +238,11 @@ export const routes: RouteConfig[] = [
         meta: { title: '线索管理' },
         component: lazy(() => import('@/pages/member/leads')),
       },
+      {
+        path: 'leads/detail/:id',
+        meta: { title: '线索详情', hideInMenu: true },
+        component: lazy(() => import('@/pages/member/leads/detail/index')),
+      },
     ],
   },
   {

@@ -510,6 +510,7 @@ export default function ServiceInstitutionPage() {
       </div>
 
       <StatusTargetModal
+        type="institution"
         statusTarget={statusTarget}
         onCancel={() => setStatusTarget(null)}
         onOk={() => handleConfirmStatusChange()}

@@ -73,27 +73,7 @@
     }
   }
 
-  /* 表单字段网格：基础信息两列 / 报名设置三列 */
-  .create-grid {
-    display: grid;
-    gap: @spacing-sm @spacing-md;
-
-    &--two {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    &--four {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .ant-form-item {
-      margin-bottom: 0;
-    }
-
-    .ant-select {
-      width: 100%;
-    }
-  }
+  /* 表单字段网格：已迁移至公共样式 @/styles/form-grid.less（.form-grid） */
 
   .ant-form-item-label > label {
     height: auto;
@@ -533,8 +513,7 @@
 
 @media (max-width: 720px) {
   .activity-create {
-    .create-grid--two,
-    .create-grid--three,
+    .form-grid,
     .create-images {
       grid-template-columns: 1fr;
     }

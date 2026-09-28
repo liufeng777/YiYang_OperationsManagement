@@ -94,7 +94,7 @@ export default function AgreementEdit() {
               <h3>协议基本信息</h3>
               <span className='header-label'>基于 V1.3 创建</span>
             </div>
-            <div className="edit-field__row">
+            <div className="form-grid form-grid--three">
               <div className="edit-field">
                 <Form.Item
                   name="type"

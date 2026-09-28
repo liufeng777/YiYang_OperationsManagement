@@ -80,7 +80,7 @@ export default function ServicePoolList() {
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
   const [statusTarget, setStatusTarget] = useState<StatusTarget | null>(null)
   const [page, setPage] = useState(1)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
   /** 服务分类（来自后端 /admin/service-categories） */
   const [catList, setCatList] = useState<ServiceCategory[]>([])
   /** 各分类下的服务数量：用于「删除分类」前置校验（有服务则置灰） */
@@ -110,7 +110,7 @@ export default function ServicePoolList() {
         setLoading(false)
       }
     },
-    [applied, page],
+    [applied, page, pageSize],
   )
 
   /** 拉取服务分类（左侧分类列表与筛选项） */
@@ -649,7 +649,10 @@ export default function ServicePoolList() {
                 current: page,
                 pageSize,
                 total: applied.type ? filteredData.length : total,
-                onChange: setPage,
+                onChange: (nextPage, nextPageSize) => {
+                  setPage(nextPage)
+                  setPageSize(nextPageSize)
+                },
                 showTotal: (total) => `共 ${total} 条`
               }}
             />
@@ -658,6 +661,7 @@ export default function ServicePoolList() {
       </div>
 
       <StatusTargetModal
+        type="service"
         statusTarget={statusTarget}
         onCancel={() => setStatusTarget(null)}
         onOk={() => handleConfirmStatusChange()}

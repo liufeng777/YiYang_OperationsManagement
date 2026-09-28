@@ -3,6 +3,8 @@
  * 用于固定高度页面（PageContainer fixed + list-card--fill）：
  * 自动测量容器剩余高度并注入 Table scroll.y —— 表头固定、表格体内部滚动、分页固定在卡片底部。
  * 用法与 antd Table 完全一致（泛型与 props 原样透传，外部传入的 scroll 其余配置保留）。
+ * 分页约定：传入 pagination 对象时默认开启「每页条数」切换（showSizeChanger），
+ *           可选条数 10/20/50/100（最小 10），调用方显式传入同名配置可覆盖。
  */
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Table } from 'antd'
@@ -10,6 +12,9 @@ import type { TableProps } from 'antd'
 
 /** 表头兜底高度（antd small 表头 ≈39px；首次渲染元素未挂载时使用） */
 const HEADER_FALLBACK = 39
+
+/** 每页条数可选项（最小 10；后端 page_size 上限 100，见共通 §2） */
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100]
 
 export default function FillTable<RecordType extends object>(props: TableProps<RecordType>) {
   const { pagination } = props
@@ -47,9 +52,15 @@ export default function FillTable<RecordType extends object>(props: TableProps<R
     }
   }, [pagination])
 
+  /** 注入分页默认配置：开启每页条数切换（最小 10），调用方显式配置优先 */
+  const mergedPagination =
+    pagination && typeof pagination === 'object'
+      ? { showSizeChanger: true, pageSizeOptions: PAGE_SIZE_OPTIONS, ...pagination }
+      : pagination
+
   return (
     <div ref={containerRef} className="fill-table">
-      <Table<RecordType> {...props} scroll={{ y: scrollY, ...props.scroll }} />
+      <Table<RecordType> {...props} pagination={mergedPagination} scroll={{ y: scrollY, ...props.scroll }} />
     </div>
   )
 }

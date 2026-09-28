@@ -36,12 +36,13 @@ export default function SmsLogsTab() {
   const [status, setStatus] = useState<string>('all')
   const [applied, setApplied] = useState<SmsFilters>(emptyFilters)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
   /** 组装查询参数：筛选条件全部下推后端 */
   const buildParams = useCallback(
-    (targetPage: number, filters: SmsFilters) => ({
+    (targetPage: number, filters: SmsFilters, size: number = PAGE_SIZE) => ({
       page: targetPage,
-      page_size: PAGE_SIZE,
+      page_size: size,
       phone: filters.phone || undefined,
       status: filters.status === 'all' ? undefined : Number(filters.status),
     }),
@@ -49,10 +50,10 @@ export default function SmsLogsTab() {
   )
 
   const fetchList = useCallback(
-    async (targetPage: number, filters: SmsFilters) => {
+    async (targetPage: number, filters: SmsFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
       try {
-        const res = await messageApi.getSmsLogs(buildParams(targetPage, filters))
+        const res = await messageApi.getSmsLogs(buildParams(targetPage, filters, size))
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
       } catch {
@@ -163,11 +164,12 @@ export default function SmsLogsTab() {
           dataSource={rows}
           pagination={{
             current: page,
-            pageSize: PAGE_SIZE,
+            pageSize,
             total,
-            onChange: (nextPage) => {
+            onChange: (nextPage, nextPageSize) => {
               setPage(nextPage)
-              void fetchList(nextPage, applied)
+              setPageSize(nextPageSize)
+              void fetchList(nextPage, applied, nextPageSize)
             },
             showTotal: (count) => `共 ${count} 条`,
           }}

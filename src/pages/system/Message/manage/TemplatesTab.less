@@ -15,18 +15,9 @@
   margin-top: @spacing-2xs;
 }
 
-/* Drawer 表单 */
-.template-drawer__form {
-  .ant-form-item {
-    margin-bottom: @spacing-md;
-  }
-}
-
-/* 两列布局 */
-.template-drawer__two-col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: @spacing-md;
+/* Drawer 表单（两列表单网格使用公共样式 .form-grid，行内 Form.Item 底距由公共样式归零） */
+.template-drawer__form > .ant-form-item {
+  margin-bottom: @spacing-md;
 }
 
 /* 提示文字 */

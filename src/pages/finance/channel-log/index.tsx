@@ -42,6 +42,7 @@ export default function ChannelLogList() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
   const [status, setStatus] = useState<number | null>(null)
   const [range, setRange] = useState<[Dayjs, Dayjs] | null>(null)
@@ -52,9 +53,9 @@ export default function ChannelLogList() {
 
   /** 组装查询参数（交易时间范围按秒时间戳下推，与退款列表一致） */
   const buildParams = useCallback(
-    (targetPage: number, filters: ChannelLogFilters) => ({
+    (targetPage: number, filters: ChannelLogFilters, size: number = PAGE_SIZE) => ({
       page: targetPage,
-      page_size: PAGE_SIZE,
+      page_size: size,
       status: filters.status ?? undefined,
       start_time: filters.range?.[0] ? filters.range[0].startOf('day').unix() : undefined,
       end_time: filters.range?.[1] ? filters.range[1].endOf('day').unix() : undefined,
@@ -64,10 +65,10 @@ export default function ChannelLogList() {
 
   /** 拉取渠道流水列表 */
   const fetchList = useCallback(
-    async (targetPage: number, filters: ChannelLogFilters) => {
+    async (targetPage: number, filters: ChannelLogFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
       try {
-        const res = await financeApi.getPaymentChannelLogs(buildParams(targetPage, filters))
+        const res = await financeApi.getPaymentChannelLogs(buildParams(targetPage, filters, size))
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
       } catch {
@@ -234,11 +235,12 @@ export default function ChannelLogList() {
             dataSource={filteredRows}
             pagination={{
               current: page,
-              pageSize: PAGE_SIZE,
+              pageSize,
               total,
-              onChange: (nextPage) => {
+              onChange: (nextPage, nextPageSize) => {
                 setPage(nextPage)
-                void fetchList(nextPage, applied)
+                setPageSize(nextPageSize)
+                void fetchList(nextPage, applied, nextPageSize)
               },
               showTotal: (count) => `共 ${count} 条`,
             }}

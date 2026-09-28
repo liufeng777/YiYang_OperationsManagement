@@ -62,6 +62,7 @@ export default function RefundList() {
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
   /** 顶部统计：全部 / 待审批 / 退款中 / 已退款 */
   const [stats, setStats] = useState({ all: 0, pending: 0, refunding: 0, refunded: 0 })
 
@@ -104,9 +105,9 @@ export default function RefundList() {
 
   /** 组装查询参数（时间范围按申请时间 applied_at 转 UTC 秒） */
   const buildParams = useCallback(
-    (targetPage: number, filters: RefundFilters) => ({
+    (targetPage: number, filters: RefundFilters, size: number = PAGE_SIZE) => ({
       page: targetPage,
-      page_size: PAGE_SIZE,
+      page_size: size,
       // 关键字后端暂未提供筛选参数，先下推、同时由当前页本地兜底过滤
       keyword: filters.keyword || undefined,
       refund_status: filters.refund_status ?? undefined,
@@ -118,10 +119,10 @@ export default function RefundList() {
 
   /** 拉取退款列表 */
   const fetchList = useCallback(
-    async (targetPage: number, filters: RefundFilters) => {
+    async (targetPage: number, filters: RefundFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
       try {
-        const res = await refundApi.getRefunds(buildParams(targetPage, filters))
+        const res = await refundApi.getRefunds(buildParams(targetPage, filters, size))
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
       } catch {
@@ -426,11 +427,12 @@ export default function RefundList() {
             dataSource={filteredRows}
             pagination={{
               current: page,
-              pageSize: PAGE_SIZE,
+              pageSize,
               total,
-              onChange: (nextPage) => {
+              onChange: (nextPage, nextPageSize) => {
                 setPage(nextPage)
-                void fetchList(nextPage, applied)
+                setPageSize(nextPageSize)
+                void fetchList(nextPage, applied, nextPageSize)
               },
               showTotal: (count) => `共 ${count} 条`,
             }}

@@ -28,6 +28,7 @@ export default function MemberList() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
   /** 顶部统计：全部 / 未实名 / 已实名 / 禁用（各状态 page_size=1 取 total） */
   const [stats, setStats] = useState({ all: 0, unverified: 0, verified: 0, disabled: 0 })
 
@@ -49,12 +50,12 @@ export default function MemberList() {
   const [tagMap, setTagMap] = useState<Map<number, tagItem>>(new Map())
 
   /** 拉取会员列表 */
-  const fetchList = useCallback(async (targetPage: number, targetInstitutionId: number | null,  targetStatus: number | null) => {
+  const fetchList = useCallback(async (targetPage: number, targetInstitutionId: number | null,  targetStatus: number | null, size: number = PAGE_SIZE) => {
     setLoading(true)
     try {
       const res = await memberApi.getMembers({
         page: targetPage,
-        page_size: PAGE_SIZE,
+        page_size: size,
         status: targetStatus ?? undefined,
         institution_Id: targetInstitutionId ?? undefined,
       })
@@ -378,11 +379,12 @@ export default function MemberList() {
             dataSource={filteredRows}
             pagination={{
               current: page,
-              pageSize: PAGE_SIZE,
+              pageSize,
               total,
-              onChange: (nextPage) => {
+              onChange: (nextPage, nextPageSize) => {
                 setPage(nextPage)
-                void fetchList(nextPage, institutionId, appliedStatus)
+                setPageSize(nextPageSize)
+                void fetchList(nextPage, institutionId, appliedStatus, nextPageSize)
               },
               showTotal: (count) => `共 ${count} 条`,
             }}

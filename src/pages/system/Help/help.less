@@ -26,11 +26,7 @@
       }
     }
 
-    &__fields {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: @spacing-md;
-    }
+    /* 表单字段网格：已迁移至公共样式 @/styles/form-grid.less（.form-grid） */
 
     &__rules {
       margin-top: @spacing-md;
@@ -234,7 +230,7 @@
       grid-template-columns: 1fr;
     }
 
-    .help-card__fields {
+    .help-card .form-grid {
       grid-template-columns: 1fr;
     }
 

@@ -106,7 +106,7 @@ export default function ArticleEdit() {
                 <Input placeholder="请输入科普文章标题，建议不超过30字" />
               </Form.Item>
             </div>
-            <div className="edit-field__row">
+            <div className="form-grid form-grid--four">
               <div className="edit-field">
                 <Form.Item
                   name="category"

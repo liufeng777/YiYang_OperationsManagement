@@ -1,26 +1,10 @@
 /**
  * 机构表单字段排布（新增机构 / 机构详情-基础资料 共用）
- * 网格布局 + Form.Item 标签样式，复刻服务编辑页 editor-grid 的视觉规范
+ * 网格布局使用公共样式 @/styles/form-grid.less（.form-grid），
+ * 此处保留 Form.Item 标签样式与纵向堆叠变体
  */
 
 .institution-form {
-  &__grid {
-    display: grid;
-    gap: @spacing-md;
-
-    &--2 {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    &--3 {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-
   /* 非网格场景（患者端介绍等）字段纵向堆叠 */
   &--stack {
     display: flex;
@@ -56,8 +40,7 @@
 
 @media (max-width: 720px) {
   .institution-form {
-    &__grid--2,
-    &__grid--3 {
+    .form-grid {
       grid-template-columns: 1fr;
     }
   }

@@ -58,7 +58,7 @@ export default function InstitutionList() {
     status: InstitutionStatus | null
   }>({ keyword: '', type: null, status: null })
   const [page, setPage] = useState(1)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
 
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
   const [statusTarget, setStatusTarget] = useState<StatusTarget | null>(null)
@@ -86,7 +86,7 @@ export default function InstitutionList() {
         setLoading(false)
       }
     },
-    [applied, page],
+    [applied, page, pageSize],
   )
 
   useEffect(() => {
@@ -405,7 +405,10 @@ export default function InstitutionList() {
               current: page,
               pageSize,
               total,
-              onChange: setPage,
+              onChange: (nextPage, nextPageSize) => {
+                setPage(nextPage)
+                setPageSize(nextPageSize)
+              },
               showTotal: (total) => `共 ${total} 条`
             }}
           />

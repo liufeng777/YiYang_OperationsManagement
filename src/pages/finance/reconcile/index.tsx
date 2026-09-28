@@ -56,6 +56,7 @@ export default function ReconcileList() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
   /** 顶部统计：全部 / 对账中 / 已平账 / 有差异 */
   const [stats, setStats] = useState({ all: 0, checking: 0, balanced: 0, diff: 0 })
 
@@ -66,9 +67,9 @@ export default function ReconcileList() {
 
   /** 组装查询参数（对账日期范围格式化为 YYYY-MM-DD 字符串） */
   const buildParams = useCallback(
-    (targetPage: number, filters: ReconcileFilters) => ({
+    (targetPage: number, filters: ReconcileFilters, size: number = PAGE_SIZE) => ({
       page: targetPage,
-      page_size: PAGE_SIZE,
+      page_size: size,
       reconciliation_type: filters.reconciliation_type ?? undefined,
       status: filters.status ?? undefined,
       start_date: filters.range?.[0] ? filters.range[0].format('YYYY-MM-DD') : undefined,
@@ -79,10 +80,10 @@ export default function ReconcileList() {
 
   /** 拉取对账单列表 */
   const fetchList = useCallback(
-    async (targetPage: number, filters: ReconcileFilters) => {
+    async (targetPage: number, filters: ReconcileFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
       try {
-        const res = await financeApi.getReconciliations(buildParams(targetPage, filters))
+        const res = await financeApi.getReconciliations(buildParams(targetPage, filters, size))
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
       } catch {
@@ -328,11 +329,12 @@ export default function ReconcileList() {
             dataSource={rows}
             pagination={{
               current: page,
-              pageSize: PAGE_SIZE,
+              pageSize,
               total,
-              onChange: (nextPage) => {
+              onChange: (nextPage, nextPageSize) => {
                 setPage(nextPage)
-                void fetchList(nextPage, applied)
+                setPageSize(nextPageSize)
+                void fetchList(nextPage, applied, nextPageSize)
               },
               showTotal: (count) => `共 ${count} 条`,
             }}

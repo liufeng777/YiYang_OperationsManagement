@@ -56,6 +56,7 @@ export default function OrderList() {
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
   /** 顶部统计：全部 / 待确认 / 生效中 / 已完成 */
   const [stats, setStats] = useState({ all: 0, pending: 0, active: 0, finished: 0 })
 
@@ -90,9 +91,9 @@ export default function OrderList() {
 
   /** 组装查询参数（时间范围转 UTC 秒） */
   const buildParams = useCallback(
-    (targetPage: number, filters: OrderFilters): OrderListParams => ({
+    (targetPage: number, filters: OrderFilters, size: number = PAGE_SIZE): OrderListParams => ({
       page: targetPage,
-      page_size: PAGE_SIZE,
+      page_size: size,
       order_no: filters.order_no || undefined,
       institution_id: filters.institution_id ?? undefined,
       order_status: filters.order_status ?? undefined,
@@ -104,10 +105,10 @@ export default function OrderList() {
 
   /** 拉取订单列表 */
   const fetchList = useCallback(
-    async (targetPage: number, filters: OrderFilters) => {
+    async (targetPage: number, filters: OrderFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
       try {
-        const res = await orderApi.getOrders(buildParams(targetPage, filters))
+        const res = await orderApi.getOrders(buildParams(targetPage, filters, size))
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
       } catch {
@@ -383,11 +384,12 @@ export default function OrderList() {
             dataSource={rows}
             pagination={{
               current: page,
-              pageSize: PAGE_SIZE,
+              pageSize,
               total,
-              onChange: (nextPage) => {
+              onChange: (nextPage, nextPageSize) => {
                 setPage(nextPage)
-                void fetchList(nextPage, applied)
+                setPageSize(nextPageSize)
+                void fetchList(nextPage, applied, nextPageSize)
               },
               showTotal: (count) => `共 ${count} 条`,
             }}

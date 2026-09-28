@@ -138,7 +138,7 @@ export default function HelpConfig() {
                 保存电话配置
               </Button>
             </div>
-            <div className="help-card__fields">
+            <div className="form-grid form-grid--three">
               <div className="help-field">
                 <label>平台客服电话</label>
                 <Input value={phone} onChange={(event) => setPhone(event.target.value)} />

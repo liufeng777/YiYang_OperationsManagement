@@ -101,12 +101,13 @@ export default function SystemLog() {
   const [range, setRange] = useState<[Dayjs | null, Dayjs | null] | null>(null)
   const [applied, setApplied] = useState<LogFilters>(emptyFilters)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
   /** 组装查询参数（筛选全部下推；时间范围按操作时间转 UTC 秒） */
   const buildParams = useCallback(
-    (targetPage: number, filters: LogFilters) => ({
+    (targetPage: number, filters: LogFilters, size: number = PAGE_SIZE) => ({
       page: targetPage,
-      page_size: PAGE_SIZE,
+      page_size: size,
       keyword: filters.keyword || undefined,
       action: filters.action === 'all' ? undefined : filters.action,
       module: filters.module === 'all' ? undefined : filters.module,
@@ -118,10 +119,10 @@ export default function SystemLog() {
 
   /** 拉取操作日志 */
   const fetchList = useCallback(
-    async (targetPage: number, filters: LogFilters) => {
+    async (targetPage: number, filters: LogFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
       try {
-        const res = await systemApi.getOperationLogs(buildParams(targetPage, filters))
+        const res = await systemApi.getOperationLogs(buildParams(targetPage, filters, size))
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
       } catch {
@@ -283,13 +284,13 @@ export default function SystemLog() {
             dataSource={rows}
             pagination={{
               current: page,
-              pageSize: PAGE_SIZE,
+              pageSize,
               total,
-              showSizeChanger: false,
               showTotal: (t) => `共 ${t} 条`,
-              onChange: (nextPage) => {
+              onChange: (nextPage, nextPageSize) => {
                 setPage(nextPage)
-                void fetchList(nextPage, applied)
+                setPageSize(nextPageSize)
+                void fetchList(nextPage, applied, nextPageSize)
               },
             }}
           />

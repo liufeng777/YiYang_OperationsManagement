@@ -105,7 +105,7 @@ export default function StaffList() {
   const [settingSort, setSettingSort] = useState<number | null>(1)
   const [settingIntro, setSettingIntro] = useState('')
   const [page, setPage] = useState(1)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
@@ -345,7 +345,10 @@ export default function StaffList() {
               current: page,
               pageSize,
               total: filteredData.length,
-              onChange: setPage,
+              onChange: (nextPage, nextPageSize) => {
+                setPage(nextPage)
+                setPageSize(nextPageSize)
+              },
               showTotal: (total) => `共 ${total} 条`
             }}
           />

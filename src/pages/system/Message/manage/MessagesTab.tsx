@@ -51,12 +51,13 @@ export default function MessagesTab() {
   const [form] = Form.useForm<MessageFormValues>()
   const [sendMode, setSendMode] = useState<'broadcast' | 'target'>('broadcast')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
   /** 组装查询参数：筛选条件全部下推后端 */
   const buildParams = useCallback(
-    (targetPage: number, filters: MessageFilters) => ({
+    (targetPage: number, filters: MessageFilters, size: number = PAGE_SIZE) => ({
       page: targetPage,
-      page_size: PAGE_SIZE,
+      page_size: size,
       keyword: filters.keyword || undefined,
       message_type: filters.message_type ?? undefined,
       is_read: filters.is_read === 'all' ? undefined : ((filters.is_read === 'read' ? 1 : 0) as 0 | 1),
@@ -65,10 +66,10 @@ export default function MessagesTab() {
   )
 
   const fetchList = useCallback(
-    async (targetPage: number, filters: MessageFilters) => {
+    async (targetPage: number, filters: MessageFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
       try {
-        const res = await messageApi.getMessages(buildParams(targetPage, filters))
+        const res = await messageApi.getMessages(buildParams(targetPage, filters, size))
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
       } catch {
@@ -289,11 +290,12 @@ export default function MessagesTab() {
           dataSource={rows}
           pagination={{
             current: page,
-            pageSize: PAGE_SIZE,
+            pageSize,
             total,
-            onChange: (nextPage) => {
+            onChange: (nextPage, nextPageSize) => {
               setPage(nextPage)
-              void fetchList(nextPage, applied)
+              setPageSize(nextPageSize)
+              void fetchList(nextPage, applied, nextPageSize)
             },
             showTotal: (count) => `共 ${count} 条`,
           }}

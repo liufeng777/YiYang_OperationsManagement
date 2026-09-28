@@ -62,6 +62,7 @@ export default function TemplatesTab() {
   const [status, setStatus] = useState<TemplateFilters['status']>('all')
   const [applied, setApplied] = useState<TemplateFilters>(emptyFilters)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editingRecord, setEditingRecord] = useState<MessageTemplateDTO | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -69,9 +70,9 @@ export default function TemplatesTab() {
 
   /** 组装查询参数：筛选条件全部下推后端 */
   const buildParams = useCallback(
-    (targetPage: number, filters: TemplateFilters) => ({
+    (targetPage: number, filters: TemplateFilters, size: number = PAGE_SIZE) => ({
       page: targetPage,
-      page_size: PAGE_SIZE,
+      page_size: size,
       keyword: filters.keyword || undefined,
       template_type: filters.template_type ?? undefined,
       status:
@@ -85,10 +86,10 @@ export default function TemplatesTab() {
   )
 
   const fetchList = useCallback(
-    async (targetPage: number, filters: TemplateFilters) => {
+    async (targetPage: number, filters: TemplateFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
       try {
-        const res = await messageApi.getMessageTemplates(buildParams(targetPage, filters))
+        const res = await messageApi.getMessageTemplates(buildParams(targetPage, filters, size))
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
       } catch {
@@ -376,7 +377,7 @@ export default function TemplatesTab() {
           >
             <Input placeholder="如 ORDER_PAID" disabled={!!editingRecord} />
           </Form.Item>
-          <div className="template-drawer__two-col">
+          <div className="form-grid form-grid--two">
             <Form.Item name="channel" label="发送渠道" rules={[{ required: true, message: '请选择渠道' }]}>
               <Select
                 options={Object.entries(channelMap).map(([value, meta]) => ({

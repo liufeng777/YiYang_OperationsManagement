@@ -328,7 +328,7 @@ export default function ActivityCreate() {
               <h3>活动基础信息<span>患者端结构化展示</span></h3>
               <div className='create-card__basicInfo'>
                 <div className='create-card__basicInfo__left'>
-                  <div className="create-grid create-grid--two">
+                  <div className="form-grid form-grid--two">
                     <Form.Item
                       name="name"
                       label="活动名称"
@@ -341,7 +341,7 @@ export default function ActivityCreate() {
                     </Form.Item>
                   </div>
 
-                  <div className="create-grid create-grid--two">
+                  <div className="form-grid form-grid--two">
                     <Form.Item
                       name="type"
                       label="活动类型"
@@ -383,7 +383,7 @@ export default function ActivityCreate() {
 
             <Card variant="borderless" className="create-card">
               <h3>报名与参与设置<span>活动内容统一配置；各机构独立设置活动时间和承接人数</span></h3>
-              <div className="create-grid create-grid--four">
+              <div className="form-grid form-grid--four">
                 <Form.Item
                   name="start_date"
                   label={<span>报名开始</span>}

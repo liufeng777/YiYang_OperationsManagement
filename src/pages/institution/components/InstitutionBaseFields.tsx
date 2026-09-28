@@ -52,7 +52,7 @@ export const regionOptions = [
 export default function InstitutionBaseFields() {
   return (
     <div className="institution-form">
-      <div className="institution-form__grid institution-form__grid--3">
+      <div className="form-grid form-grid--three">
         <Form.Item
           name="name"
           label={<span>机构名称</span>}
@@ -71,7 +71,7 @@ export default function InstitutionBaseFields() {
           <Select placeholder="请选择机构类型" options={institutionTypeOptions} />
         </Form.Item>
       </div>
-      <div className="institution-form__grid institution-form__grid--3">
+      <div className="form-grid form-grid--three">
         <Form.Item
           name="region"
           label={<span>所在地区</span>}
@@ -94,7 +94,7 @@ export default function InstitutionBaseFields() {
           <InputNumber min={1} max={50} precision={1} style={{ width: '100%' }} placeholder="留空表示不限" />
         </Form.Item>
       </div>
-      <div className="institution-form__grid institution-form__grid--3">
+      <div className="form-grid form-grid--three">
         <Form.Item
           name="contact_phone"
           label={<span>联系电话</span>}

@@ -56,6 +56,7 @@ export default function ReconcileDetail() {
   const [linesTotal, setLinesTotal] = useState(0)
   const [linesLoading, setLinesLoading] = useState(false)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
   const [matchStatus, setMatchStatus] = useState<number | null>(null)
 
   /** 拉取对账单头部信息 */
@@ -74,13 +75,13 @@ export default function ReconcileDetail() {
 
   /** 拉取差异明细分页（detail_lines 仅在详情页展示） */
   const fetchLines = useCallback(
-    async (targetPage: number, status: number | null) => {
+    async (targetPage: number, status: number | null, size: number = PAGE_SIZE) => {
       if (!reconcileId) return
       setLinesLoading(true)
       try {
         const res = await financeApi.getReconciliationDetails(reconcileId, {
           page: targetPage,
-          page_size: PAGE_SIZE,
+          page_size: size,
           match_status: status ?? undefined,
         })
         setLines(res.list ?? [])
@@ -330,11 +331,14 @@ export default function ReconcileDetail() {
               dataSource={lines}
               pagination={{
                 current: page,
-                pageSize: PAGE_SIZE,
+                pageSize,
                 total: linesTotal,
-                onChange: (nextPage) => {
+                showSizeChanger: true,
+                pageSizeOptions: [10, 20, 50, 100],
+                onChange: (nextPage, nextPageSize) => {
                   setPage(nextPage)
-                  void fetchLines(nextPage, matchStatus)
+                  setPageSize(nextPageSize)
+                  void fetchLines(nextPage, matchStatus, nextPageSize)
                 },
                 showTotal: (count) => `共 ${count} 条`,
               }}

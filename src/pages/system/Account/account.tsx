@@ -51,16 +51,17 @@ export default function AccountList() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<AdminItem | null>(null)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
   /** 重置密码弹框：目标用户 + 新密码 */
   const [resetTarget, setResetTarget] = useState<AdminItem | null>(null)
   const [resetting, setResetting] = useState(false)
   const [resetForm] = Form.useForm<{ new_password: string }>()
 
   /** 组装查询参数：筛选条件全部下推后端（登录时间按 UTC 秒区间传递） */
-  const buildParams = useCallback((targetPage: number, filters: AccountFilters) => {
+  const buildParams = useCallback((targetPage: number, filters: AccountFilters, size: number = PAGE_SIZE) => {
     return {
       page: targetPage,
-      page_size: PAGE_SIZE,
+      page_size: size,
       keyword: filters.keyword || undefined,
       role_id: !filters.role ? undefined : Number(filters.role),
       status:
@@ -72,10 +73,10 @@ export default function AccountList() {
 
   /** 拉取用户列表（分页 + 筛选） */
   const fetchList = useCallback(
-    async (targetPage: number, filters: AccountFilters) => {
+    async (targetPage: number, filters: AccountFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
       try {
-        const res = await systemApi.getAdminList(buildParams(targetPage, filters))
+        const res = await systemApi.getAdminList(buildParams(targetPage, filters, size))
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
       } catch {
@@ -370,11 +371,12 @@ export default function AccountList() {
             dataSource={rows}
             pagination={{
               current: page,
-              pageSize: PAGE_SIZE,
+              pageSize,
               total,
-              onChange: (nextPage) => {
+              onChange: (nextPage, nextPageSize) => {
                 setPage(nextPage)
-                void fetchList(nextPage, applied)
+                setPageSize(nextPageSize)
+                void fetchList(nextPage, applied, nextPageSize)
               },
               showTotal: (count) => `共 ${count} 条`,
             }}

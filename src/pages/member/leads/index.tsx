@@ -1,59 +1,91 @@
 /**
  * 会员管理 - 线索管理
- * 数据来源：leadApi.getLeads（分页 + 来源/状态/机构/优先级筛选）
- * 视觉对齐设计稿：顶部统计卡 + 筛选 + 运营线索列表 + 线索详情 Drawer（指定服务机构）
- * 状态枚举（共通 §6.5）：1-新线索 2-已联系 3-有意向 4-洽谈中 5-已转化 6-已流失 9-已忽略
+ * 权威依据：《线索-前端对接与测试指南》（2026-09-26）
+ * 列表 GET /admin/leads：分页 + keyword（姓名/手机号）+ 状态/来源/机构过滤（指南 §4.1）
+ * 工具栏：新增线索（§4.2）/ CSV 导入（§4.9）/ CSV 导出（§4.10，携带当前过滤条件）
+ * 状态枚举（指南 §2.1）：1-待跟进 2-跟进中 3-已转化 4-转化失败 9-流失（3/9 终态）
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, Input, Select } from 'antd'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { App, Button, Card, Form, Input, Modal, Select } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
-import { BarChartOutlined } from '@ant-design/icons'
+import { BarChartOutlined, DownloadOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import { leadApi } from '@/api'
-import type { LeadDTO } from '@/api/modules/lead'
+import { institutionApi, leadApi } from '@/api'
+import type { InstitutionItem } from '@/api/modules/institution'
+import type { LeadDTO, LeadListParams } from '@/api/modules/lead'
 import { formatDateTime } from '@/utils'
-import LeadDetailDrawer from './components/LeadDetailDrawer'
-import { LEAD_PRIORITY_TEXT, LEAD_SOURCE_TEXT, LEAD_STATUS_TEXT } from './constants'
+import { LEAD_SOURCE_TEXT, LEAD_STATUS_TEXT, LEAD_TASK_TYPE_TEXT } from './constants'
 import './index.less'
 
-const PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 10
 
 interface LeadFilters {
+  keyword: string
   status: number | null
   source_type: number | null
+  institution_id: number | null
 }
 
 const emptyFilters: LeadFilters = {
+  keyword: '',
   status: null,
   source_type: null,
+  institution_id: null,
+}
+
+/** 将筛选条件转为接口入参 */
+const toParams = (filters: LeadFilters): LeadListParams => ({
+  keyword: filters.keyword || undefined,
+  status: (filters.status ?? undefined) as LeadDTO['status'] | undefined,
+  source_type: filters.source_type ?? undefined,
+  institution_id: filters.institution_id ?? undefined,
+})
+
+interface CreateLeadForm {
+  name: string
+  phone: string
+  source_type?: number
+  institution_id?: number
+  remark?: string
 }
 
 export default function LeadList() {
+  const navigate = useNavigate()
+  const { message } = App.useApp()
   const [rows, setRows] = useState<LeadDTO[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
-  /** 顶部统计：全部 / 新线索(待指定) / 有意向 / 已转化 */
-  const [stats, setStats] = useState({ all: 0, fresh: 0, intent: 0, converted: 0 })
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  /** 顶部统计：全部 / 待跟进(1) / 跟进中(2) / 已转化(3) */
+  // const [stats, setStats] = useState({ all: 0, pending: 0, following: 0, converted: 0 })
 
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState<number | null>(null)
   const [sourceType, setSourceType] = useState<number | null>(null)
+  const [institutionId, setInstitutionId] = useState<number | null>(null)
+  /** 机构筛选项（新增线索共用） */
+  const [institutions, setInstitutions] = useState<InstitutionItem[]>([])
   const [applied, setApplied] = useState<LeadFilters>(emptyFilters)
-  const [appliedKeyword, setAppliedKeyword] = useState('')
-  /** 线索详情 Drawer：当前查看的线索 id */
-  const [activeLeadId, setActiveLeadId] = useState<number | null>(null)
+  /** 新增线索弹窗 */
+  const [createOpen, setCreateOpen] = useState(false)
+  const [createForm] = Form.useForm<CreateLeadForm>()
+  const [createSubmitting, setCreateSubmitting] = useState(false)
+  /** CSV 导入 / 导出 */
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [importing, setImporting] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
-  /** 拉取线索列表 */
-  const fetchList = useCallback(async (targetPage: number, filters: LeadFilters) => {
+  /** 拉取线索列表（关键字/筛选全部走后端分页查询） */
+  const fetchList = useCallback(async (targetPage: number, size: number, filters: LeadFilters) => {
     setLoading(true)
     try {
       const res = await leadApi.getLeads({
         page: targetPage,
-        page_size: PAGE_SIZE,
-        status: (filters.status ?? undefined) as LeadDTO['status'] | undefined,
-        source_type: filters.source_type ?? undefined,
+        page_size: size,
+        ...toParams(filters),
       })
       setRows(res.list ?? [])
       setTotal(res.total ?? 0)
@@ -66,58 +98,114 @@ export default function LeadList() {
     }
   }, [])
 
-  /** 顶部统计：各状态各取 1 条拿 total */
-  const fetchStats = useCallback(async () => {
-    try {
-      const [all, fresh, intent, converted] = await Promise.all([
-        leadApi.getLeads({ page: 1, page_size: 1 }),
-        leadApi.getLeads({ page: 1, page_size: 1, status: 1 }),
-        leadApi.getLeads({ page: 1, page_size: 1, status: 3 }),
-        leadApi.getLeads({ page: 1, page_size: 1, status: 5 }),
-      ])
-      setStats({
-        all: all.total ?? 0,
-        fresh: fresh.total ?? 0,
-        intent: intent.total ?? 0,
-        converted: converted.total ?? 0,
-      })
-    } catch {
-      /* 错误提示由 request 拦截器统一处理 */
-    }
-  }, [])
-
   useEffect(() => {
-    void fetchList(1, emptyFilters)
-    void fetchStats()
-  }, [fetchList, fetchStats])
+    void fetchList(1, DEFAULT_PAGE_SIZE, emptyFilters)
+    /** 机构选项（筛选 + 新增线索共用，前 100 条） */
+    void (async () => {
+      try {
+        const res = await institutionApi.getInstitutions({ page: 1, page_size: 100 })
+        setInstitutions(res.list ?? [])
+      } catch {
+        setInstitutions([])
+      }
+    })()
+  }, [fetchList])
 
   const applyFilters = () => {
-    const nextFilters: LeadFilters = { status, source_type: sourceType }
+    const nextFilters: LeadFilters = {
+      keyword: keyword.trim(),
+      status,
+      source_type: sourceType,
+      institution_id: institutionId,
+    }
     setApplied(nextFilters)
-    setAppliedKeyword(keyword.trim())
     setPage(1)
-    void fetchList(1, nextFilters)
+    void fetchList(1, pageSize, nextFilters)
   }
 
   const handleReset = () => {
     setKeyword('')
     setStatus(null)
     setSourceType(null)
+    setInstitutionId(null)
     setApplied(emptyFilters)
-    setAppliedKeyword('')
     setPage(1)
-    void fetchList(1, emptyFilters)
+    void fetchList(1, pageSize, emptyFilters)
   }
 
-  /** 当前页兜底过滤：关键字匹配联系人 / 手机号（后端未提供该筛选参数） */
-  const filteredRows = useMemo(() => {
-    const kw = appliedKeyword.trim()
-    if (!kw) return rows
-    return rows.filter(
-      (item) =>
-        (item.contact_name ?? '').includes(kw) || (item.contact_phone ?? '').includes(kw),
-    )
-  }, [appliedKeyword, rows])
+  const refresh = () => {
+    void fetchList(page, pageSize, applied)
+  }
+
+  /** 新增线索（指南 §4.2：name/phone 必填） */
+  const handleCreate = async () => {
+    let values: CreateLeadForm
+    try {
+      values = await createForm.validateFields()
+    } catch {
+      return
+    }
+    setCreateSubmitting(true)
+    try {
+      await leadApi.createLead({
+        name: values.name.trim(),
+        phone: values.phone.trim(),
+        source_type: values.source_type,
+        institution_id: values.institution_id,
+        remark: values.remark?.trim() || undefined,
+      })
+      message.success('线索已创建')
+      setCreateOpen(false)
+      createForm.resetFields()
+      setPage(1)
+      void fetchList(1, pageSize, applied)
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      setCreateSubmitting(false)
+    }
+  }
+
+  /** CSV 导入（指南 §4.9：仅 .csv，重复手机号跳过不报错） */
+  const handleImportFile = async (file: File) => {
+    if (!/\.csv$/i.test(file.name)) {
+      message.warning('仅支持 .csv 文件')
+      return
+    }
+    setImporting(true)
+    try {
+      await leadApi.importLeads(file)
+      message.success('导入完成（重复手机号已自动跳过）')
+      refresh()
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  /** CSV 导出（指南 §4.10：文件流，携带当前过滤条件） */
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const res = await leadApi.exportLeads(toParams(applied))
+      const disposition = (res.headers?.['content-disposition'] as string | undefined) ?? ''
+      const match = /filename\*?=(?:UTF-8''|")?([^";]+)/i.exec(disposition)
+      const filename = match
+        ? decodeURIComponent(match[1])
+        : `线索导出_${formatDateTime(Date.now(), 'YYYYMMDD-HHmm')}.csv`
+      const url = URL.createObjectURL(res.data)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      /* 错误提示由 request 拦截器统一处理（blob 错误已解 JSON message） */
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const columns: ColumnsType<LeadDTO> = [
     {
@@ -126,35 +214,29 @@ export default function LeadList() {
       width: 150,
       render: (_, record) => (
         <div className="lead-contact">
-          <strong>{record.contact_name}</strong>
-          <span>{record.contact_phone || '—'}</span>
+          <strong>{record.name}</strong>
+          <span>{record.phone || '—'}</span>
         </div>
       ),
     },
     {
-      title: '意向服务',
-      dataIndex: 'demand_detail',
-      key: 'demand_detail',
-      ellipsis: true,
-      render: (value?: string) => value || '—',
+      title: '任务类型',
+      key: 'task_type',
+      width: 120,
+      render: (_, record) => LEAD_TASK_TYPE_TEXT[record.task_type] ?? record.task_type ?? '—',
     },
     {
       title: '线索来源',
       key: 'source_type',
-      width: 100,
+      width: 110,
       render: (_, record) => LEAD_SOURCE_TEXT[record.source_type] ?? record.source_type ?? '—',
     },
     {
       title: '负责人',
-      key: 'owner',
+      key: 'assignee',
       width: 110,
-      render: (_, record) => record.owner_staff_name || <span className="lead-owner--empty">待指定</span>,
-    },
-    {
-      title: '优先级',
-      key: 'priority',
-      width: 80,
-      render: (_, record) => LEAD_PRIORITY_TEXT[record.priority] ?? record.priority ?? '—',
+      render: (_, record) =>
+        record.assignee_name || <span className="lead-owner--empty">待认领</span>,
     },
     {
       title: '线索状态',
@@ -165,6 +247,13 @@ export default function LeadList() {
           {LEAD_STATUS_TEXT[record.status] ?? record.status}
         </span>
       ),
+    },
+    {
+      title: '备注',
+      dataIndex: 'remark',
+      key: 'remark',
+      ellipsis: true,
+      render: (value?: string) => value || '—',
     },
     {
       title: '创建时间',
@@ -178,25 +267,25 @@ export default function LeadList() {
       key: 'action',
       width: 100,
       render: (_, record) => (
-        <Button type="link" size="small" onClick={() => setActiveLeadId(record.id)}>
-          详情
+        <Button type="link" size="small" onClick={() => navigate(`/member/leads/detail/${record.id}`)}>
+          查看详情
         </Button>
       ),
     },
   ]
 
   const metrics = [
-    { key: 'all', label: '全部线索', value: stats.all, note: '运营线索总量', tone: 'success' },
-    { key: 'fresh', label: '待指定', value: stats.fresh, note: '新线索待分配负责人', tone: 'warning' },
-    { key: 'intent', label: '有意向', value: stats.intent, note: '已有明确服务意向', tone: 'info' },
-    { key: 'converted', label: '已转化', value: stats.converted, note: '已转化为注册会员', tone: 'success' },
+    { key: 'all', label: '全部线索', value: 10, note: '运营线索总量', tone: 'success' },
+    { key: 'pending', label: '待跟进', value: 2, note: '待认领的新线索', tone: 'warning' },
+    { key: 'following', label: '跟进中', value: 5, note: '已认领正在跟进', tone: 'info' },
+    { key: 'converted', label: '已转化', value: 3, note: '复核达成的线索', tone: 'success' },
   ]
 
   return (
     <PageContainer
       fixed
       title="线索管理"
-      description="客服指定机构，健管师跟进；运营查看业务进度与转化结果"
+      description="运营手动建档或事件自动建线，认领/转派后由负责人跟进，转化由系统按任务类型自动复核"
     >
       <div className="lead-list">
         <div className="metric-cards">
@@ -217,7 +306,7 @@ export default function LeadList() {
         <Card variant="borderless" className="filter-bar lead-list__filter">
           <Input
             allowClear
-            placeholder="联系人 / 手机号"
+            placeholder="姓名 / 手机号"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             onPressEnter={applyFilters}
@@ -242,6 +331,15 @@ export default function LeadList() {
             allowClear
             placeholder="全部线索来源"
           />
+          <Select
+            value={institutionId}
+            onChange={(value) => setInstitutionId(value ?? null)}
+            options={institutions.map((item) => ({ label: item.name, value: item.id }))}
+            allowClear
+            showSearch
+            optionFilterProp="label"
+            placeholder="全部机构"
+          />
           <Button onClick={handleReset}>重置</Button>
           <Button type="primary" onClick={applyFilters}>
             查询
@@ -253,9 +351,19 @@ export default function LeadList() {
             <div>
               <span className="list-card__header__title">运营线索列表</span>
               <span className="list-card__header__tips">
-                共 {stats.all} 条线索 · 待指定 {stats.fresh} 条
-                {appliedKeyword.trim() ? ` · 当前页过滤“${appliedKeyword.trim()}”` : ''}
+                {applied.keyword ? ` · 关键字“${applied.keyword}”` : ''}
               </span>
+            </div>
+            <div className="list-card__header__actions">
+              <Button icon={<UploadOutlined />} loading={importing} onClick={() => fileInputRef.current?.click()}>
+                CSV 导入
+              </Button>
+              <Button icon={<DownloadOutlined />} loading={exporting} onClick={handleExport}>
+                导出 CSV
+              </Button>
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>
+                新增线索
+              </Button>
             </div>
           </div>
           <FillTable<LeadDTO>
@@ -263,14 +371,15 @@ export default function LeadList() {
             size="small"
             loading={loading}
             columns={columns}
-            dataSource={filteredRows}
+            dataSource={rows}
             pagination={{
               current: page,
-              pageSize: PAGE_SIZE,
+              pageSize,
               total,
-              onChange: (nextPage) => {
+              onChange: (nextPage, nextPageSize) => {
                 setPage(nextPage)
-                void fetchList(nextPage, applied)
+                setPageSize(nextPageSize)
+                void fetchList(nextPage, nextPageSize, applied)
               },
               showTotal: (count) => `共 ${count} 条`,
             }}
@@ -278,15 +387,68 @@ export default function LeadList() {
         </Card>
       </div>
 
-      <LeadDetailDrawer
-        leadId={activeLeadId}
-        open={activeLeadId != null}
-        onClose={() => setActiveLeadId(null)}
-        onChanged={() => {
-          void fetchList(page, applied)
-          void fetchStats()
+      {/* CSV 导入隐藏文件框（指南 §4.9：仅 .csv） */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv"
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          event.target.value = ''
+          if (file) void handleImportFile(file)
         }}
       />
+
+      {/* 新增线索弹窗（指南 §4.2） */}
+      <Modal
+        title="新增线索"
+        open={createOpen}
+        onOk={handleCreate}
+        onCancel={() => setCreateOpen(false)}
+        okText="确认创建"
+        cancelText="取消"
+        confirmLoading={createSubmitting}
+        destroyOnHidden
+      >
+        <Form form={createForm} layout="vertical" preserve={false} initialValues={{ source_type: 4 }}>
+          <Form.Item name="name" label="联系人姓名" rules={[{ required: true, message: '请输入联系人姓名' }]}>
+            <Input maxLength={50} placeholder="请输入联系人姓名" />
+          </Form.Item>
+          <Form.Item
+            name="phone"
+            label="联系电话"
+            rules={[
+              { required: true, message: '请输入联系电话' },
+              { pattern: /^1\d{10}$/, message: '请输入 11 位手机号' },
+            ]}
+          >
+            <Input maxLength={11} placeholder="手机号用于线索去重与转化判定" />
+          </Form.Item>
+          <Form.Item name="source_type" label="线索来源">
+            <Select
+              options={Object.entries(LEAD_SOURCE_TEXT).map(([key, label]) => ({
+                label,
+                value: Number(key),
+              }))}
+              placeholder="请选择线索来源"
+            />
+          </Form.Item>
+          <Form.Item name="institution_id" label="归属机构">
+            <Select
+              options={institutions.map((item) => ({ label: item.name, value: item.id }))}
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="请选择归属机构"
+            />
+          </Form.Item>
+          <Form.Item name="remark" label="备注">
+            <Input.TextArea rows={2} maxLength={200} showCount placeholder="选填" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
     </PageContainer>
   )
 }

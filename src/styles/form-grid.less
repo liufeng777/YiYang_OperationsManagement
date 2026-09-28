@@ -1,0 +1,50 @@
+/**
+ * ============================================================
+ * 表单字段网格公共样式（display:grid 的 form 表单统一布局）
+ * 用法：
+ *   <div className="form-grid form-grid--two|three|four">
+ *     <Form.Item ... />
+ *   </div>
+ * 跨整行：<Form.Item className="form-grid__full" ... />
+ * 相邻多个 .form-grid 行之间的上下间距统一为 @spacing-md（16px），
+ * 行内列间距与网格内部行距同为 @spacing-md；Form.Item 底距归零，行距统一由网格承担。
+ * 复用页面：服务详情 / 活动创建 / 协议编辑 / 科普文章编辑 / 帮助与电话 / 消息模板 Drawer
+ * 依赖 variables.less / mixins.less（vite 已自动注入 reference）
+ * ============================================================
+ */
+
+.form-grid {
+  display: grid;
+  gap: @spacing-md;
+
+  /* 上下两行（相邻网格行）之间的间距 */
+  & ~ & {
+    margin-top: @spacing-xs;
+  }
+
+  &--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  &--three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  &--four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  /* 跨整行字段 */
+  &__full {
+    grid-column: 1 / -1;
+  }
+
+  /* 行内表单项：底距归零，行距统一由网格 gap / 相邻 margin 承担 */
+  .ant-form-item {
+    margin-bottom: 0;
+  }
+
+  .ant-select {
+    width: 100%;
+  }
+}

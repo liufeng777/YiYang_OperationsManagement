@@ -1,7 +1,7 @@
 /**
  * 服务项目 - 新建 / 编辑服务项目
  * 集团统一定义一次，机构选择后继承基础信息与价格
- * 表单使用 antd Form 管理（便于字段校验），排布样式仍由 detail.less 的 editor-grid 提供
+ * 表单使用 antd Form 管理（便于字段校验），排布样式使用公共表单网格 @/styles/form-grid.less（.form-grid）
  * 数据来源：serviceApi.getService / createService / updateService / getServiceCategories
  * 说明：服务过程（service_process）后端以 JSON 字符串存储与返回，保存时序列化、回填时反序列化
  */
@@ -397,8 +397,7 @@ export default function ServiceEditorPage() {
                 <h3>服务基础信息</h3>
                 {/* <span>这些字段由集团统一维护，机构不可单独修改</span> */}
               </div>
-              <div className="editor-grid">
-                <div className="editor-grid__3">
+              <div className="form-grid form-grid--three">
                   <Form.Item
                     name="name"
                     label={<span>服务名称</span>}
@@ -431,71 +430,61 @@ export default function ServiceEditorPage() {
                       value: Number(key),
                     }))} />
                   </Form.Item>
-                </div>
-                <div className="editor-grid__3">
-                  <Form.Item
-                    name="unit"
-                    label={<span>计价单位</span>}
-                    rules={[{ required: true, message: '请选择计价单位' }]}
-                  >
-                    <Input placeholder='如：次、小时、天' />
-                  </Form.Item>
-                  <Form.Item
-                    name="price"
-                    label={<span>参考起售价</span>}
-                    rules={[
-                      { required: true, message: '请输入参考起售价' },
-                      { pattern: /^\d+(\.\d{1,2})?$/, message: '请输入正确价格（最多两位小数）' },
-                    ]}
-                  >
-                    <Input placeholder='请输入参考起售价' />
-                  </Form.Item>
-                  <Form.Item
-                    name="target_crowd"
-                    label={<span>适用人群</span>}
-                  >
-                    <Input placeholder="如：老年人、术后康复人群" />
-                  </Form.Item>
-                </div>
-                <div className="editor-grid__3">
-                  <Form.Item name="duration" label="服务时长（分钟）">
-                    <InputNumber min={0} precision={0} style={{ width: '100%' }} placeholder="例如：60" />
-                  </Form.Item>
-                  <Form.Item
-                    name="consumable"
-                    label={<span>是否涉及耗材</span>}
-                  >
-                    <Select options={consumableOptions} placeholder="请选择是否涉及耗材" />
-                  </Form.Item>
-                  <Form.Item name="vital_sign" label="生命体征监测项">
-                    <Select mode="multiple" placeholder="请选择一项或多项" />
-                  </Form.Item>
-                  {/* <Form.Item name="audience" label="适用人群">
-                    <Input />
-                  </Form.Item>
-                  <Form.Item name="package" label="上架套餐">
-                    <Input placeholder="单次、5次、10次" />
-                  </Form.Item> */}
-                </div>
-                <div className="editor-grid__3">
-                  
-                  {/* <Form.Item name="consumableSpec" label="耗材规格（条件显示）">
-                    <Input placeholder="含耗材/不含耗材" />
-                  </Form.Item>
-                  <Form.Item name="consumableList" label="标准耗材清单">
-                    <Input placeholder="清洁用品、护理垫" />
-                  </Form.Item> */}
-                </div>
-                {/* 下方「服务规格与套餐」卡片与上述耗材字段同名绑定，修改任一处自动同步 */}
-                {/* <Form.Item
-                  className="editor-grid__full"
-                  name="summary"
-                  label={<span>列表摘要</span>}
-                  rules={[{ required: true, message: '请输入列表摘要' }]}
+              </div>
+              <div className="form-grid form-grid--three">
+                <Form.Item
+                  name="unit"
+                  label={<span>计价单位</span>}
+                  rules={[{ required: true, message: '请选择计价单位' }]}
                 >
-                  <Input placeholder="专业护理人员上门提供安全、舒适的助浴服务" />
+                  <Input placeholder='如：次、小时、天' />
+                </Form.Item>
+                <Form.Item
+                  name="price"
+                  label={<span>参考起售价</span>}
+                  rules={[
+                    { required: true, message: '请输入参考起售价' },
+                    { pattern: /^\d+(\.\d{1,2})?$/, message: '请输入正确价格（最多两位小数）' },
+                  ]}
+                >
+                  <Input placeholder='请输入参考起售价' />
+                </Form.Item>
+                <Form.Item
+                  name="target_crowd"
+                  label={<span>适用人群</span>}
+                >
+                  <Input placeholder="如：老年人、术后康复人群" />
+                </Form.Item>
+              </div>
+              <div className="form-grid form-grid--three">
+                <Form.Item name="duration" label="服务时长（分钟）">
+                  <InputNumber min={0} precision={0} style={{ width: '100%' }} placeholder="例如：60" />
+                </Form.Item>
+                <Form.Item
+                  name="consumable"
+                  label={<span>是否涉及耗材</span>}
+                >
+                  <Select options={consumableOptions} placeholder="请选择是否涉及耗材" />
+                </Form.Item>
+                <Form.Item name="vital_sign" label="生命体征监测项">
+                  <Select mode="multiple" placeholder="请选择一项或多项" />
+                </Form.Item>
+                {/* <Form.Item name="audience" label="适用人群">
+                  <Input />
+                </Form.Item>
+                <Form.Item name="package" label="上架套餐">
+                  <Input placeholder="单次、5次、10次" />
                 </Form.Item> */}
               </div>
+              {/* 下方「服务规格与套餐」卡片与上述耗材字段同名绑定，修改任一处自动同步 */}
+              {/* <Form.Item
+                className="form-grid__full"
+                name="summary"
+                label={<span>列表摘要</span>}
+                rules={[{ required: true, message: '请输入列表摘要' }]}
+              >
+                <Input placeholder="专业护理人员上门提供安全、舒适的助浴服务" />
+              </Form.Item> */}
               {/* <div className="editor-tip">提示：服务半径、日容量、接单时间与预约上下架，由机构添加服务后配置。</div> */}
             </Card>
 

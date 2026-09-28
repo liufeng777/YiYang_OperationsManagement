@@ -34,51 +34,6 @@
     }
   }
 
-  .editor-grid {
-    &__2, &__3, &__4 {
-      display: grid;
-      gap: @spacing-lg;
-      margin-top: 8px;
-    }
-    &__2 {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    &__3 {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    &__4 {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-    &__full {
-      grid-column: 1 / -1;
-    }
-
-    /* Form.Item 复刻原 label 排布：上方标签 + 控件 + 错误提示 */
-    .ant-form-item {
-      margin-bottom: 0;
-
-      .ant-form-item-label {
-        padding-bottom: @spacing-2xs;
-
-        > label {
-          height: auto;
-          .text-label();
-          color: @color-text-primary;
-        }
-      }
-
-      .ant-form-item-extra {
-        .text-auxiliary();
-      }
-
-      .ant-form-item-explain-error {
-        margin-top: 2px;
-        font-size: @font-size-auxiliary;
-        line-height: @line-height-auxiliary;
-      }
-    }
-  }
-
   .editor-tip {
     padding: 2px 10px;
     color: @color-primary-dark;
@@ -395,7 +350,7 @@
 
 @media (max-width: 720px) {
   .service-editor {
-    .editor-grid {
+    .form-grid {
       grid-template-columns: 1fr;
     }
 
