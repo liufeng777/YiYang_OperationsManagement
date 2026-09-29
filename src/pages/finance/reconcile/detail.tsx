@@ -102,7 +102,7 @@ export default function ReconcileDetail() {
   }, [fetchDetail])
 
   useEffect(() => {
-    void fetchLines(1, matchStatus)
+    void fetchLines(1, matchStatus, pageSize)
   }, [fetchLines, matchStatus])
 
   /** 平账：对账中 / 有差异的单据可标记平账 */

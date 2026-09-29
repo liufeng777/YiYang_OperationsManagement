@@ -8,7 +8,7 @@
  * 字段以后端实测返回为准：name / phone / registered_source / unregistered_at / remark
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Col, Input, Modal, Radio, Row, Select, Space } from 'antd'
+import { App, Button, Card, Col, Input, Modal, Row, Select, Space } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { ArrowLeftOutlined, BarChartOutlined, DownloadOutlined, EditOutlined } from '@ant-design/icons'
@@ -162,14 +162,14 @@ export default function ActivitySignups() {
   // 进入页面 / 切换活动：加载第 1 页与统计
   useEffect(() => {
     setPage(1)
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
     void fetchStats()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityId])
 
   /** 刷新当前页与统计（签到 / 取消报名后） */
   const refresh = useCallback(async () => {
-    await fetchList(page, applied)
+    await fetchList(page, applied, pageSize)
     void fetchStats()
   }, [fetchList, fetchStats, page, applied])
 
@@ -199,7 +199,7 @@ export default function ActivitySignups() {
     const nextFilters: SignupFilters = { ...applied, status: nextStatus }
     setApplied(nextFilters)
     setPage(1)
-    void fetchList(1, nextFilters)
+    void fetchList(1, nextFilters, pageSize)
     void fetchStats()
   }
 
@@ -212,7 +212,7 @@ export default function ActivitySignups() {
     }
     setApplied(nextFilters)
     setPage(1)
-    void fetchList(1, nextFilters)
+    void fetchList(1, nextFilters, pageSize)
   }
 
   const handleReset = () => {
@@ -222,7 +222,7 @@ export default function ActivitySignups() {
     setDate('')
     setApplied(emptyFilters)
     setPage(1)
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
     void fetchStats()
   }
 
@@ -297,13 +297,6 @@ export default function ActivitySignups() {
     { key: 'signed', label: '待签到', value: stats.signed, badge: '可签到或取消', tone: 'warning' },
     { key: 'checked', label: '已签到', value: stats.checked, badge: '已签到不可取消', tone: 'info' },
     { key: 'cancelled', label: '已取消', value: stats.cancelled, badge: '不涉及退款', tone: 'danger' },
-  ]
-
-  const tabItems = [
-    { value: 'all', label: `全部 ${stats.total}` },
-    { value: '1', label: `待签到 ${stats.signed}` },
-    { value: '2', label: `已签到 ${stats.checked}` },
-    { value: '3', label: `已取消 ${stats.cancelled}` },
   ]
 
   const columns: ColumnsType<ActivityRegistrationDTO> = useMemo(

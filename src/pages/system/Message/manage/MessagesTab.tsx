@@ -84,7 +84,7 @@ export default function MessagesTab() {
   )
 
   useEffect(() => {
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
   }, [fetchList])
 
   /** 接收者候选：来自会员列表接口 */
@@ -112,7 +112,7 @@ export default function MessagesTab() {
     }
     setApplied(nextFilters)
     setPage(1)
-    void fetchList(1, nextFilters)
+    void fetchList(1, nextFilters, pageSize)
   }
 
   const handleReset = () => {
@@ -121,7 +121,7 @@ export default function MessagesTab() {
     setIsRead('all')
     setApplied(emptyFilters)
     setPage(1)
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
   }
 
   const closeSendDrawer = () => {
@@ -147,7 +147,7 @@ export default function MessagesTab() {
       })
       message.success('站内消息已发送')
       closeSendDrawer()
-      void fetchList(1, applied)
+      void fetchList(1, applied, pageSize)
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
     } finally {

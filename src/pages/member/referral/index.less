@@ -1,0 +1,85 @@
+/* 推荐与奖励：Tabs 仅作分段导航，内容区沿用 list-card--fill 标准高度链 */
+.referral-page {
+  /* 隐藏 Tabs 空内容区（本页 Tabs 只渲染导航条，内容按 tab 条件渲染在下方） */
+  .referral-page__tabs {
+    flex-shrink: 0;
+
+    .ant-tabs-content-holder {
+      display: none;
+    }
+  }
+}
+
+.referral-filter {
+  margin-bottom: @spacing-md;
+}
+
+.referral-cell {
+  display: flex;
+  flex-direction: column;
+
+  strong {
+    .text-body-medium();
+  }
+
+  span {
+    margin-top: 2px;
+    .text-auxiliary();
+  }
+}
+
+/* 奖励状态：1-未奖励（警告色） 2-已奖励（主色） 3-已过期（灰） 9-作废（危险色） */
+.referral-reward {
+  display: inline-flex;
+  align-items: center;
+  padding: @spacing-2xs @spacing-xs;
+  color: @color-text-secondary;
+  font-size: @font-size-auxiliary;
+  background: @color-bg-page;
+  border-radius: @radius-full;
+  white-space: nowrap;
+
+  &--1 {
+    color: @color-warning;
+    background: fade(@color-warning, 12%);
+  }
+
+  &--2 {
+    color: @color-primary;
+    background: @color-primary-light;
+  }
+
+  &--9 {
+    color: @color-danger;
+    background: fade(@color-danger, 10%);
+  }
+}
+
+/* 状态：1-待生效（信息色） 2-已生效（主色） 9-无效（灰） */
+.referral-status {
+  display: inline-flex;
+  align-items: center;
+  padding: @spacing-2xs @spacing-xs;
+  color: @color-text-secondary;
+  font-size: @font-size-auxiliary;
+  background: @color-bg-page;
+  border-radius: @radius-full;
+  white-space: nowrap;
+
+  &--1 {
+    color: @color-info;
+    background: fade(@color-info, 10%);
+  }
+
+  &--2 {
+    color: @color-primary;
+    background: @color-primary-light;
+  }
+}
+
+.referral-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}

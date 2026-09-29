@@ -6,7 +6,7 @@
  * 说明：服务过程（service_process）后端以 JSON 字符串存储与返回，保存时序列化、回填时反序列化
  */
 import { useCallback, useEffect, useState } from 'react'
-import { App, Button, Card, Empty, Form, Input, InputNumber, Modal, Select, Skeleton, Table, Upload } from 'antd'
+import { App, Button, Card, Drawer, Empty, Form, Input, InputNumber, Select, Skeleton, Space, Table, Upload } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { ArrowLeftOutlined, ArrowDownOutlined, ArrowUpOutlined, CheckOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -201,6 +201,7 @@ export default function ServiceEditorPage() {
     if (!detail) return
     form.setFieldsValue({
       ...detail,
+      unit: detail.unit as PriceUnit,
       consumable: detail.support_consum === 1 ? '1' : '2',
       publishStatus: detail.status === 1 ? 'on' : 'draft'
     })
@@ -238,7 +239,7 @@ export default function ServiceEditorPage() {
       duration: values.duration,
       // 后端字段名为 support_consum（1-涉及耗材 0-不涉及）
       support_consum: values.consumable === '1' ? 1 : 0,
-      price: Number(values.price),
+      price: String(values.price),
       unit: values.unit,
       status: targetStatus === 'on' ? 1 : 9,
       service_type: values.service_type,
@@ -266,7 +267,7 @@ export default function ServiceEditorPage() {
     }
   }
 
-  /** 添加 / 编辑套餐：打开弹窗（回填在下方 useEffect 中处理，确保 Modal 内 Form 已挂载） */
+  /** 添加 / 编辑套餐：打开抽屉（回填在下方 useEffect 中处理，确保 Drawer 内 Form 已挂载） */
   const openPackageModal = (pkg?: PackageItem) => {
     setEditingPackage(pkg ?? null)
     setPackageModalOpen(true)
@@ -748,14 +749,21 @@ export default function ServiceEditorPage() {
         </div> */}
       </Form>
 
-      <Modal
+      {/* 添加 / 编辑套餐（新建/编辑统一使用 Drawer） */}
+      <Drawer
         title={editingPackage ? '编辑套餐' : '添加套餐'}
         open={packageModalOpen}
-        onOk={handlePackageSave}
-        onCancel={() => setPackageModalOpen(false)}
-        okText="保存"
-        cancelText="取消"
-        destroyOnClose
+        onClose={() => setPackageModalOpen(false)}
+        width={420}
+        destroyOnHidden
+        footer={
+          <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button onClick={() => setPackageModalOpen(false)}>取消</Button>
+            <Button type="primary" onClick={handlePackageSave}>
+              保存
+            </Button>
+          </Space>
+        }
       >
         <Form form={packageForm} layout="vertical" requiredMark={false}>
           <Form.Item
@@ -780,7 +788,7 @@ export default function ServiceEditorPage() {
             <InputNumber min={0} precision={2} style={{ width: '100%' }} />
           </Form.Item>
         </Form>
-      </Modal>
+      </Drawer>
     </PageContainer>
   )
 }

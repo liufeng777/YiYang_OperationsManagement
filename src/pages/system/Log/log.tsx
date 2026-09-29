@@ -137,14 +137,14 @@ export default function SystemLog() {
   )
 
   useEffect(() => {
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
   }, [fetchList])
 
   const applyFilters = () => {
     const nextFilters: LogFilters = { keyword: keyword.trim(), action, module, range }
     setApplied(nextFilters)
     setPage(1)
-    void fetchList(1, nextFilters)
+    void fetchList(1, nextFilters, pageSize)
   }
 
   const handleReset = () => {
@@ -154,7 +154,7 @@ export default function SystemLog() {
     setRange(null)
     setApplied(emptyFilters)
     setPage(1)
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
   }
 
   const columns: ColumnsType<OperationLogItem> = [

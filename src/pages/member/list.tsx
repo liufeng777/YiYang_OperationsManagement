@@ -7,7 +7,7 @@
  * Excel 导入：下载模板（getMemberImportTemplate）+ 上传导入（importMembers，multipart/form-data）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Input, Select, Space, Tag, Upload } from 'antd'
+import { App, Button, Card, Input, Select, Space, Upload } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons'
@@ -17,7 +17,7 @@ import type { MemberDTO } from '@/api/modules/member'
 import type { tagItem } from '@/api/modules/tag'
 import { downloadBlob } from '@/utils'
 import MemberDetailDrawer from './components/MemberDetailDrawer'
-import { MEMBER_STATUS_TAG_COLOR, MEMBER_STATUS_TEXT, resolveMemberTags } from './constants'
+import { MEMBER_STATUS_TAG_COLOR, MEMBER_STATUS_TEXT } from './constants'
 import './list.less'
 
 const PAGE_SIZE = 10
@@ -30,7 +30,7 @@ export default function MemberList() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
   /** 顶部统计：全部 / 未实名 / 已实名 / 禁用（各状态 page_size=1 取 total） */
-  const [stats, setStats] = useState({ all: 0, unverified: 0, verified: 0, disabled: 0 })
+  const [stats] = useState({ all: 0, unverified: 0, verified: 0, disabled: 0 })
 
   const [keyword, setKeyword] = useState('')
   const [institutionId, setInstitutionId] = useState<number | null>(null)
@@ -71,7 +71,7 @@ export default function MemberList() {
   }, [])
 
   useEffect(() => {
-    void fetchList(1, null, null)
+    void fetchList(1, null, null, pageSize)
   }, [fetchList])
 
   // 机构 / 标签字典：挂载时各拉取一次，供列表与详情名称匹配
@@ -98,7 +98,7 @@ export default function MemberList() {
     setAppliedKeyword(keyword.trim())
     setAppliedStatus(status)
     setPage(1)
-    void fetchList(1, institutionId, status)
+    void fetchList(1, institutionId, status, pageSize)
   }
 
   const handleReset = () => {
@@ -107,31 +107,7 @@ export default function MemberList() {
     setAppliedKeyword('')
     setAppliedStatus(null)
     setPage(1)
-    void fetchList(1, null, null)
-  }
-
-  /** 启用 / 禁用会员 */
-  const handleToggleStatus = (record: MemberDTO) => {
-    const nextStatus = record.status === 9 ? 1 : 9
-    modal.confirm({
-      title: record.status === 9 ? '启用会员' : '禁用会员',
-      content:
-        record.status === 9
-          ? `确认恢复会员「${record.name}」的正常状态？`
-          : `确认禁用会员「${record.name}」？禁用后该会员将无法使用患者端服务。`,
-      okText: '确认',
-      cancelText: '取消',
-      okButtonProps: record.status === 9 ? {} : { danger: true },
-      onOk: async () => {
-        try {
-          await memberApi.updateMemberStatus(record.id, nextStatus)
-          message.success(record.status === 9 ? '会员已启用' : '会员已禁用')
-          void fetchList(page, institutionId, appliedStatus)
-        } catch {
-          /* 错误提示由 request 拦截器统一处理 */
-        }
-      },
-    })
+    void fetchList(1, null, null, pageSize)
   }
 
   /** 查看会员详情 */
@@ -145,7 +121,7 @@ export default function MemberList() {
     setTemplateLoading(true)
     try {
       const res = await memberApi.getMemberImportTemplate()
-      downloadBlob(res.data?.download_url, '会员导入模板.xlsx')
+      downloadBlob(res.data, '会员导入模板.xlsx')
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
     } finally {
@@ -184,7 +160,7 @@ export default function MemberList() {
       } else {
         message.success(`导入成功 ${result.success_count} 条`)
       }
-      void fetchList(1, institutionId, appliedStatus)
+      void fetchList(1, institutionId, appliedStatus, pageSize)
       setPage(1)
     } catch {
       /* 错误提示由 request 拦截器统一处理 */

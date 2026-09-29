@@ -6,7 +6,7 @@
  */
 import { useEffect, useState } from 'react'
 import { App, Button, Drawer, Input } from 'antd'
-import type { VerifyRecord, VerifyStatus } from '@/api/modules/memberOps'
+import type { VerifyRecord, VerifyStatus } from '@/api/modules/reward'
 
 interface VerifyDrawerProps {
   open: boolean

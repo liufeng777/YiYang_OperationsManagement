@@ -243,6 +243,11 @@ export const routes: RouteConfig[] = [
         meta: { title: '线索详情', hideInMenu: true },
         component: lazy(() => import('@/pages/member/leads/detail/index')),
       },
+      {
+        path: 'referral',
+        meta: { title: '推荐与奖励' },
+        component: lazy(() => import('@/pages/member/referral')),
+      },
     ],
   },
   {
@@ -251,7 +256,7 @@ export const routes: RouteConfig[] = [
     children: [
       {
         path: 'account',
-        meta: { title: '用户管理' },
+        meta: { title: '管理员管理' },
         component: lazy(() => import('@/pages/system/Account/account')),
       },
       {

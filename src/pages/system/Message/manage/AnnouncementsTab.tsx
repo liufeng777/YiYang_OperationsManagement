@@ -142,7 +142,7 @@ export default function AnnouncementsTab() {
   )
 
   useEffect(() => {
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
   }, [fetchList])
 
   /** 定向发布机构候选：来自机构列表接口 */
@@ -170,7 +170,7 @@ export default function AnnouncementsTab() {
     }
     setApplied(nextFilters)
     setPage(1)
-    void fetchList(1, nextFilters)
+    void fetchList(1, nextFilters, pageSize)
   }
 
   const handleReset = () => {
@@ -179,7 +179,7 @@ export default function AnnouncementsTab() {
     setStatus(null)
     setApplied(emptyFilters)
     setPage(1)
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
   }
 
   const closeDrawer = () => {
@@ -238,7 +238,7 @@ export default function AnnouncementsTab() {
         message.success(`公告「${body.title}」已创建`)
       }
       closeDrawer()
-      void fetchList(page, applied)
+      void fetchList(page, applied, pageSize)
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
     } finally {
@@ -255,7 +255,7 @@ export default function AnnouncementsTab() {
       onOk: async () => {
         await messageApi.publishAnnouncement(record.id)
         message.success('公告已发布')
-        void fetchList(page, applied)
+        void fetchList(page, applied, pageSize)
       },
     })
   }
@@ -269,7 +269,7 @@ export default function AnnouncementsTab() {
       onOk: async () => {
         await messageApi.withdrawAnnouncement(record.id)
         message.success('公告已撤回')
-        void fetchList(page, applied)
+        void fetchList(page, applied, pageSize)
       },
     })
   }
@@ -283,7 +283,7 @@ export default function AnnouncementsTab() {
       onOk: async () => {
         await messageApi.deleteAnnouncement(record.id)
         message.success('公告已删除')
-        void fetchList(page, applied)
+        void fetchList(page, applied, pageSize)
       },
     })
   }

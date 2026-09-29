@@ -22,13 +22,14 @@
  * - settings    §12 全局参数
  * - upload      共通 §7 上传契约
  * - content     页面展示类型（mock，无文档接口，见模块内说明）
- * - memberOps   会员运营（会员列表/积分明细/实名审核）页面展示类型（mock，无文档接口）
+ * - reward      推荐与奖励（推荐事件列表）+ 积分/实名审核 mock 页面展示类型
  */
 export * as authApi from './modules/auth'
 export * as dashboardApi from './modules/dashboard'
 export * as institutionApi from './modules/institution'
 export * as staffApi from './modules/staff'
 export * as memberApi from './modules/member'
+export * as rewardApi from './modules/reward'
 export * as tagApi from './modules/tag'
 export * as serviceApi from './modules/service'
 export * as consumableApi from './modules/consumable'

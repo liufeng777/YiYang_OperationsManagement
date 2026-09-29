@@ -38,6 +38,7 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
   const [rows, setRows] = useState<InstitutionServiceRow[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(PAGE_SIZE)
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState<InstitutionServiceRow | null>(null)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -53,13 +54,13 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
 
   /** 已添加服务：服务端分页查询（角标取 total） */
   const fetchRows = useCallback(
-    async (targetPage = 1) => {
+    async (targetPage = 1, size: number = PAGE_SIZE) => {
       if (!detail?.id) return
       setLoading(true)
       try {
         const res = await institutionApi.getInstitutionServiceList(detail.id, {
           page: targetPage,
-          page_size: PAGE_SIZE,
+          page_size: size,
         })
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
@@ -78,7 +79,7 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
 
   useEffect(() => {
     setPage(1)
-    void fetchRows(1)
+    void fetchRows(1, pageSize)
   }, [fetchRows])
 
   const fetchCategories = useCallback(async () => {
@@ -156,7 +157,7 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
       setDrawerOpen(false)
       setSelectedServiceIds([])
       setPage(1)
-      void fetchRows(1)
+      void fetchRows(1, pageSize)
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
     } finally {
@@ -344,13 +345,15 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
           dataSource={rows}
           pagination={{
             current: page,
-            pageSize: PAGE_SIZE,
+            pageSize,
             total,
-            showSizeChanger: false,
+            showSizeChanger: true,
+            pageSizeOptions: [10, 20, 50, 100],
             showTotal: (count) => `共 ${count} 条`,
-            onChange: (nextPage) => {
+            onChange: (nextPage, nextPageSize) => {
               setPage(nextPage)
-              void fetchRows(nextPage)
+              setPageSize(nextPageSize)
+              void fetchRows(nextPage, nextPageSize)
             },
           }}
         />

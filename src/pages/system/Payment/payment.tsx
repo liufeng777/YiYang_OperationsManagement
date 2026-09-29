@@ -3,7 +3,7 @@
  * 对齐设计稿：微信商户基础信息 + 安全凭证 + 支付与退款回调 + 渠道运行状态 + 连接测试 + 操作记录
  */
 import { useState } from 'react'
-import { App, Button, Card, Divider, Form, Input, Modal, Switch } from 'antd'
+import { App, Button, Card, Divider, Drawer, Form, Input, Space, Switch } from 'antd'
 import { CopyOutlined, EditOutlined, EyeOutlined, UploadOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
 import type { WechatPayConfig, PaymentOperationLog } from '@/api/modules/settings'
@@ -380,13 +380,21 @@ export default function PaymentSettings() {
         </div>
       </div>
 
-      {/* 编辑商户号 Modal */}
-      <Modal
+      {/* 编辑商户号 Drawer（新建/编辑统一使用 Drawer） */}
+      <Drawer
         open={editMchOpen}
         title="编辑微信商户号"
-        onCancel={() => setEditMchOpen(false)}
-        onOk={saveMch}
-        okText="保存"
+        onClose={() => setEditMchOpen(false)}
+        width={420}
+        destroyOnHidden
+        footer={
+          <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button onClick={() => setEditMchOpen(false)}>取消</Button>
+            <Button type="primary" onClick={saveMch}>
+              保存
+            </Button>
+          </Space>
+        }
       >
         <Form form={editMchForm} layout="vertical" requiredMark={false}>
           <Form.Item
@@ -397,15 +405,23 @@ export default function PaymentSettings() {
             <Input placeholder="请输入微信商户号" />
           </Form.Item>
         </Form>
-      </Modal>
+      </Drawer>
 
-      {/* 编辑 AppID Modal */}
-      <Modal
+      {/* 编辑 AppID Drawer（新建/编辑统一使用 Drawer） */}
+      <Drawer
         open={editAppIdOpen}
         title="编辑小程序 AppID"
-        onCancel={() => setEditAppIdOpen(false)}
-        onOk={saveAppId}
-        okText="保存"
+        onClose={() => setEditAppIdOpen(false)}
+        width={420}
+        destroyOnHidden
+        footer={
+          <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button onClick={() => setEditAppIdOpen(false)}>取消</Button>
+            <Button type="primary" onClick={saveAppId}>
+              保存
+            </Button>
+          </Space>
+        }
       >
         <Form form={editAppIdForm} layout="vertical" requiredMark={false}>
           <Form.Item
@@ -416,7 +432,7 @@ export default function PaymentSettings() {
             <Input placeholder="请输入小程序 AppID" />
           </Form.Item>
         </Form>
-      </Modal>
+      </Drawer>
     </PageContainer>
   )
 }

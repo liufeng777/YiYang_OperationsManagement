@@ -6,7 +6,7 @@
  * 状态枚举（指南 §2.1）：1-待跟进 2-跟进中 3-已转化 4-转化失败 9-流失（3/9 终态）
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { App, Button, Card, Form, Input, Modal, Select } from 'antd'
+import { App, Button, Card, Drawer, Form, Input, Select, Space } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, DownloadOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
@@ -400,16 +400,21 @@ export default function LeadList() {
         }}
       />
 
-      {/* 新增线索弹窗（指南 §4.2） */}
-      <Modal
+      {/* 新增线索抽屉（指南 §4.2；新建/编辑统一使用 Drawer） */}
+      <Drawer
         title="新增线索"
         open={createOpen}
-        onOk={handleCreate}
-        onCancel={() => setCreateOpen(false)}
-        okText="确认创建"
-        cancelText="取消"
-        confirmLoading={createSubmitting}
+        onClose={() => setCreateOpen(false)}
+        width={480}
         destroyOnHidden
+        footer={
+          <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button onClick={() => setCreateOpen(false)}>取消</Button>
+            <Button type="primary" loading={createSubmitting} onClick={handleCreate}>
+              确认创建
+            </Button>
+          </Space>
+        }
       >
         <Form form={createForm} layout="vertical" preserve={false} initialValues={{ source_type: 4 }}>
           <Form.Item name="name" label="联系人姓名" rules={[{ required: true, message: '请输入联系人姓名' }]}>
@@ -447,8 +452,7 @@ export default function LeadList() {
             <Input.TextArea rows={2} maxLength={200} showCount placeholder="选填" />
           </Form.Item>
         </Form>
-      </Modal>
-
+      </Drawer>
     </PageContainer>
   )
 }

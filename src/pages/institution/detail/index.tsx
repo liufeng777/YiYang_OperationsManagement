@@ -11,17 +11,12 @@ import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import { institutionApi } from '@/api'
-import type { InstitutionItem, InstitutionType } from '@/api/modules/institution'
+import type { InstitutionItem } from '@/api/modules/institution'
 import InstitutionInfoForm from '../components/InstitutionInfoForm'
 import ServicesTab from '../components/ServicesTab'
 import './index.less'
 
 type DetailTab = 'base' | 'services'
-
-const typeText: Record<InstitutionType, string> = {
-  1: '护理院',
-  2: '驿站',
-}
 
 const detailTabs: { key: DetailTab; label: string }[] = [
   { key: 'base', label: '基础资料' },

@@ -158,7 +158,7 @@ export default function RefundList() {
 
   // 进入页面：加载第 1 页与统计
   useEffect(() => {
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
     void fetchStats()
   }, [fetchList, fetchStats])
 
@@ -168,7 +168,7 @@ export default function RefundList() {
     const nextFilters: RefundFilters = { ...applied, refund_status: nextStatus }
     setApplied(nextFilters)
     setPage(1)
-    void fetchList(1, nextFilters)
+    void fetchList(1, nextFilters, pageSize)
   }
 
   const applyFilters = () => {
@@ -179,7 +179,7 @@ export default function RefundList() {
     }
     setApplied(nextFilters)
     setPage(1)
-    void fetchList(1, nextFilters)
+    void fetchList(1, nextFilters, pageSize)
   }
 
   const handleReset = () => {
@@ -188,7 +188,7 @@ export default function RefundList() {
     setRange(null)
     setApplied(emptyFilters)
     setPage(1)
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
   }
 
   /** 当前页兜底过滤：关键字匹配退款单号 / 关联订单ID / 申请人姓名（后端未提供该筛选参数） */
@@ -445,7 +445,7 @@ export default function RefundList() {
         open={!!approveTarget}
         onClose={() => setApproveTarget(null)}
         onSuccess={() => {
-          void fetchList(page, applied)
+          void fetchList(page, applied, pageSize)
           void fetchStats()
         }}
       />

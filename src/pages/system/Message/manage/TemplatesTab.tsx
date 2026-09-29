@@ -104,7 +104,7 @@ export default function TemplatesTab() {
   )
 
   useEffect(() => {
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
   }, [fetchList])
 
   const applyFilters = () => {
@@ -115,7 +115,7 @@ export default function TemplatesTab() {
     }
     setApplied(nextFilters)
     setPage(1)
-    void fetchList(1, nextFilters)
+    void fetchList(1, nextFilters, pageSize)
   }
 
   const handleReset = () => {
@@ -124,7 +124,7 @@ export default function TemplatesTab() {
     setStatus('all')
     setApplied(emptyFilters)
     setPage(1)
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
   }
 
   const openCreate = () => {
@@ -180,7 +180,7 @@ export default function TemplatesTab() {
         message.success(`模板「${values.name.trim()}」已创建并启用`)
       }
       closeDrawer()
-      void fetchList(page, applied)
+      void fetchList(page, applied, pageSize)
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
     } finally {
@@ -193,7 +193,7 @@ export default function TemplatesTab() {
     try {
       await messageApi.updateMessageTemplateStatus(record.id, next)
       message.success(`「${record.name}」已${next === STATUS_ENABLED ? '启用' : '停用'}`)
-      void fetchList(page, applied)
+      void fetchList(page, applied, pageSize)
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
     }
@@ -208,7 +208,7 @@ export default function TemplatesTab() {
       onOk: async () => {
         await messageApi.deleteMessageTemplate(record.id)
         message.success('模板已删除')
-        void fetchList(page, applied)
+        void fetchList(page, applied, pageSize)
       },
     })
   }
@@ -329,11 +329,12 @@ export default function TemplatesTab() {
           dataSource={rows}
           pagination={{
             current: page,
-            pageSize: PAGE_SIZE,
+            pageSize,
             total,
-            onChange: (nextPage) => {
+            onChange: (nextPage, nextPageSize) => {
               setPage(nextPage)
-              void fetchList(nextPage, applied)
+              setPageSize(nextPageSize)
+              void fetchList(nextPage, applied, nextPageSize)
             },
             showTotal: (count) => `共 ${count} 条`,
           }}

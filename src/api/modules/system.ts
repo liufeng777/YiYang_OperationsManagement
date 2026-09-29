@@ -10,7 +10,8 @@
  * 实测要点：
  * - 管理员：字段为 real_name / mobile / phone / role_ids / role_names，created_at、last_login_at 为
  *   'YYYY-MM-DD HH:mm:ss' 字符串；PUT 复用创建校验，username、password 均为必填。
- * - 角色：列表项为 id / name / code / description / status / built_in，不含已分配权限（后端无该接口）。
+ * - 角色：列表项为 id / name / code / description / status / built_in（1-普通 2-内置）；
+ *   详情 GET /admin/roles/:id 额外返回 permission_ids / permissions（已分配权限）。
  * - 权限：GET /admin/permissions 返回 { list, modules }，支持 module 过滤。
  * - 操作日志：字段为 operator / module / action / target / params / path / ip / operated_at(字符串) /
  *   create_at(秒) / error_message。
@@ -72,6 +73,8 @@ export interface AdminItem {
   role_names?: string[]
   /** 创建时间（字符串 'YYYY-MM-DD HH:mm:ss'） */
   created_at?: string | null
+  /** 1是普通，2是内置（不允许进行任何操作） */
+  built_in: number
 }
 
 /**
@@ -169,12 +172,19 @@ export interface RoleItem {
   code: string
   description: string
   status: number
-  /** 1-系统内置（不可删除） 0-自定义 */
+  /** 1-普通 2-内置（不允许删除、不允许修改权限） */
   built_in: number
 }
 
-/** 兼容旧命名 */
-export type RoleDetail = RoleItem
+/** 角色详情（GET /admin/roles/:id，含已分配权限，见 §2.2 出参） */
+export interface RoleDetail extends RoleItem {
+  /** 1-普通 2-内置（不允许删除、不允许修改权限） */
+  built_in: number
+  /** 已分配权限 id 列表（勾选态以此为准） */
+  permission_ids: number[]
+  /** 已分配权限列表 */
+  permissions: PermissionItem[]
+}
 
 /** 角色新增 / 编辑入参 */
 export interface RoleSaveBody {
@@ -192,9 +202,9 @@ export function getRoles(params?: ApiPageParams & { all?: 0 | 1; keyword?: strin
   return http.get<ApiPageResult<RoleItem>>('/admin/roles', { ...params })
 }
 
-/** 角色详情 GET /api/admin/roles/:id */
+/** 角色详情 GET /api/admin/roles/:id（含已分配权限 permissions） */
 export function getRoleDetail(id: number) {
-  return http.get<RoleItem>(`/admin/roles/${id}`)
+  return http.get<RoleDetail>(`/admin/roles/${id}`)
 }
 
 /** 新增角色 POST /api/admin/roles */

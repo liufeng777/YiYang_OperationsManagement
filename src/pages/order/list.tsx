@@ -144,7 +144,7 @@ export default function OrderList() {
 
   // 进入页面：加载第 1 页与统计
   useEffect(() => {
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
     void fetchStats()
   }, [fetchList, fetchStats])
 
@@ -154,7 +154,7 @@ export default function OrderList() {
     const nextFilters: OrderFilters = { ...applied, order_status: nextStatus }
     setApplied(nextFilters)
     setPage(1)
-    void fetchList(1, nextFilters)
+    void fetchList(1, nextFilters, pageSize)
   }
 
   const applyFilters = () => {
@@ -166,7 +166,7 @@ export default function OrderList() {
     }
     setApplied(nextFilters)
     setPage(1)
-    void fetchList(1, nextFilters)
+    void fetchList(1, nextFilters, pageSize)
   }
 
   const handleReset = () => {
@@ -176,7 +176,7 @@ export default function OrderList() {
     setRange(null)
     setApplied(emptyFilters)
     setPage(1)
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
   }
 
   /**

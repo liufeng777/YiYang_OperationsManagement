@@ -1,13 +1,12 @@
 /**
  * 系统设置 - 角色管理
  * 数据来源：
- * - 角色列表 systemApi.getRoles({ all: 1 })（实测字段：id / name / code / description / status / built_in）
+ * - 角色列表 systemApi.getRoles({ all: 1 })（字段：id / name / code / description / status / built_in，1-普通 2-内置）
+ * - 角色详情 systemApi.getRoleDetail(roleId)（含 built_in / permission_ids / permissions，切换角色时拉取并渲染勾选态）
  * - 权限面板 systemApi.getPermissions()（返回 { modules, list }，按 module 分组渲染）
  * - 权限保存 systemApi.assignRolePermissions(roleId, permissionIds)
- * 说明：后端未提供「角色已分配权限」查询接口（/admin/roles/:id/permissions、?role_id= 均不可用），
- *       因此切换角色时勾选态为空，勾选并保存后即写入后端。
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { App, Button, Card, Spin } from 'antd'
 import { CheckOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
@@ -49,8 +48,29 @@ export default function RoleManage() {
   const [activeId, setActiveId] = useState<number | null>(null)
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingRole, setEditingRole] = useState<RoleItem | null>(null)
-  /** 本地勾选态：roleId → permissionId[]（后端无查询接口，仅记录本次会话的勾选） */
+  /** 勾选态：roleId → permissionId[]（切换角色时由 getRoleDetail 服务端数据初始化，勾选为本地修改） */
   const [permMap, setPermMap] = useState<Record<number, number[]>>({})
+  /** 角色详情（已分配权限）加载中 */
+  const [permLoading, setPermLoading] = useState(false)
+  /** 详情请求序号：仅最后一次请求生效，避免快速切换角色时旧响应覆盖新勾选 */
+  const detailSeq = useRef(0)
+
+  /** 拉取角色详情（已分配权限），写入勾选态 */
+  const fetchRoleDetail = useCallback(async (roleId: number) => {
+    const seq = ++detailSeq.current
+    setPermLoading(true)
+    try {
+      const detail = await systemApi.getRoleDetail(roleId)
+      if (seq !== detailSeq.current) return
+      /** 勾选态以 permission_ids 为准，permissions 兜底 */
+      const ids = detail.permission_ids ?? (detail.permissions ?? []).map((item) => item.id)
+      setPermMap((prev) => ({ ...prev, [roleId]: ids }))
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      if (seq === detailSeq.current) setPermLoading(false)
+    }
+  }, [])
 
   /** 拉取角色列表与权限清单 */
   const fetchData = useCallback(async () => {
@@ -77,12 +97,19 @@ export default function RoleManage() {
     void fetchData()
   }, [fetchData])
 
+  /** 切换角色（含列表加载后的默认选中）：拉取角色详情，按已分配权限渲染勾选态 */
+  useEffect(() => {
+    if (activeId == null) return
+    void fetchRoleDetail(activeId)
+  }, [activeId, fetchRoleDetail])
+
   const activeRole = useMemo(
     () => roles.find((item) => item.id === activeId) ?? null,
     [roles, activeId],
   )
 
-  const isBuiltIn = (role: RoleItem | null) => !!role && role.built_in === 1
+  /** 内置判定：built_in 1-普通 2-内置（不允许删除、不允许修改权限） */
+  const isBuiltIn = (role: RoleItem | null) => !!role && role.built_in === 2
 
   /** 按模块分组的权限清单（顺序沿用接口返回的 modules） */
   const permissionGroups = useMemo(() => {
@@ -125,7 +152,7 @@ export default function RoleManage() {
 
   /** 删除角色二次确认（仅自定义角色可删） */
   const confirmDeleteRole = (role: RoleItem) => {
-    if (role.built_in === 1) return
+    if (role.built_in === 2) return
     modal.confirm({
       title: `确认删除角色「${role.name}」？`,
       content: '删除后不可恢复，请确认该角色下已无用户。',
@@ -217,10 +244,8 @@ export default function RoleManage() {
                   </div>
                   <p>{role.description || '暂无描述'}</p>
                   <div className="role-item__foot">
-                    <em>{role.built_in === 1 ? '系统内置' : '自定义角色'}</em>
-                    {role.built_in === 1 ? (
-                      <span>查看权限</span>
-                    ) : (
+                    <em>{role.built_in === 2 ? '系统内置' : '自定义角色'}</em>
+                    {role.built_in !== 2 && (
                       <div
                         className="role-item__actions"
                         onClick={(event) => event.stopPropagation()}
@@ -264,6 +289,7 @@ export default function RoleManage() {
               用户不单独配置权限，也不设置机构数据范围；角色权限统一生效。
             </div>
             <div className="role-panel__groups">
+              <Spin spinning={permLoading} size="small">
               {permissionGroups.map((group) => (
                 <div className="perm-group" key={group.key}>
                   <div className="perm-group__info">
@@ -291,6 +317,7 @@ export default function RoleManage() {
               {!permissionGroups.length && !loading && (
                 <p className="role-list__tip">暂无权限数据</p>
               )}
+              </Spin>
             </div>
             <div className="role-panel__footer">
               <span>
@@ -319,7 +346,11 @@ export default function RoleManage() {
         initial={editingRole}
         otherCodes={otherCodes}
         onClose={() => setEditorOpen(false)}
-        onSaved={() => void fetchData()}
+        onSaved={() => {
+          void fetchData()
+          /** 编辑角色可能一并下发权限，保存后同步最新勾选态 */
+          if (activeId != null) void fetchRoleDetail(activeId)
+        }}
       />
     </PageContainer>
   )

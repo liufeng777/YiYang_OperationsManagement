@@ -32,8 +32,9 @@ export function formatAmount(value?: number | string) {
   })}`
 }
 
-/** 触发浏览器下载 */
-export function downloadBlob(url: string, filename: string) {
+/** 触发浏览器下载（Blob 内容，内部创建并释放 object URL） */
+export function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
   link.download = filename

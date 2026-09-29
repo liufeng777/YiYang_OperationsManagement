@@ -6,9 +6,9 @@
 import { useMemo, useState } from 'react'
 import { App, Button, Card, Input, Radio, Select, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { BarChartOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { BarChartOutlined, PlusOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
-import type { PointsChangeType, PointsRecord } from '@/api/modules/memberOps'
+import type { PointsChangeType, PointsRecord } from '@/api/modules/reward'
 import './points.less'
 
 const changeTypeText: Record<PointsChangeType, string> = {
@@ -136,7 +136,7 @@ export default function PointsList() {
     date: '',
   })
   const [page, setPage] = useState(1)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
 
   const filteredData = useMemo(() => {
     return mockRecords.filter((item) => {
@@ -345,7 +345,12 @@ export default function PointsList() {
               current: page,
               pageSize,
               total: filteredData.length,
-              onChange: setPage,
+              showSizeChanger: true,
+              pageSizeOptions: [10, 20, 50, 100],
+              onChange: (nextPage, nextPageSize) => {
+                setPage(nextPage)
+                setPageSize(nextPageSize)
+              },
               showTotal: (total) => `共 ${total} 条`
             }}
           />

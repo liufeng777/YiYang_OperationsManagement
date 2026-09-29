@@ -10,6 +10,12 @@
 
     strong {
       .text-body-medium();
+
+      /* 内置账号标识 */
+      .account-tag--builtin {
+        margin-left: @spacing-2xs;
+        margin-right: 0;
+      }
     }
 
     span {
@@ -49,6 +55,12 @@
 
     .ant-btn {
       padding-inline: @spacing-2xs;
+    }
+
+    /* 内置账号（built_in=2）：不允许任何操作，占位提示 */
+    &__builtin {
+      .text-auxiliary();
+      white-space: nowrap;
     }
   }
 }

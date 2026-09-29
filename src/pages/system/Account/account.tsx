@@ -2,7 +2,8 @@
  * 系统设置 - 用户管理
  * 数据来源：systemApi.getAdminList（服务端分页；筛选条件全部下推后端，前端不做本地过滤）
  * 字段按后端实测：username / nickname / mobile(phone) / role_ids / role_names /
- *                status(1 启用 9 停用) / last_login_at('YYYY-MM-DD HH:mm:ss')
+ *                status(1 启用 9 停用) / last_login_at('YYYY-MM-DD HH:mm:ss') /
+ *                built_in(1 普通 2 内置，内置账号不允许进行任何操作)
  * 统计卡片：暂不接入（待后端提供统计接口后填充，不用列表接口凑数）
  * 重置密码：弹框填写 new_password 后调用 systemApi.resetAdminPassword
  */
@@ -37,6 +38,9 @@ const statusText: Record<number, string> = {
   1: '已激活',
   9: '已禁用',
 }
+
+/** 内置账号判定：built_in 1-普通 2-内置（不允许进行任何操作） */
+const isBuiltInAdmin = (record: AdminItem) => record.built_in === 2
 
 export default function AccountList() {
   const { message, modal } = App.useApp()
@@ -101,7 +105,7 @@ export default function AccountList() {
   }, [])
 
   useEffect(() => {
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
     void fetchRoles()
   }, [fetchList, fetchRoles])
 
@@ -133,7 +137,7 @@ export default function AccountList() {
     }
     setApplied(merged)
     setPage(1)
-    void fetchList(1, merged)
+    void fetchList(1, merged, pageSize)
   }
 
   /** 用户状态筛选：与状态下拉同维度，切换即下推查询 */
@@ -148,7 +152,7 @@ export default function AccountList() {
     setStatus(null)
     setApplied(emptyFilters)
     setPage(1)
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
   }
 
   /** 停用/启用二次确认 */
@@ -217,7 +221,10 @@ export default function AccountList() {
       key: 'username',
       render: (_, record) => (
         <div className="account-name">
-          <strong>{record.username}</strong>
+          <strong>
+            {record.username}
+            {isBuiltInAdmin(record) && <Tag className="account-tag--builtin">内置</Tag>}
+          </strong>
           <span>{record.nickname || '—'}</span>
         </div>
       ),
@@ -267,22 +274,28 @@ export default function AccountList() {
       title: '操作',
       key: 'action',
       width: 200,
-      render: (_, record) => (
-        <div className="account-actions">
-          <Button type="link" size="small" onClick={() => openEdit(record)}>
-            编辑
-          </Button>
-          <Button type="link" size="small" danger={record.status === 1} onClick={() => confirmToggle(record)}>
-            {record.status === STATUS_ENABLED ? '禁用' : '激活'}
-          </Button>
-          <Button type="link" size="small" onClick={() => openResetPassword(record)}>
-            重置密码
-          </Button>
-          <Button type="link" size="small" danger onClick={() => confirmDelete(record)}>
-            删除
-          </Button>
-        </div>
-      ),
+      render: (_, record) => {
+        /** 内置账号（built_in=2）：不允许进行任何操作 */
+        if (isBuiltInAdmin(record)) {
+          return <span className="account-actions__builtin">内置账号，不可操作</span>
+        }
+        return (
+          <div className="account-actions">
+            <Button type="link" size="small" onClick={() => openEdit(record)}>
+              编辑
+            </Button>
+            <Button type="link" size="small" danger={record.status === 1} onClick={() => confirmToggle(record)}>
+              {record.status === STATUS_ENABLED ? '禁用' : '激活'}
+            </Button>
+            <Button type="link" size="small" onClick={() => openResetPassword(record)}>
+              重置密码
+            </Button>
+            <Button type="link" size="small" danger onClick={() => confirmDelete(record)}>
+              删除
+            </Button>
+          </div>
+        )
+      },
     },
   ]
 
@@ -297,11 +310,11 @@ export default function AccountList() {
   return (
     <PageContainer
       fixed
-      title="用户管理"
-      description="创建运营平台用户并分配角色，用户权限全部继承所属角色"
+      title="管理员管理"
+      description="创建运营平台管理员并分配角色，用户权限全部继承所属角色"
       extra={
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          新增用户
+          新增管理员
         </Button>
       }
     >

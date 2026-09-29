@@ -98,7 +98,7 @@ export default function ReconcileList() {
   )
 
   useEffect(() => {
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
   }, [fetchList])
 
   /** 顶部统计：各状态各取 1 条拿 total */
@@ -129,7 +129,7 @@ export default function ReconcileList() {
     const nextFilters: ReconcileFilters = { reconciliation_type: type, status, range }
     setApplied(nextFilters)
     setPage(1)
-    void fetchList(1, nextFilters)
+    void fetchList(1, nextFilters, pageSize)
   }
 
   const handleReset = () => {
@@ -138,7 +138,7 @@ export default function ReconcileList() {
     setRange(null)
     setApplied(emptyFilters)
     setPage(1)
-    void fetchList(1, emptyFilters)
+    void fetchList(1, emptyFilters, pageSize)
   }
 
   /** 平账：对账中 / 有差异的单据可标记平账 */
@@ -152,7 +152,7 @@ export default function ReconcileList() {
         try {
           await financeApi.finishReconciliation(Number(record.id))
           message.success('该对账单已平账')
-          void fetchList(page, applied)
+          void fetchList(page, applied, pageSize)
           void fetchStats()
         } catch {
           /* 错误提示由 request 拦截器统一处理 */

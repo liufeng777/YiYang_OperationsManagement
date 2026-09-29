@@ -54,7 +54,7 @@ function handleUnauthorized(msg?: string) {
 // 请求拦截器
 service.interceptors.request.use(
   (config) => {
-    const { token } = useUserStore.getState()
+    // const { token } = useUserStore.getState()
     // if (token) {
     //   config.headers.Authorization = `Bearer ${token}`
     // }

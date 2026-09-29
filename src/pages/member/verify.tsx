@@ -1,15 +1,15 @@
 /**
  * 会员管理 - 健康服务对象实名审核
  * 视觉对齐设计稿：顶部统计卡 + 筛选 + 审核状态 Tabs + 审核列表 + 审核 Drawer
- * 当前为 mock 数据，后端就绪后替换为 memberOpsApi 对应接口
+ * 当前为 mock 数据，后端就绪后替换为 rewardApi 对应接口
  */
 import { useMemo, useState } from 'react'
 import { App, Button, Card, Input, Radio, Select, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { BarChartOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
+import { BarChartOutlined, PlusOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
 import VerifyDrawer from './VerifyDrawer'
-import type { VerifyRecord, VerifySource, VerifyStatus } from '@/api/modules/memberOps'
+import type { VerifyRecord, VerifySource, VerifyStatus } from '@/api/modules/reward'
 import './verify.less'
 
 const statusText: Record<VerifyStatus, string> = {
@@ -141,7 +141,7 @@ export default function VerifyList() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [current, setCurrent] = useState<VerifyRecord | null>(null)
   const [page, setPage] = useState(1)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
 
   const filteredData = useMemo(() => {
     return records.filter((item) => {
@@ -353,7 +353,12 @@ export default function VerifyList() {
               current: page,
               pageSize,
               total: filteredData.length,
-              onChange: setPage,
+              showSizeChanger: true,
+              pageSizeOptions: [10, 20, 50, 100],
+              onChange: (nextPage, nextPageSize) => {
+                setPage(nextPage)
+                setPageSize(nextPageSize)
+              },
               showTotal: (total) => `共 ${total} 条`
             }}
           />
