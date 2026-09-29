@@ -1,6 +1,6 @@
 /**
  * 登录页
- * 当前为 mock 登录：任意账号密码可登录，接入真实后端后替换 login action
+ * 登录：调用 authApi.login（POST /api/admin/auth/login），出参 token/admin 写入 useUserStore
  */
 import { useState } from 'react'
 import { Button, Checkbox, Form, Input, App } from 'antd'

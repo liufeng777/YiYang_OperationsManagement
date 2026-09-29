@@ -1,72 +1,36 @@
 /**
  * 系统设置 - 协议与授权内容
  * 视觉对齐设计稿：版本规则提示 + 筛选 + 协议版本表格
- * 当前为 mock 数据，后端就绪后替换为 systemApi.getAgreementList
+ * 后端接口未对接：页面以 Alert 提示、不展示业务数据；接口就绪后接入 systemApi.getAgreementList
  */
 import { useMemo, useState } from 'react'
 import { App, Button, Card, Input, Modal, Select } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
+import ApiPendingAlert from '@/components/ApiPendingAlert'
 import type { AgreementItem } from '@/api/modules/system'
 import AgreementPhone from './AgreementPhone'
+import { useNavigate } from 'react-router-dom'
 import './agreement.less'
-
-const initialData: AgreementItem[] = [
-  {
-    id: '1',
-    name: '幸福颐养用户服务协议',
-    type: '用户服务协议',
-    version: 'V1.2',
-    status: 'effective',
-    effectiveTime: '2026-08-01 00:00',
-    updatedAt: '2026-07-28 16:20',
-    updater: '陈运营',
-  },
-  {
-    id: '2',
-    name: '幸福颐养隐私政策',
-    type: '隐私政策',
-    version: 'V1.3',
-    status: 'effective',
-    effectiveTime: '2026-08-01 00:00',
-    updatedAt: '2026-07-29 10:15',
-    updater: '平台管理员',
-  },
-  {
-    id: '3',
-    name: '健康数据使用授权书',
-    type: '健康数据授权',
-    version: 'V1.1',
-    status: 'effective',
-    effectiveTime: '2026-08-05 00:00',
-    updatedAt: '2026-08-02 14:32',
-    updater: '陈运营',
-  },
-  {
-    id: '4',
-    name: '家庭健康信息授权说明',
-    type: '家庭信息授权',
-    version: 'V1.0',
-    status: 'draft',
-    effectiveTime: '—',
-    updatedAt: '2026-08-10 11:08',
-    updater: '陈运营',
-  },
-]
 
 export default function AgreementList() {
   const navigate = useNavigate()
   const { message } = App.useApp()
-  const [data, setData] = useState(initialData)
+  /** 接口未对接：无列表数据，操作统一提示 */
+  const [data] = useState<AgreementItem[]>([])
   const [keyword, setKeyword] = useState('')
   const [type, setType] = useState('all')
   const [status, setStatus] = useState('all')
   const [terminal, setTerminal] = useState('patient')
   const [previewId, setPreviewId] = useState<string | null>(null)
   const previewItem = data.find((item) => item.id === previewId) ?? null
+
+  /** 接口未对接：操作统一提示 */
+  const notReady = () => {
+    message.warning('接口未对接，功能暂未开放')
+  }
 
   const filteredData = useMemo(() => {
     return data.filter((item) => {
@@ -80,15 +44,8 @@ export default function AgreementList() {
     })
   }, [data, keyword, status, type])
 
-  const handlePublish = (record: AgreementItem) => {
-    setData((prev) =>
-      prev.map((item) =>
-        item.id === record.id
-          ? { ...item, status: 'effective', effectiveTime: '2026-08-15 00:00' }
-          : item,
-      ),
-    )
-    message.success(`「${record.name}」${record.version} 已发布（mock）`)
+  const handlePublish = () => {
+    notReady()
   }
 
   const columns = useMemo<ColumnsType<AgreementItem>>(
@@ -126,36 +83,16 @@ export default function AgreementList() {
                 <Button type="link" size="small" onClick={() => setPreviewId(record.id)}>
                   预览
                 </Button>
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={() =>
-                    navigate(
-                      `/system/agreement/edit/${record.id}?action=create&name=${encodeURIComponent(
-                        record.name,
-                      )}&type=${encodeURIComponent(record.type)}`,
-                    )
-                  }
-                >
+                <Button type="link" size="small" onClick={notReady}>
                   新建版本
                 </Button>
               </>
             ) : (
               <>
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={() =>
-                    navigate(
-                      `/system/agreement/edit/${record.id}?action=edit&name=${encodeURIComponent(
-                        record.name,
-                      )}&type=${encodeURIComponent(record.type)}`,
-                    )
-                  }
-                >
+                <Button type="link" size="small" onClick={notReady}>
                   编辑
                 </Button>
-                <Button type="link" size="small" onClick={() => handlePublish(record)}>
+                <Button type="link" size="small" onClick={handlePublish}>
                   发布
                 </Button>
               </>
@@ -164,7 +101,7 @@ export default function AgreementList() {
         ),
       },
     ],
-    [message, navigate],
+    [message],
   )
 
   return (
@@ -176,7 +113,7 @@ export default function AgreementList() {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => navigate('/system/agreement/edit/new')}
+          onClick={notReady}
         >
           新建协议版本
         </Button>
@@ -186,6 +123,7 @@ export default function AgreementList() {
         <div className="agreement-page__banner">
           版本规则：编辑已生效协议时自动创建新草稿；发布新版本后，旧版本进入历史记录，患者端按生效时间展示最新版本。
         </div>
+        <ApiPendingAlert feature="协议与授权内容" />
 
         <Card variant="borderless" className="filter-bar">
           <Input
@@ -197,13 +135,7 @@ export default function AgreementList() {
           <Select
             value={type}
             onChange={setType}
-            options={[
-              { label: '全部协议类型', value: 'all' },
-              { label: '用户服务协议', value: '用户服务协议' },
-              { label: '隐私政策', value: '隐私政策' },
-              { label: '健康数据授权', value: '健康数据授权' },
-              { label: '家庭信息授权', value: '家庭信息授权' },
-            ]}
+            options={[{ label: '全部协议类型', value: 'all' }]}
           />
           <Select
             value={status}
@@ -239,7 +171,7 @@ export default function AgreementList() {
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">协议版本列表</span>
-              <span className="list-card__header__tips">当前协议 4 类 · 历史版本 7 个</span>
+              <span className="list-card__header__tips">共 {filteredData.length} 个版本</span>
             </div>
             <Button type="link" className="list-card__header__link" size="small" onClick={() => message.info('历史版本列表开发中')}>
               查看全部历史版本

@@ -1,13 +1,15 @@
 /**
- * 会员管理 - 积分明细
+ * 会员管理 - 积分明细（当前未挂载路由）
  * 视觉对齐设计稿：顶部统计卡 + 筛选 + 变动类型 Tabs + 积分明细表格
- * 一期仅支持查看与后台调整，不支持积分兑换；当前为 mock 数据
+ * 一期仅支持查看与后台调整，不支持积分兑换；
+ * 后端接口未对接：页面以 Alert 提示、不展示业务数据，接口就绪后接入 rewardApi 对应接口
  */
 import { useMemo, useState } from 'react'
 import { App, Button, Card, Input, Radio, Select, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, PlusOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
+import ApiPendingAlert from '@/components/ApiPendingAlert'
 import type { PointsChangeType, PointsRecord } from '@/api/modules/reward'
 import './points.less'
 
@@ -17,81 +19,6 @@ const changeTypeText: Record<PointsChangeType, string> = {
   manual_add: '后台增加',
   manual_deduct: '后台扣减',
 }
-
-const mockRecords: PointsRecord[] = [
-  {
-    id: '1',
-    time: '08-25 14:35',
-    memberName: '王丽华',
-    changeType: 'earn',
-    points: 120,
-    balance: 1260,
-    bizType: 'order',
-    bizNo: 'O2026061',
-    reason: '订单完成赠送',
-    source: '系统自动',
-  },
-  {
-    id: '2',
-    time: '08-25 11:10',
-    memberName: '李建国',
-    changeType: 'deduct',
-    points: -80,
-    balance: 860,
-    bizType: 'refund',
-    bizNo: 'R2026062',
-    reason: '退款扣回积分',
-    source: '系统自动',
-  },
-  {
-    id: '3',
-    time: '08-24 17:36',
-    memberName: '张敏',
-    changeType: 'manual_add',
-    points: 100,
-    balance: 320,
-    bizType: null,
-    bizNo: null,
-    reason: '服务补偿',
-    source: '系统自动',
-  },
-  {
-    id: '4',
-    time: '08-24 16:20',
-    memberName: '赵梅',
-    changeType: 'earn',
-    points: 240,
-    balance: 2450,
-    bizType: 'order',
-    bizNo: 'O2026058',
-    reason: '订单完成赠送',
-    source: '陈运营',
-  },
-  {
-    id: '5',
-    time: '08-23 10:08',
-    memberName: '周秀兰',
-    changeType: 'manual_deduct',
-    points: -20,
-    balance: 80,
-    bizType: null,
-    bizNo: null,
-    reason: '异常积分修正',
-    source: '陈运营',
-  },
-  {
-    id: '6',
-    time: '08-22 14:42',
-    memberName: '陈国强',
-    changeType: 'earn',
-    points: 60,
-    balance: 60,
-    bizType: 'order',
-    bizNo: 'O2026050',
-    reason: '订单完成赠送',
-    source: '陈运营',
-  },
-]
 
 const tabItems = [
   { key: 'all', label: '全部' },
@@ -103,13 +30,13 @@ const tabItems = [
 ]
 
 const metrics = [
-  { key: 'account', label: '积分账户', value: '2,846', note: '与会员账户一一对应', tone: 'primary' },
-  { key: 'issued', label: '累计发放', value: '286,420', note: '订单完成后自动发放', tone: 'info' },
-  { key: 'deducted', label: '累计扣减', value: '18,630', note: '退款或后台调整', tone: 'warning' },
+  { key: 'account', label: '积分账户', value: '—', note: '与会员账户一一对应', tone: 'primary' },
+  { key: 'issued', label: '累计发放', value: '—', note: '订单完成后自动发放', tone: 'info' },
+  { key: 'deducted', label: '累计扣减', value: '—', note: '退款或后台调整', tone: 'warning' },
   {
     key: 'balance',
     label: '当前余额',
-    value: '267,790',
+    value: '—',
     note: '一期仅查看和调整，不支持兑换',
     tone: 'danger',
   },
@@ -124,6 +51,8 @@ interface PointsFilters {
 
 export default function PointsList() {
   const { message } = App.useApp()
+  /** 接口未对接：无积分数据 */
+  const [records] = useState<PointsRecord[]>([])
   const [keyword, setKeyword] = useState('')
   const [changeType, setChangeType] = useState<PointsChangeType | 'all'>('all')
   const [source, setSource] = useState('all')
@@ -139,7 +68,7 @@ export default function PointsList() {
   const [pageSize, setPageSize] = useState(10)
 
   const filteredData = useMemo(() => {
-    return mockRecords.filter((item) => {
+    return records.filter((item) => {
       const keywordHit =
         !applied.keyword ||
         item.memberName.includes(applied.keyword) ||
@@ -258,13 +187,14 @@ export default function PointsList() {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => message.info('导出功能将在后端接口就绪后接入')}
+          onClick={() => message.warning('接口未对接，功能暂未开放')}
         >
           导出明细
         </Button>
       }
     >
       <div className="points-list">
+        <ApiPendingAlert feature="积分明细" />
         <div className="metric-cards">
           {metrics.map((metric) => (
             <Card variant="borderless" className="metric-card" key={metric.key}>
@@ -304,11 +234,7 @@ export default function PointsList() {
           <Select
             value={source}
             onChange={setSource}
-            options={[
-              { label: '全部来源', value: 'all' },
-              { label: '系统自动', value: '系统自动' },
-              { label: '陈运营', value: '陈运营' },
-            ]}
+            options={[{ label: '全部来源', value: 'all' }]}
           />
           <Input
             allowClear
@@ -327,7 +253,7 @@ export default function PointsList() {
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">积分明细</span>
-              <span className="list-card__header__tips">共 8,632 条记录 · 当前余额 267,790</span>
+              <span className="list-card__header__tips">共 {filteredData.length} 条记录</span>
             </div>
             <Radio.Group
               className="list-card__status-filter"

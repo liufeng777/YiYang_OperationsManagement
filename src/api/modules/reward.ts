@@ -4,8 +4,8 @@
  * 注意：接口返回标准分页结构 { list, total }，服务端分页；
  *       记录字段按后端实测返回渲染（见 ReferralItem）。
  *
- * 另含会员运营 mock 页面（积分明细 / 实名审核）的展示类型：
- * pages/member/points.tsx、verify.tsx、VerifyDrawer.tsx 目前使用本地 mock 数据，
+ * 另含会员运营页面（积分明细 / 实名审核）的展示类型：
+ * pages/member/points.tsx、verify.tsx、VerifyDrawer.tsx 接口未对接，页面以 Alert 提示，
  * 后端接口就绪后在此补充对应 API 方法（页面注释已预留替换点）。
  */
 import { http } from '@/utils/request'
@@ -58,7 +58,7 @@ export function getReferralList(params?: ReferralListParams) {
 }
 
 /* ------------------------------------------------------------------ */
-/* 会员运营 mock 页面展示类型（积分明细 / 实名审核，接口待后端就绪）      */
+/* 会员运营页面展示类型（积分明细 / 实名审核，接口未对接）                 */
 /* ------------------------------------------------------------------ */
 
 /** 积分变动类型：earn 获得 / deduct 扣减 / manual_add 后台增加 / manual_deduct 后台扣减 */

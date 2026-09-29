@@ -1,7 +1,7 @@
 /**
  * 内容配置 - 专业人员展示
- * 视觉对齐设计稿：资料来源提示条 + 筛选 + 状态统计 + 人员表格 + 人员展示设置 Drawer
- * 当前为 mock 数据，后端就绪后替换为 contentApi.getStaffList / saveStaffDisplay
+ * 视觉对齐设计稿：资料来源提示条 + 筛选 + 人员表格 + 人员展示设置 Drawer
+ * 后端接口未对接：页面以 Alert 提示、不展示业务数据；接口就绪后接入 contentApi.getStaffList / saveStaffDisplay
  */
 import { useMemo, useState } from 'react'
 import type { Key } from 'react'
@@ -10,73 +10,9 @@ import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { SyncOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
+import ApiPendingAlert from '@/components/ApiPendingAlert'
 import type { StaffItem } from '@/api/modules/content'
 import './staff.less'
-
-const initialStaff: StaffItem[] = [
-  {
-    id: '1',
-    name: '李慧',
-    institutionName: '幸福颐养护理院',
-    title: '主任医师',
-    specialty: '心脑血管、慢病管理',
-    syncedAt: '08-10 15:30',
-    qualified: true,
-    visible: true,
-    recommended: true,
-    recommendSort: 1,
-    intro: '从事老年心脑血管疾病诊疗与慢病管理20余年，擅长为长者制定个性化健康管理方案。',
-  },
-  {
-    id: '2',
-    name: '王静',
-    institutionName: '东城健康驿站',
-    title: '主管护师',
-    specialty: '居家护理、压疮照护',
-    syncedAt: '08-10 15:30',
-    qualified: true,
-    visible: true,
-    recommended: true,
-    recommendSort: 2,
-    intro: '专注居家护理与压疮照护，为失能长者家庭提供上门护理指导。',
-  },
-  {
-    id: '3',
-    name: '赵明',
-    institutionName: '幸福颐养护理院',
-    title: '康复治疗师',
-    specialty: '术后康复、运动指导',
-    syncedAt: '08-10 15:29',
-    qualified: true,
-    visible: true,
-    recommended: false,
-    intro: '擅长术后康复训练与长者运动能力评估指导。',
-  },
-  {
-    id: '4',
-    name: '周玲',
-    institutionName: '西城健康驿站',
-    title: '营养师',
-    specialty: '长者营养、糖尿病饮食',
-    syncedAt: '08-10 15:28',
-    qualified: true,
-    visible: true,
-    recommended: false,
-    intro: '专注长者营养配餐与糖尿病饮食管理。',
-  },
-  {
-    id: '5',
-    name: '陈岚',
-    institutionName: '北苑健康驿站',
-    title: '护士',
-    specialty: '基础护理、健康随访',
-    syncedAt: '08-09 17:42',
-    qualified: false,
-    visible: false,
-    recommended: false,
-    intro: '',
-  },
-]
 
 interface StaffFilters {
   keyword: string
@@ -87,7 +23,8 @@ interface StaffFilters {
 
 export default function StaffList() {
   const { message } = App.useApp()
-  const [data, setData] = useState(initialStaff)
+  /** 接口未对接：无列表数据，操作统一提示 */
+  const [data] = useState<StaffItem[]>([])
   const [keyword, setKeyword] = useState('')
   const [institution, setInstitution] = useState('all')
   const [title, setTitle] = useState('all')
@@ -143,35 +80,19 @@ export default function StaffList() {
     setSettingIntro(record.intro ?? '')
   }
 
+  /** 接口未对接：操作统一提示 */
+  const notReady = () => {
+    message.warning('接口未对接，功能暂未开放')
+  }
+
   const handleSaveSetting = () => {
     if (!settingTarget) return
-    setData((prev) =>
-      prev.map((item) =>
-        item.id === settingTarget.id
-          ? {
-              ...item,
-              visible: settingVisible,
-              recommended: settingRecommended,
-              recommendSort: settingSort ?? undefined,
-              intro: settingIntro,
-            }
-          : item,
-      ),
-    )
-    message.success(`已保存 ${settingTarget.name} 的展示设置（mock）`)
+    notReady()
     setSettingTarget(null)
   }
 
-  const setBatchVisible = (visible: boolean) => {
-    if (!selectedRowKeys.length) {
-      message.warning('请先选择人员')
-      return
-    }
-    setData((prev) =>
-      prev.map((item) => (selectedRowKeys.includes(item.id) ? { ...item, visible } : item)),
-    )
-    message.success(`已批量${visible ? '展示' : '隐藏'} ${selectedRowKeys.length} 人（mock）`)
-    setSelectedRowKeys([])
+  const setBatchVisible = () => {
+    notReady()
   }
 
   const columns = useMemo<ColumnsType<StaffItem>>(
@@ -241,7 +162,7 @@ export default function StaffList() {
         <Button
           type="primary"
           icon={<SyncOutlined />}
-          onClick={() => message.success('人员资料同步任务已发起（mock）')}
+          onClick={notReady}
         >
           同步人员资料
         </Button>
@@ -251,6 +172,7 @@ export default function StaffList() {
         <div className="staff-list__banner">
           资料来源：医养服务工作台。运营平台不可新增人员或修改执业资质，仅设置患者端展示、推荐顺序和展示简介。
         </div>
+        <ApiPendingAlert feature="专业人员展示" />
 
         <Card variant="borderless" className="staff-list__filter">
           <div className="filter-row">
@@ -264,25 +186,12 @@ export default function StaffList() {
             <Select
               value={institution}
               onChange={setInstitution}
-              options={[
-                { label: '全部机构', value: 'all' },
-                { label: '幸福颐养护理院', value: '幸福颐养护理院' },
-                { label: '东城健康驿站', value: '东城健康驿站' },
-                { label: '西城健康驿站', value: '西城健康驿站' },
-                { label: '北苑健康驿站', value: '北苑健康驿站' },
-              ]}
+              options={[{ label: '全部机构', value: 'all' }]}
             />
             <Select
               value={title}
               onChange={setTitle}
-              options={[
-                { label: '全部职业', value: 'all' },
-                { label: '主任医师', value: '主任医师' },
-                { label: '主管护师', value: '主管护师' },
-                { label: '康复治疗师', value: '康复治疗师' },
-                { label: '营养师', value: '营养师' },
-                { label: '护士', value: '护士' },
-              ]}
+              options={[{ label: '全部职业', value: 'all' }]}
             />
             <Select
               value={status}
@@ -298,38 +207,25 @@ export default function StaffList() {
               查询
             </Button>
           </div>
-          <div className="filter-stats">
-            <span>全部人员 46</span>
-            <span>患者端展示 32</span>
-            <span>首页推荐 8</span>
-            <span>已隐藏 14</span>
-          </div>
         </Card>
 
         <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">专业人员列表</span>
-              <span className="list-card__header__tips">共 46 人 · 最近同步 2026-08-10 15:30</span>
+              <span className="list-card__header__tips">共 {filteredData.length} 人</span>
             </div>
             <div className="staff-table__batch">
-              <Button type="link" size="small" onClick={() => setBatchVisible(true)}>
+              <Button type="link" size="small" onClick={setBatchVisible}>
                 批量展示
               </Button>
-              <Button type="link" size="small" onClick={() => setBatchVisible(false)}>
+              <Button type="link" size="small" onClick={setBatchVisible}>
                 批量隐藏
               </Button>
               <Button
                 type="link"
                 size="small"
-                onClick={() => {
-                  if (!selectedRowKeys.length) {
-                    message.warning('请先选择人员')
-                    return
-                  }
-                  message.success(`已设置 ${selectedRowKeys.length} 人为首页推荐（mock）`)
-                  setSelectedRowKeys([])
-                }}
+                onClick={notReady}
               >
                 设置首页推荐
               </Button>

@@ -3,7 +3,7 @@
  * - 支付渠道配置 finance:payment-config
  * - 渠道流水查看 finance:channel-log
  * - 对账管理 finance:reconcile
- * 说明：上半部分为页面展示用类型（mock），下半部分 DTO 对齐文档契约。
+ * 说明：上半部分为支付配置页展示用类型（页面接口未对接，已以 Alert 占位），下半部分 DTO 对齐文档契约。
  */
 import { http } from '@/utils/request'
 import type { ApiPageParams, ApiPageResult } from '@/types/api'

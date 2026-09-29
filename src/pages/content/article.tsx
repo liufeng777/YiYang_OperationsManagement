@@ -1,7 +1,7 @@
 /**
  * 内容配置 - 科普内容管理
  * 视觉对齐设计稿：筛选 + 状态文字 Tabs + 文章表格（批量发布 / 下架）+ 底部提示条
- * 当前为 mock 数据，后端就绪后替换为 contentApi.getArticleList
+ * 后端接口未对接：页面以 Alert 提示、不展示业务数据；接口就绪后接入 contentApi.getArticleList
  */
 import { useMemo, useState } from 'react'
 import type { Key } from 'react'
@@ -11,6 +11,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
+import ApiPendingAlert from '@/components/ApiPendingAlert'
 import type { ArticleItem } from '@/api/modules/content'
 import './article.less'
 
@@ -22,64 +23,11 @@ const statusText: Record<ArticleStatus, string> = {
   offline: '已下架',
 }
 
-const initialArticles: ArticleItem[] = [
-  {
-    id: '1',
-    title: '秋季心脑血管养护：长者要注意这5件事',
-    category: '慢病管理',
-    source: '幸福颐养护理部',
-    author: '护理部',
-    updatedAt: '2026-08-09 16:20',
-    recommended: true,
-    status: 'published',
-  },
-  {
-    id: '2',
-    title: '居家血压监测的正确方法',
-    category: '居家照护',
-    source: '健康管理中心',
-    author: '健康管理中心',
-    updatedAt: '2026-08-08 10:35',
-    recommended: true,
-    status: 'published',
-  },
-  {
-    id: '3',
-    title: '失眠并非小事：老年睡眠改善指南',
-    category: '健康科普',
-    source: '李医生',
-    author: '李医生',
-    updatedAt: '2026-08-07 14:10',
-    recommended: false,
-    status: 'published',
-  },
-  {
-    id: '4',
-    title: '护理院入住前需要准备什么？',
-    category: '照护指南',
-    source: '运营中心',
-    author: '运营中心',
-    updatedAt: '2026-08-06 09:42',
-    recommended: false,
-    status: 'draft',
-  },
-  {
-    id: '5',
-    title: '夏季防暑与科学补水',
-    category: '季节养生',
-    source: '王护士',
-    author: '王护士',
-    updatedAt: '2026-07-28 11:05',
-    recommended: false,
-    status: 'offline',
-  },
-]
-
 const statusTabs = [
-  { key: 'all', label: '全部内容 28' },
-  { key: 'published', label: '已发布 18' },
-  { key: 'draft', label: '草稿 6' },
-  { key: 'offline', label: '已下架 4' },
+  { key: 'all', label: '全部内容' },
+  { key: 'published', label: '已发布' },
+  { key: 'draft', label: '草稿' },
+  { key: 'offline', label: '已下架' },
 ]
 
 interface ArticleFilters {
@@ -92,7 +40,8 @@ interface ArticleFilters {
 export default function ArticleList() {
   const navigate = useNavigate()
   const { message } = App.useApp()
-  const [data, setData] = useState(initialArticles)
+  /** 接口未对接：无列表数据，操作统一提示 */
+  const [data] = useState<ArticleItem[]>([])
   const [keyword, setKeyword] = useState('')
   const [category, setCategory] = useState('all')
   const [status, setStatus] = useState<ArticleStatus | 'all'>('all')
@@ -136,16 +85,9 @@ export default function ArticleList() {
     setApplied({ keyword: '', category: 'all', status: 'all', recommended: 'all' })
   }
 
-  const setArticleStatus = (ids: Key[], next: ArticleStatus, tip: string) => {
-    if (!ids.length) {
-      message.warning('请先选择内容')
-      return
-    }
-    setData((prev) =>
-      prev.map((item) => (ids.includes(item.id) ? { ...item, status: next } : item)),
-    )
-    message.success(tip)
-    setSelectedRowKeys([])
+  /** 接口未对接：操作统一提示（列表为空时行内操作不可达，仅批量按钮可点） */
+  const notReady = () => {
+    message.warning('接口未对接，功能暂未开放')
   }
 
   const columns = useMemo<ColumnsType<ArticleItem>>(
@@ -201,7 +143,7 @@ export default function ArticleList() {
               <Button
                 type="link"
                 size="small"
-                onClick={() => setArticleStatus([record.id], 'offline', `「${record.title}」已下架`)}
+                onClick={notReady}
               >
                 下架
               </Button>
@@ -210,7 +152,7 @@ export default function ArticleList() {
               <Button
                 type="link"
                 size="small"
-                onClick={() => setArticleStatus([record.id], 'published', `「${record.title}」已发布`)}
+                onClick={notReady}
               >
                 发布
               </Button>
@@ -219,7 +161,7 @@ export default function ArticleList() {
               <Button
                 type="link"
                 size="small"
-                onClick={() => setArticleStatus([record.id], 'published', `「${record.title}」已重新发布`)}
+                onClick={notReady}
               >
                 重新发布
               </Button>
@@ -240,13 +182,14 @@ export default function ArticleList() {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => navigate('/content/article/edit/new')}
+          onClick={notReady}
         >
           新建科普内容
         </Button>
       }
     >
       <div className="article-list">
+        <ApiPendingAlert feature="科普内容管理" />
         <Card variant="borderless" className="article-list__filter">
           <div className="filter-row">
             <Input
@@ -310,20 +253,20 @@ export default function ArticleList() {
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">科普内容列表</span>
-              <span className="list-card__header__tips">共 28 篇</span>
+              <span className="list-card__header__tips">共 {filteredData.length} 篇</span>
             </div>
             <div className="article-table__batch">
               <Button
                 type="link"
                 size="small"
-                onClick={() => setArticleStatus(selectedRowKeys, 'published', `已批量发布 ${selectedRowKeys.length} 篇`)}
+                onClick={notReady}
               >
                 批量发布
               </Button>
               <Button
                 type="link"
                 size="small"
-                onClick={() => setArticleStatus(selectedRowKeys, 'offline', `已批量下架 ${selectedRowKeys.length} 篇`)}
+                onClick={notReady}
               >
                 批量下架
               </Button>

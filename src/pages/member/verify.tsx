@@ -1,13 +1,14 @@
 /**
- * 会员管理 - 健康服务对象实名审核
+ * 会员管理 - 健康服务对象实名审核（当前未挂载路由）
  * 视觉对齐设计稿：顶部统计卡 + 筛选 + 审核状态 Tabs + 审核列表 + 审核 Drawer
- * 当前为 mock 数据，后端就绪后替换为 rewardApi 对应接口
+ * 后端接口未对接：页面以 Alert 提示、不展示业务数据，接口就绪后接入 rewardApi 对应接口
  */
 import { useMemo, useState } from 'react'
 import { App, Button, Card, Input, Radio, Select, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, PlusOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
+import ApiPendingAlert from '@/components/ApiPendingAlert'
 import VerifyDrawer from './VerifyDrawer'
 import type { VerifyRecord, VerifySource, VerifyStatus } from '@/api/modules/reward'
 import './verify.less'
@@ -23,98 +24,20 @@ const sourceText: Record<VerifySource, string> = {
   self: 'C端本人认证',
 }
 
-const initialRecords: VerifyRecord[] = [
-  {
-    id: '1',
-    applyNo: 'RN202608250038',
-    targetName: '张建国',
-    submitter: '张女士 · 138****2368',
-    relation: '父亲',
-    idCard: '1101011948****1234',
-    source: 'add',
-    status: 'pending',
-    submitTime: '2026-08-25 14:20',
-    auditor: null,
-  },
-  {
-    id: '2',
-    applyNo: 'RN202608250031',
-    targetName: '李秀兰',
-    submitter: '李先生 · 139****5521',
-    relation: '母亲',
-    idCard: '1101021952****4521',
-    source: 'add',
-    status: 'pending',
-    submitTime: '2026-08-25 11:35',
-    auditor: null,
-  },
-  {
-    id: '3',
-    applyNo: 'RN202608240096',
-    targetName: '王国强',
-    submitter: '本人 · 136****8890',
-    relation: '本人',
-    idCard: '1101051960****8772',
-    source: 'self',
-    status: 'approved',
-    submitTime: '2026-08-24 17:36',
-    auditor: '陈运营',
-    remark: '姓名与身份证信息核对一致。',
-  },
-  {
-    id: '4',
-    applyNo: 'RN202608240087',
-    targetName: '赵梅',
-    submitter: '赵女士 · 137****6632',
-    relation: '母亲',
-    idCard: '1101061955****2008',
-    source: 'add',
-    status: 'rejected',
-    submitTime: '2026-08-24 16:20',
-    auditor: '陈运营',
-    remark: '身份证号与姓名不匹配，请核对后重新提交。',
-  },
-  {
-    id: '5',
-    applyNo: 'RN202608240052',
-    targetName: '周秀兰',
-    submitter: '周先生 · 135****9066',
-    relation: '配偶',
-    idCard: '1101071958****3690',
-    source: 'add',
-    status: 'pending',
-    submitTime: '2026-08-24 10:08',
-    auditor: null,
-  },
-  {
-    id: '6',
-    applyNo: 'RN202608230041',
-    targetName: '陈国强',
-    submitter: '陈女士 · 188****3175',
-    relation: '父亲',
-    idCard: '1101081949****6617',
-    source: 'add',
-    status: 'approved',
-    submitTime: '2026-08-23 14:42',
-    auditor: '陈运营',
-    remark: '姓名与身份证信息核对一致。',
-  },
-]
-
 const tabItems = [
   { key: 'all', label: '全部' },
-  { key: 'pending', label: '待审核 38' },
-  { key: 'approved', label: '已通过 82' },
-  { key: 'rejected', label: '已驳回 6' },
-  { key: 'today', label: '今日提交 31' },
+  { key: 'pending', label: '待审核' },
+  { key: 'approved', label: '已通过' },
+  { key: 'rejected', label: '已驳回' },
+  { key: 'today', label: '今日提交' },
   { key: 'source', label: '全部来源' },
 ]
 
 const metrics = [
-  { key: 'pending', label: '待审核', value: '38', note: '需运营人员人工核对', tone: 'primary' },
-  { key: 'approved', label: '今日通过', value: '24', note: '审核通过后可建档', tone: 'info' },
-  { key: 'rejected', label: '今日驳回', value: '3', note: '均已填写驳回原因', tone: 'warning' },
-  { key: 'duration', label: '平均审核时长', value: '4.2h', note: '目标 1 个工作日内完成', tone: 'danger' },
+  { key: 'pending', label: '待审核', value: '—', note: '需运营人员人工核对', tone: 'primary' },
+  { key: 'approved', label: '今日通过', value: '—', note: '审核通过后可建档', tone: 'info' },
+  { key: 'rejected', label: '今日驳回', value: '—', note: '均已填写驳回原因', tone: 'warning' },
+  { key: 'duration', label: '平均审核时长', value: '—', note: '目标 1 个工作日内完成', tone: 'danger' },
 ]
 
 interface VerifyFilters {
@@ -126,7 +49,8 @@ interface VerifyFilters {
 
 export default function VerifyList() {
   const { message } = App.useApp()
-  const [records, setRecords] = useState<VerifyRecord[]>(initialRecords)
+  /** 接口未对接：无审核数据 */
+  const [records] = useState<VerifyRecord[]>([])
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState<VerifyStatus | 'all'>('all')
   const [source, setSource] = useState<VerifySource | 'all'>('all')
@@ -177,18 +101,9 @@ export default function VerifyList() {
     setDrawerOpen(true)
   }
 
-  const handleAudited = (
-    id: string,
-    nextStatus: Exclude<VerifyStatus, 'pending'>,
-    remark: string,
-  ) => {
-    setRecords((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, status: nextStatus, auditor: '陈运营', remark: remark || item.remark }
-          : item,
-      ),
-    )
+  /** 接口未对接：审核回调统一提示（列表为空时 Drawer 不可达） */
+  const handleAudited = () => {
+    message.warning('接口未对接，功能暂未开放')
   }
 
   const columns = useMemo<ColumnsType<VerifyRecord>>(
@@ -267,13 +182,14 @@ export default function VerifyList() {
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => message.info('导出功能将在后端接口就绪后接入')}
+          onClick={() => message.warning('接口未对接，功能暂未开放')}
         >
           导出审核记录
         </Button>
       }
     >
       <div className="verify-list">
+        <ApiPendingAlert feature="实名审核" />
         <div className="metric-cards">
           {metrics.map((metric) => (
             <Card variant="borderless" className="metric-card" key={metric.key}>
@@ -335,7 +251,7 @@ export default function VerifyList() {
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">实名认证审核列表</span>
-              <span className="list-card__header__tips">共 126 条申请 · 待审核 38 条</span>
+              <span className="list-card__header__tips">共 {filteredData.length} 条申请</span>
             </div>
             <Radio.Group
               className="list-card__status-filter"

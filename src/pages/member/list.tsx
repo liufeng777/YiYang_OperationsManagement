@@ -29,8 +29,6 @@ export default function MemberList() {
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
-  /** 顶部统计：全部 / 未实名 / 已实名 / 禁用（各状态 page_size=1 取 total） */
-  const [stats] = useState({ all: 0, unverified: 0, verified: 0, disabled: 0 })
 
   const [keyword, setKeyword] = useState('')
   const [institutionId, setInstitutionId] = useState<number | null>(null)
@@ -260,10 +258,10 @@ export default function MemberList() {
   ]
 
   const metrics = [
-    { key: 'all', label: '全部会员', value: stats.all, note: '平台全部注册会员', tone: 'success' },
-    { key: 'verified', label: '已实名', value: stats.verified, note: '已完成实名认证', tone: 'info' },
-    { key: 'unverified', label: '未实名', value: stats.unverified, note: '待完成实名认证', tone: 'warning' },
-    { key: 'disabled', label: '已禁用', value: stats.disabled, note: '已被平台禁用', tone: 'danger' },
+    { key: 'all', label: '全部会员', value: total, note: '平台全部注册会员', tone: 'success' },
+    { key: 'verified', label: '已实名', value: '—', note: '已完成实名认证', tone: 'info' },
+    { key: 'unverified', label: '未实名', value: '—', note: '待完成实名认证', tone: 'warning' },
+    { key: 'disabled', label: '已禁用', value: '—', note: '已被平台禁用', tone: 'danger' },
   ]
 
   return (

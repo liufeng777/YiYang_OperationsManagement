@@ -21,8 +21,8 @@
  * - dashboard   §11 数据看板
  * - settings    §12 全局参数
  * - upload      共通 §7 上传契约
- * - content     页面展示类型（mock，无文档接口，见模块内说明）
- * - reward      推荐与奖励（推荐事件列表）+ 积分/实名审核 mock 页面展示类型
+ * - content     页面展示类型（对应页面接口未对接，见模块内说明）
+ * - reward      推荐与奖励（推荐事件列表）+ 积分/实名审核页面展示类型（接口未对接）
  */
 export * as authApi from './modules/auth'
 export * as dashboardApi from './modules/dashboard'

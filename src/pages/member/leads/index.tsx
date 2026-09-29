@@ -274,11 +274,12 @@ export default function LeadList() {
     },
   ]
 
+  /** 顶部统计：全部线索取列表接口 total（真实数据）；分状态统计接口未提供，展示 — */
   const metrics = [
-    { key: 'all', label: '全部线索', value: 10, note: '运营线索总量', tone: 'success' },
-    { key: 'pending', label: '待跟进', value: 2, note: '待认领的新线索', tone: 'warning' },
-    { key: 'following', label: '跟进中', value: 5, note: '已认领正在跟进', tone: 'info' },
-    { key: 'converted', label: '已转化', value: 3, note: '复核达成的线索', tone: 'success' },
+    { key: 'all', label: '全部线索', value: total, note: '运营线索总量', tone: 'success' },
+    { key: 'pending', label: '待跟进', value: '—', note: '待认领的新线索', tone: 'warning' },
+    { key: 'following', label: '跟进中', value: '—', note: '已认领正在跟进', tone: 'info' },
+    { key: 'converted', label: '已转化', value: '—', note: '复核达成的线索', tone: 'success' },
   ]
 
   return (

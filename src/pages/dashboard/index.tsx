@@ -2,9 +2,9 @@
  * 运营首页 - 数据总览
  * 布局：经营指标卡（今日订单 / 运营机构 / 待办事项 / 今日活动报名）
  *       + 待办事项 / 近 7 日订单趋势 + 近期订单表格
- * 视觉严格对齐设计稿：docs/assets/design-reference.png
+ * 后端接口未对接：页面以 Alert 提示、不展示业务数据；接口就绪后接入 dashboardApi（§11）
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Card, Col, Row } from 'antd'
@@ -12,6 +12,7 @@ import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { ArrowUpOutlined, BarChartOutlined, RightOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
+import ApiPendingAlert from '@/components/ApiPendingAlert'
 import type {
   DashboardTodo,
   OverviewData,
@@ -49,92 +50,19 @@ interface MetricCard {
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const [overview, setOverview] = useState<OverviewData | null>(null)
-  const [todos, setTodos] = useState<DashboardTodo[]>([])
-  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
-  const [trend, setTrend] = useState<TrendStat | null>(null)
+  /** 接口未对接：各区块保持空态（指标卡展示 -，列表/趋势为空） */
+  const [overview] = useState<OverviewData | null>(null)
+  const [todos] = useState<DashboardTodo[]>([])
+  const [recentOrders] = useState<RecentOrder[]>([])
+  const [trend] = useState<TrendStat | null>(null)
 
-  useEffect(() => {
-    // TODO: 后端就绪后替换为真实接口：
-    // getOverview().then(setOverview)
-    // getTodoList().then(setTodos)
-    // getRecentOrders().then(setRecentOrders)
-    // getTrendStat().then(setTrend)
-    setOverview({
-      todayOrderCount: 128,
-      todayOrderRate: 12.6,
-      activitySignupCount: 58,
-      activitySignupRate: 8.2,
-      pendingRefundCount: 6,
-      pendingTodoCount: 18,
-      totalInstitution: 36,
-      pendingInstitutionCount: 3,
-    })
-    setTodos([
-      { key: 'refund', title: '退款待审核', desc: '用户退款由平台最终审批', count: 6, unit: '笔' },
-      { key: 'institution', title: '机构资料待完善', desc: '影响用户定位与服务展示', count: 3, unit: '家' },
-      { key: 'content', title: '内容待发布', desc: '活动及首页推荐位待处理', count: 5, unit: '条' },
-    ])
-    setRecentOrders([
-      {
-        orderNo: 'XY202608060128',
-        bizType: '上门服务',
-        institution: '幸福里健康驿站',
-        customer: '李阿姨',
-        amount: 168.0,
-        orderTime: '08-06 10:24',
-        status: 1,
-      },
-      {
-        orderNo: 'XY202608060119',
-        bizType: '活动报名',
-        institution: '康乐护理院',
-        customer: '王叔叔',
-        amount: 99.0,
-        orderTime: '08-06 09:46',
-        status: 2,
-      },
-      {
-        orderNo: 'XY202608050986',
-        bizType: '适老商品',
-        institution: '幸福里健康驿站',
-        customer: '陈女士',
-        amount: 328.0,
-        orderTime: '08-05 18:32',
-        status: 3,
-      },
-      {
-        orderNo: 'XY202608050921',
-        bizType: '银龄旅游',
-        institution: '怡康护理院',
-        customer: '赵先生',
-        amount: 1299.0,
-        orderTime: '08-05 16:08',
-        status: 4,
-      },
-    ])
-    setTrend({
-      totalOrders: 742,
-      totalRate: 11.8,
-      daily: [
-        { label: '7/31', value: 82 },
-        { label: '8/1', value: 96 },
-        { label: '8/2', value: 74 },
-        { label: '8/3', value: 118 },
-        { label: '8/4', value: 104 },
-        { label: '8/5', value: 126 },
-        { label: '今日', value: 142 },
-      ],
-    })
-  }, [])
-
-  /** 经营指标卡配置（顺序与设计稿一致） */
+  /** 经营指标卡配置（顺序与设计稿一致）；接口未对接时副标题展示 - */
   const metricCards: MetricCard[] = [
     {
       key: 'order',
       label: '今日订单',
       value: overview?.todayOrderCount,
-      badge: `+${overview?.todayOrderRate ?? 0}% 较昨日`,
+      badge: overview ? `+${overview.todayOrderRate}% 较昨日` : '-',
       tone: 'success',
       icon: <BarChartOutlined />,
     },
@@ -142,7 +70,7 @@ export default function Dashboard() {
       key: 'institution',
       label: '运营机构',
       value: overview?.totalInstitution,
-      badge: `${overview?.pendingInstitutionCount ?? 0} 家待完善资料`,
+      badge: overview ? `${overview.pendingInstitutionCount} 家待完善资料` : '-',
       tone: 'info',
       icon: <BarChartOutlined />,
     },
@@ -150,7 +78,7 @@ export default function Dashboard() {
       key: 'todo',
       label: '待办事项',
       value: overview?.pendingTodoCount,
-      badge: `含 ${overview?.pendingRefundCount ?? 0} 笔退款审核`,
+      badge: overview ? `含 ${overview.pendingRefundCount} 笔退款审核` : '-',
       tone: 'warning',
       icon: <BarChartOutlined />,
     },
@@ -158,7 +86,7 @@ export default function Dashboard() {
       key: 'signup',
       label: '今日活动报名',
       value: overview?.activitySignupCount,
-      badge: `+${overview?.activitySignupRate ?? 0}% 较昨日`,
+      badge: overview ? `+${overview.activitySignupRate}% 较昨日` : '-',
       tone: 'danger',
       icon: <BarChartOutlined />,
     },
@@ -212,6 +140,7 @@ export default function Dashboard() {
 
   return (
     <PageContainer fixed title="运营首页" description="欢迎回来，以下是今日平台经营概览">
+      <ApiPendingAlert feature="运营首页数据总览" />
       {/* 经营指标卡 */}
       <Row gutter={[16, 16]}>
         {metricCards.map((card) => (
@@ -282,7 +211,7 @@ export default function Dashboard() {
                 <span className="dashboard-trend__summary">
                   累计 {trend?.totalOrders ?? '-'} 单
                   <ArrowUpOutlined className="dashboard-trend__summary-arrow" />
-                  {trend?.totalRate ?? 0}%
+                  {trend ? `${trend.totalRate}%` : '-'}
                 </span>
               </div>
               <div className="dashboard-trend">
