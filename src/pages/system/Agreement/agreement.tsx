@@ -12,11 +12,9 @@ import PageContainer from '@/components/PageContainer'
 import ApiPendingAlert from '@/components/ApiPendingAlert'
 import type { AgreementItem } from '@/api/modules/system'
 import AgreementPhone from './AgreementPhone'
-import { useNavigate } from 'react-router-dom'
 import './agreement.less'
 
 export default function AgreementList() {
-  const navigate = useNavigate()
   const { message } = App.useApp()
   /** 接口未对接：无列表数据，操作统一提示 */
   const [data] = useState<AgreementItem[]>([])
