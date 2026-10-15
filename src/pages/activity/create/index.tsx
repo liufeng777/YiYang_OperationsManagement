@@ -28,6 +28,7 @@ import dayjs, { type Dayjs } from 'dayjs'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import RichDetailEditor from '@/components/RichDetailEditor'
+import RichDetailPreview, { isRichDetailEmpty } from '@/components/RichDetailPreview'
 import { activityApi } from '@/api'
 import { useImageUpload } from '@/hooks'
 import type { ActivityInstitutionConfig, ActivitySaveBody } from '@/api/modules/activity'
@@ -255,34 +256,38 @@ export default function ActivityCreate() {
           <LeftOutlined />
           活动详情
         </div>
-        <div className="phone-preview__hero">
-          <strong>{name || '秋日康养游园会'}</strong>
-          <span>{location || '健康相伴 · 乐享秋日好时光'}</span>
-        </div>
-        <div className="phone-preview__tags">
-          <em>{typeLabel || '社区活动'}</em>
-          <em>{institutions.length} 家机构可选</em>
-        </div>
-        <div className="phone-preview__info">
-          <p className='phone-preview__info__title'>选择机构后展示对应活动时间</p>
-          <p className='phone-preview__info__label'>{institutions.length} 家参与机构可选 · 共承接 {totalCapacity} 人</p>
-          <p className='phone-preview__info__highlight'>适合 {targetCrowd || '60 岁以上长者'} · {feeText}</p>
-        </div>
-        <div className="phone-preview__image phone-preview__image--cream">
-          <em>DETAIL IMAGE 01</em>
-          <strong>五大康养活动亮点</strong>
-          <span>健康义诊 · 趣味运动 · 营养茶歇</span>
-        </div>
-        <div className="phone-preview__image phone-preview__image--green">
-          <em>DETAIL IMAGE 02</em>
-          <strong>活动流程与注意事项</strong>
-          <span>签到集合 · 分组体验 · 午间休息 · 快乐返程</span>
-        </div>
-        {status === 'success' && (
-          <div className="phone-preview__success">
-            <CheckOutlined /> 报名成功，已为您预留名额
+        <div className="phone-preview__scroll">
+          <div className={`phone-preview__hero${coverUrl ? ' has-cover' : ''}`}>
+            {coverUrl && <img src={coverUrl} alt="活动封面" />}
+            <strong>{name || '秋日康养游园会'}</strong>
+            <span>{location || '健康相伴 · 乐享秋日好时光'}</span>
           </div>
-        )}
+          <div className="phone-preview__tags">
+            <em>{typeLabel || '社区活动'}</em>
+            <em>{institutions.length} 家机构可选</em>
+          </div>
+          <div className="phone-preview__info">
+            <p className='phone-preview__info__title'>选择机构后展示对应活动时间</p>
+            <p className='phone-preview__info__label'>{institutions.length} 家参与机构可选 · 共承接 {totalCapacity} 人</p>
+            <p className='phone-preview__info__highlight'>适合 {targetCrowd || '60 岁以上长者'} · {feeText}</p>
+          </div>
+          {isRichDetailEmpty(description) ? (
+            <div className="phone-preview__image phone-preview__image--cream">
+              <em>图文详情</em>
+              <strong>编辑图文详情后在此展示</strong>
+              <span>支持图片、标题、列表等富文本排版</span>
+            </div>
+          ) : (
+            <div className="phone-preview__detail">
+              <RichDetailPreview value={description} />
+            </div>
+          )}
+          {status === 'success' && (
+            <div className="phone-preview__success">
+              <CheckOutlined /> 报名成功，已为您预留名额
+            </div>
+          )}
+        </div>
         <div className="phone-preview__footer">
           <div>
             <span>活动费用</span>

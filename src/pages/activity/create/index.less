@@ -67,12 +67,6 @@
     }
   }
 
-  .basic-card {
-    .ant-card-body {
-      padding-bottom: 0;
-    }
-  }
-
   /* 表单字段网格：已迁移至公共样式 @/styles/form-grid.less（.form-grid） */
 
   .ant-form-item-label > label {
@@ -98,6 +92,7 @@
     border-radius: @radius-sm;
     padding: @spacing-sm @spacing-md;
     border: 1px solid @color-primary-dark;
+    margin-top: 12px;
 
     &__bar {
       display: flex;
@@ -201,22 +196,60 @@
     .text-body-medium();
   }
 
+  /* 头部之下、底部报名栏之上的可滚动内容区 */
+  &__scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
   &__hero {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: @spacing-2xs;
     padding: @spacing-2xl @spacing-md;
     color: @color-bg-card;
     background: @color-primary;
+    overflow: hidden;
 
     strong {
+      position: relative;
       font-size: @font-size-title-card;
       font-weight: @font-weight-title-card;
     }
 
     span {
+      position: relative;
       font-size: @font-size-auxiliary;
       opacity: 0.85;
+    }
+
+    /* 有封面图：图片铺满 hero，标题叠白字 */
+    &.has-cover {
+      min-height: 140px;
+      justify-content: flex-end;
+
+      img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, transparent 35%, rgba(0, 0, 0, 0.45));
+      }
+
+      strong,
+      span {
+        z-index: 1;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
     }
   }
 
@@ -258,7 +291,13 @@
     }
   }
 
-  /* 详情长图块 */
+  /* 图文详情渲染区（白底承接富文本） */
+  &__detail {
+    padding: @spacing-md;
+    background: #fff;
+  }
+
+  /* 详情长图块（图文详情未配置时的占位提示） */
   &__image {
     display: flex;
     flex-direction: column;

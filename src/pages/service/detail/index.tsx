@@ -12,6 +12,7 @@ import { ArrowLeftOutlined, ArrowDownOutlined, ArrowUpOutlined, CheckOutlined, D
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import RichDetailEditor from '@/components/RichDetailEditor'
+import RichDetailPreview, { isRichDetailEmpty } from '@/components/RichDetailPreview'
 import { serviceApi } from '@/api'
 import { useImageUpload } from '@/hooks'
 import type { Package, PriceUnit, ServiceCategory, ServiceItem, ServiceProcessStep, ServiceSaveBody } from '@/api/modules/service'
@@ -710,24 +711,30 @@ export default function ServiceEditorPage() {
                 <strong>服务详情</strong>
                 <span />
               </div>
-              <div className="service-phone__hero">
-                <h4>{previewName || '上门助浴服务'}</h4>
-                <p>安全 · 专业 · 有温度</p>
-              </div>
-              <div className="service-phone__body">
-                <h4>{previewName || '上门助浴服务'}</h4>
-                <div className="service-phone__price">
-                  <strong>¥{Number(previewPrice || 0).toFixed(0)}</strong>
-                  <span>/ {previewUnit}</span>
+              <div className="service-phone__scroll">
+                <div className={`service-phone__hero${coverUrl ? ' has-cover' : ''}`}>
+                  {coverUrl && <img src={coverUrl} alt="服务封面" />}
+                  <h4>{previewName || '上门助浴服务'}</h4>
+                  <p>安全 · 专业 · 有温度</p>
                 </div>
-                <div className="service-phone__meta">
-                  <span>{previewType ? serviceTypeText[previewType]?.label : ''}</span>
-                  <em>由附近已上架机构提供</em>
-                </div>
-                <div className="service-phone__section">
-                  <strong>服务介绍</strong>
-                  <div className="is-blue">服务流程图</div>
-                  <div className="is-warm">服务场景图</div>
+                <div className="service-phone__body">
+                  <h4>{previewName || '上门助浴服务'}</h4>
+                  <div className="service-phone__price">
+                    <strong>¥{Number(previewPrice || 0).toFixed(0)}</strong>
+                    <span>/ {previewUnit}</span>
+                  </div>
+                  <div className="service-phone__meta">
+                    <span>{previewType ? serviceTypeText[previewType]?.label : ''}</span>
+                    <em>由附近已上架机构提供</em>
+                  </div>
+                  <div className="service-phone__section">
+                    <strong>图文详情</strong>
+                    {isRichDetailEmpty(description) ? (
+                      <div className="service-phone__empty">编辑图文详情后在此展示</div>
+                    ) : (
+                      <RichDetailPreview value={description} />
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="service-phone__footer">

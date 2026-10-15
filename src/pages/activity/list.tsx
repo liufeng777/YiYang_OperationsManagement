@@ -379,7 +379,7 @@ export default function ActivityList() {
       {
         title: '操作',
         key: 'action',
-        width: 260,
+        width: 280,
         render: (_, record) => {
           /* 四段式操作列：状态主操作 + 配置机构 + 查看详情 + 更多（低频/危险操作收拢）
              - 待发布(1)：发布；报名中(2)/已结束(3)：报名查询；已取消(9)：重新发布

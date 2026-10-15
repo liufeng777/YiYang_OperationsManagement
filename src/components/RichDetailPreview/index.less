@@ -1,0 +1,68 @@
+/**
+ * 图文详情渲染样式（患者端手机预览共用）
+ * 字号按 320-328px 手机预览容器调校，图片等比缩放不溢出
+ */
+.rich-detail-preview {
+  .text-body();
+  color: @color-text-primary;
+  line-height: 1.7;
+  word-break: break-word;
+
+  p {
+    margin: 0 0 @spacing-xs;
+  }
+
+  h2,
+  h3 {
+    margin: @spacing-sm 0 @spacing-2xs;
+    color: @color-text-primary;
+    line-height: 1.4;
+  }
+
+  h2 {
+    font-size: @font-size-body-medium;
+    font-weight: @font-weight-title-card;
+  }
+
+  h3 {
+    font-size: @font-size-body;
+    font-weight: @font-weight-body-medium;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: @spacing-xs 0;
+    border-radius: @radius-xs;
+  }
+
+  ul,
+  ol {
+    margin: 0 0 @spacing-xs;
+    padding-left: @spacing-lg;
+  }
+
+  li + li {
+    margin-top: 2px;
+  }
+
+  a {
+    color: @color-primary;
+    text-decoration: underline;
+  }
+
+  mark {
+    padding: 0 2px;
+    background: fade(@color-warning, 40%);
+    border-radius: 2px;
+  }
+
+  s {
+    color: @color-text-secondary;
+  }
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+}

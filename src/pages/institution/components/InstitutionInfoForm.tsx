@@ -12,6 +12,7 @@ import { institutionApi } from '@/api'
 import { useImageUpload } from '@/hooks'
 import type { InstitutionItem, InstitutionType } from '@/api/modules/institution'
 import RichDetailEditor from '@/components/RichDetailEditor'
+import RichDetailPreview, { isRichDetailEmpty } from '@/components/RichDetailPreview'
 import InstitutionBaseFields from './InstitutionBaseFields'
 import './InstitutionInfoForm.less'
 
@@ -239,29 +240,36 @@ export default function InstitutionInfoForm({ detail, onSaved, onCancel }: Insti
             <strong>机构详情</strong>
             <span>···</span>
           </div>
-          <div className="institution-phone__hero">
-            <h4>{previewName || detail?.name || '幸福里健康驿站'}</h4>
-            <p>{previewType ? typeText[previewType] : typeText[detail?.type ?? 2]} · 专业照护 · 安心颐养</p>
-            <span>{previewAddress || detail?.address || '机构详细地址'}</span>
-          </div>
-          <div className="institution-phone__body">
-            <h4>{previewBrief || detail?.brief || '患者端展示标题'}</h4>
-            <p>{richDesc ? '已配置图文详情（富文本内容见小程序渲染）' : '编辑图文详情后在此展示机构简介'}</p>
-            <div className="institution-phone__section">
-              <div>
-                <strong>机构环境</strong>
-                <span>查看全部 9 张 ›</span>
-              </div>
-              <div className="institution-phone__photos">
-                {previewPhotoPlaceholders.map((item) => (
-                  <i key={item}>{item}</i>
-                ))}
-              </div>
+          <div className="institution-phone__scroll">
+            <div className={`institution-phone__hero${coverUrl ? ' has-cover' : ''}`}>
+              {coverUrl && <img src={coverUrl} alt="机构封面" />}
+              <h4>{previewName || detail?.name || '幸福里健康驿站'}</h4>
+              <p>{previewType ? typeText[previewType] : typeText[detail?.type ?? 2]} · 专业照护 · 安心颐养</p>
+              <span>{previewAddress || detail?.address || '机构详细地址'}</span>
             </div>
-            <div className="institution-phone__tabs">
-              <span>机构介绍</span>
-              <span>服务项目</span>
-              <span>近期活动</span>
+            <div className="institution-phone__body">
+              <h4>{previewBrief || detail?.brief || '患者端展示标题'}</h4>
+              {isRichDetailEmpty(richDesc) ? (
+                <p>编辑图文详情后在此展示机构简介</p>
+              ) : (
+                <RichDetailPreview value={richDesc} />
+              )}
+              <div className="institution-phone__section">
+                <div>
+                  <strong>机构环境</strong>
+                  <span>查看全部 9 张 ›</span>
+                </div>
+                <div className="institution-phone__photos">
+                  {previewPhotoPlaceholders.map((item) => (
+                    <i key={item}>{item}</i>
+                  ))}
+                </div>
+              </div>
+              <div className="institution-phone__tabs">
+                <span>机构介绍</span>
+                <span>服务项目</span>
+                <span>近期活动</span>
+              </div>
             </div>
           </div>
           <div className="institution-phone__cta">

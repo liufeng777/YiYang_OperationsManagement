@@ -178,12 +178,21 @@
   }
 
   .service-phone {
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
     background: @color-bg-card;
     border: 1px solid @color-text-primary;
     border-radius: (@radius-xl + 12px);
     width: 328px;
     height: 620px;
+
+    /* 封面之下、底部操作栏之上的可滚动内容区 */
+    &__scroll {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
 
     &__status {
       display: flex;
@@ -214,6 +223,7 @@
     }
 
     &__hero {
+      position: relative;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
@@ -222,15 +232,43 @@
       padding: @spacing-md;
       background: fade(@color-info, 14%);
       border-radius: @radius-md @radius-md 0 0;
+      overflow: hidden;
 
       h4 {
+        position: relative;
         margin: 0;
         .text-title-card();
       }
 
       p {
+        position: relative;
         margin: @spacing-2xs 0 0;
         .text-auxiliary();
+      }
+
+      /* 有封面图：图片铺满 hero，标题叠白字 */
+      &.has-cover {
+        img {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        &::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.45));
+        }
+
+        h4,
+        p {
+          z-index: 1;
+          color: #fff;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
       }
     }
 
@@ -285,32 +323,27 @@
         margin-bottom: @spacing-sm;
         .text-body-medium();
       }
+    }
 
-      > div {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 64px;
-        margin-bottom: @spacing-sm;
-        color: @color-text-secondary;
-        border-radius: @radius-sm;
-
-        &.is-blue {
-          background: fade(@color-info, 10%);
-        }
-
-        &.is-warm {
-          background: fade(@color-warning, 16%);
-        }
-      }
+    /* 图文详情未配置时的占位提示 */
+    &__empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 64px;
+      color: @color-text-secondary;
+      .text-auxiliary();
+      background: fade(@color-info, 10%);
+      border-radius: @radius-sm;
     }
 
     &__footer {
+      flex: none;
       display: grid;
       grid-template-columns: 80px 1fr;
       gap: @spacing-sm;
       align-items: center;
-      padding: 0 @spacing-md;
+      padding: @spacing-xs @spacing-md;
 
       // span {
       //   text-align: center;
