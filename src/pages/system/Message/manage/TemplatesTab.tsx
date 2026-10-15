@@ -3,7 +3,7 @@
  * 数据来源：messageApi.getMessageTemplates / createMessageTemplate / updateMessageTemplate /
  *          updateMessageTemplateStatus / deleteMessageTemplate
  * 字段按后端实测：id / name / code / content / channel(数字) / type(数字) / status / variables
- * 筛选：关键字 / 类型 / 状态全部下推后端（前端不做本地过滤）
+ * 筛选：类型 / 状态下推后端（swagger：type 为字符串）；关键字后端未提供参数，当前页本地过滤
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { App, Button, Card, Drawer, Form, Input, Select, Space, Tag } from 'antd'
@@ -36,7 +36,6 @@ const STATUS_DISABLED: CommonStatus = 9
 
 interface TemplateFormValues {
   name: string
-  code: string
   content: string
   channel: number
   type: number
@@ -68,13 +67,12 @@ export default function TemplatesTab() {
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm<TemplateFormValues>()
 
-  /** 组装查询参数：筛选条件全部下推后端 */
+  /** 组装查询参数：类型 / 状态下推后端（swagger type 为字符串，故 String 化） */
   const buildParams = useCallback(
     (targetPage: number, filters: TemplateFilters, size: number = PAGE_SIZE) => ({
       page: targetPage,
       page_size: size,
-      keyword: filters.keyword || undefined,
-      template_type: filters.template_type ?? undefined,
+      type: filters.template_type != null ? String(filters.template_type) : undefined,
       status:
         filters.status === 'all'
           ? undefined
@@ -137,7 +135,6 @@ export default function TemplatesTab() {
     setEditingRecord(record)
     form.setFieldsValue({
       name: record.name,
-      code: record.code,
       content: record.content,
       channel: record.channel,
       type: record.type,
@@ -164,17 +161,16 @@ export default function TemplatesTab() {
         await messageApi.updateMessageTemplate(editingRecord.id, {
           name: values.name.trim(),
           content: values.content.trim(),
-          channel: values.channel,
-          type: values.type,
+          channel: String(values.channel),
+          type: String(values.type),
         })
         message.success(`模板「${values.name.trim()}」已保存`)
       } else {
         await messageApi.createMessageTemplate({
           name: values.name.trim(),
-          code: values.code.trim(),
           content: values.content.trim(),
-          channel: values.channel,
-          type: values.type,
+          channel: String(values.channel),
+          type: String(values.type),
           status: STATUS_ENABLED,
         })
         message.success(`模板「${values.name.trim()}」已创建并启用`)
@@ -274,6 +270,13 @@ export default function TemplatesTab() {
     [modal, message],
   )
 
+  /** 关键字后端未提供查询参数，对当前页结果本地过滤 */
+  const filteredRows = useMemo(() => {
+    const kw = applied.keyword
+    if (!kw) return rows
+    return rows.filter((r) => r.name.includes(kw) || (r.code ?? '').includes(kw))
+  }, [rows, applied.keyword])
+
   return (
     <>
       <div className="message-add-btn">
@@ -326,7 +329,7 @@ export default function TemplatesTab() {
           size="small"
           loading={loading}
           columns={columns}
-          dataSource={rows}
+          dataSource={filteredRows}
           pagination={{
             current: page,
             pageSize,
@@ -369,14 +372,6 @@ export default function TemplatesTab() {
         <Form form={form} layout="vertical" requiredMark={false} className="template-drawer__form">
           <Form.Item name="name" label="模板名称" rules={[{ required: true, message: '请输入模板名称' }]}>
             <Input placeholder="请输入模板名称" />
-          </Form.Item>
-          <Form.Item
-            name="code"
-            label="模板编码"
-            extra="唯一标识，创建后不可修改"
-            rules={[{ required: true, message: '请输入模板编码' }]}
-          >
-            <Input placeholder="如 ORDER_PAID" disabled={!!editingRecord} />
           </Form.Item>
           <div className="form-grid form-grid--two">
             <Form.Item name="channel" label="发送渠道" rules={[{ required: true, message: '请选择渠道' }]}>

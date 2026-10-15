@@ -69,10 +69,11 @@ export interface RefundItem {
   }[] // 退款渠道记录，通常是1条
 }
 
-/** 退款单列表 GET /api/admin/refunds（按状态/机构/时间） */
+/** 退款单列表 GET /api/admin/refunds（swagger：page / page_size / status / institution_id / start_time / end_time） */
 export function getRefunds(
   params?: ApiPageParams & {
-    refund_status?: number
+    /** 退款状态：1-待审批 2-审批通过 3-退款中 4-已退款 5-已拒绝 6-退款失败 8-待财务审批 */
+    status?: number
     institution_id?: number
     start_time?: number
     end_time?: number
@@ -87,25 +88,56 @@ export function getRefund(id: number) {
 }
 
 /**
- * 退款导出 GET /api/admin/refunds/export
+ * 退款导出 GET /api/admin/refunds/export（swagger：status / start_time / end_time）
  * 与订单导出一致：后端可能返回 JSON（{ download_url }）或文件流，故返回整个 AxiosResponse，
  * 由页面判断 content-type 后分别处理
  */
 export function exportRefunds(
-  params?: ApiPageParams & { refund_status?: number },
+  params?: ApiPageParams & { status?: number; start_time?: number; end_time?: number },
 ): Promise<AxiosResponse<Blob>> {
   return http.get<AxiosResponse<Blob>>('/admin/refunds/export', { ...params }, { responseType: 'blob' })
 }
 
-/** 退款审批 */
+/** 退款审批 POST /api/admin/refunds/:id/approve（swagger admin.ReqApproveRefund）
+ *  approve / refund_amount 必填；refund_channel 通过退款时必填 */
 export function approveRefunds(
   id: number,
   data: {
-    approve: boolean, // true-通过 false-拒绝，必填
-    opinion: string, // 审批意见
-    refund_amount: number, // 实际退款金额，必填
-    refund_channel: string // 退款渠道
-  }
+    /** true-通过 false-拒绝，必填 */
+    approve: boolean
+    /** 实际退款金额（分），必填 */
+    refund_amount: number
+    /** 审批意见，选填 */
+    opinion?: string
+    /** 原路退回渠道（通过退款时必填），选填 */
+    refund_channel?: string
+  },
 ) {
-  return http.post(`/admin/refunds/${id}/approve`, data)
+  return http.post<null>(`/admin/refunds/${id}/approve`, data)
+}
+
+/** 退款审批留痕 GET /api/admin/refunds/:id/logs（swagger：approver_type=staff/finance 选填） */
+export function getRefundLogs(id: number, params?: { approver_type?: 'staff' | 'finance' }) {
+  return http.get<RefundItem['approvals']>(`/admin/refunds/${id}/logs`, { ...params })
+}
+
+/** 人工线下退款完成 POST /api/admin/refunds/:id/manual-complete
+ *  swagger：operator_name / remark 均为 query 选填；财务在详情页直接设置退款成功，不走渠道退款 */
+export function manualCompleteRefund(id: number, params?: { operator_name?: string; remark?: string }) {
+  return http.post<null>(`/admin/refunds/${id}/manual-complete`, undefined, { params: { ...params } })
+}
+
+/** 手动重试退款 POST /api/admin/refunds/:id/manual-refund
+ *  swagger：operator_name / refund_channel / refund_amount(分) / remark 均为 query 选填；
+ *  对退款失败/退款中的退款单重新发起渠道退款 */
+export function manualRefund(
+  id: number,
+  params?: { operator_name?: string; refund_channel?: string; refund_amount?: number; remark?: string },
+) {
+  return http.post<null>(`/admin/refunds/${id}/manual-refund`, undefined, { params: { ...params } })
+}
+
+/** 退款渠道执行留痕列表 GET /api/admin/refund-channel-logs（swagger：refund_id / refund_no 选填） */
+export function getRefundChannelLogs(params?: { refund_id?: number; refund_no?: string }) {
+  return http.get<RefundItem['refund_channel_logs']>('/admin/refund-channel-logs', { ...params })
 }

@@ -56,8 +56,7 @@ export function toInstitutionRows(configs: ActivityInstitutionConfig[] = []): Ac
 
 /**
  * 本地行 → 契约 institutions[]
- * 注意：契约里 institution_id 声明为 string，但后端要求 int（实测传字符串报
- * "cannot unmarshal string into Go struct field ... of type int"），故提交数字；
+ * swagger admin.ActivityInstitution：institution_id 为 int，直接提交数字；
  * 另：编辑为全量覆盖，表格里的名额 / 场次 / 联系人被清空时回退 origin 原值，避免写空机构数据。
  */
 export function toInstitutionConfigs(
@@ -72,7 +71,7 @@ export function toInstitutionConfigs(
     .map((row) => {
       const prev = origin.find((item) => Number(item.institution_id) === Number(row.id))
       return {
-        institution_id: Number(row.id) as unknown as string,
+        institution_id: Number(row.id),
         max_participants: row.capacity > 0 ? row.capacity : (prev?.max_participants ?? 0),
         start_time: toSeconds(row.startTime, prev?.start_time ?? 0),
         end_time: toSeconds(row.endTime, prev?.end_time ?? 0),

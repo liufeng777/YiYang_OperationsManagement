@@ -97,7 +97,7 @@ export default function ServicePoolList() {
           page: targetPage,
           page_size: pageSize,
           keyword: applied.keyword || undefined,
-          category: applied.category ?? undefined,
+          category_id: applied.category ?? undefined,
           status: (applied.status ?? undefined) as CommonStatus | undefined,
         })
         setData(result.list ?? [])

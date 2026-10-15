@@ -15,16 +15,20 @@ import type { ApiPageParams, ApiPageResult } from '@/types/api'
 /* 推荐事件（GET /admin/referral-events）                               */
 /* ------------------------------------------------------------------ */
 
-/** 推荐事件列表筛选入参（不传或传 0 表示全部） */
+/** 推荐事件列表筛选入参（swagger：不传或传 0 表示全部） */
 export interface ReferralListParams extends ApiPageParams {
-  /** 状态：1-pending / 2-valid / 9-invalid */
+  /** 事件状态：1-pending / 2-valid / 9-invalid */
   status?: number
-  /** 事件类型：100-注册 / 200-报名 / 300-订单支付 */
+  /** 事件类型：100-注册 / 200-报名 / 300-订单支付 等 */
   event_type?: number
-  /** 业务类型：1-用户 / 2-活动 / 3-订单 */
+  /** 业务对象类型：1-用户 / 2-活动 / 3-订单 */
   biz_type?: number
-  /** 奖励状态：1-未奖励 / 2-已奖励 / 3-已过期 / 9-作废 */
+  /** 结算状态：1-待结算 / 2-已结算 / 3-已过期 / 4-已取消 */
   reward_status?: number
+  /** 起始创建时间（Unix 秒，含边界） */
+  start_time?: number
+  /** 结束创建时间（Unix 秒，含边界） */
+  stop_time?: number
 }
 
 /** 推荐事件记录（按后端实测返回对齐） */

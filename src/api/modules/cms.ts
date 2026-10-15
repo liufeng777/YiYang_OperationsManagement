@@ -11,40 +11,37 @@ import type { ApiPageParams, ApiPageResult, BatchResult, CommonStatus } from '@/
 /* §10.1 内容管理（权限 cms:manage）                                     */
 /* ------------------------------------------------------------------ */
 
-/** 内容类型：1-图文 2-视频 */
-export type CmsContentType = 1 | 2
 /** 发布状态：1-草稿 2-已发布 3-已下线 */
 export type CmsPublishStatus = 1 | 2 | 3
 
-/** 内容 DTO（映射 cms_content；操作人由服务端会话注入，前端不传） */
+/** 内容 DTO（swagger admin.ReqCreateCmsContent 出参同构；操作人由服务端会话注入，前端不传） */
 export interface CmsContentDTO {
   id: number
   category_id: number
   title: string
+  /** 摘要 */
   summary: string
-  content_type: CmsContentType
   cover_url: string
-  /** content_type=2 时使用 */
-  video_url?: string
-  /** 正文 Markdown */
-  body_md: string
+  /** 正文（JSON） */
+  body: string
   tags: string[]
   author_name: string
   source: string
-  is_top: 0 | 1
-  /** 投放端：all / user-app / staff-app / admin（多端逗号分隔） */
+  /** 投放端：all / user-app / staff-app / admin */
   platform: string
   publish_status: CmsPublishStatus
   /** 计划发布时间 UTC 秒，NULL=立即发布 */
   publish_at: number | null
+  /** 排序（升序，0-置顶） */
+  sort: number
 }
 
-/** 内容新增 / 编辑入参 */
-export type CmsContentSaveBody = Omit<CmsContentDTO, 'id' | 'publish_status'>
+/** 内容新增 / 编辑入参（swagger admin.ReqCreateCmsContent：仅 title 必填） */
+export type CmsContentSaveBody = Partial<Omit<CmsContentDTO, 'id'>> & { title: string }
 
-/** 内容列表 GET /api/admin/cms/contents（按分类/状态/关键字，含草稿） */
+/** 内容列表 GET /api/admin/cms/contents（swagger：page / page_size / category_id / status / keyword） */
 export function getCmsContents(
-  params?: ApiPageParams & { category_id?: number; publish_status?: CmsPublishStatus },
+  params?: ApiPageParams & { category_id?: number; status?: CmsPublishStatus; keyword?: string },
 ) {
   return http.get<ApiPageResult<CmsContentDTO>>('/admin/cms/contents', { ...params })
 }
@@ -60,48 +57,28 @@ export function createCmsContent(data: CmsContentSaveBody) {
 }
 
 /** 编辑内容 PUT /api/admin/cms/contents/:id */
-export function updateCmsContent(id: number, data: Partial<CmsContentSaveBody>) {
+export function updateCmsContent(id: number, data: CmsContentSaveBody) {
   return http.put<null>(`/admin/cms/contents/${id}`, data)
 }
 
-/** 内容审核 POST /api/admin/cms/contents/:id/review */
-export function reviewCmsContent(id: number, approved: boolean, note?: string) {
-  return http.post<null>(`/admin/cms/contents/${id}/review`, { approved, note })
+/** 发布 POST /api/admin/cms/contents/:id/publish（swagger：remark 为 query 选填） */
+export function publishCmsContent(id: number, remark?: string) {
+  return http.post<null>(`/admin/cms/contents/${id}/publish`, undefined, { params: { remark } })
 }
 
-/** 批量审核 POST /api/admin/cms/contents/batch-review */
-export function batchReviewCmsContents(ids: number[], approved: boolean, note?: string) {
-  return http.post<BatchResult>('/admin/cms/contents/batch-review', { ids, approved, note })
+/** 下架 POST /api/admin/cms/contents/:id/offline（swagger：remark 为 query 选填） */
+export function offlineCmsContent(id: number, remark?: string) {
+  return http.post<null>(`/admin/cms/contents/${id}/offline`, undefined, { params: { remark } })
 }
 
-/** 发布 POST /api/admin/cms/contents/:id/publish */
-export function publishCmsContent(id: number) {
-  return http.post<null>(`/admin/cms/contents/${id}/publish`)
+/** 批量删除 DELETE /api/admin/cms/contents/batch（swagger：body {ids}，remark 为 query 选填） */
+export function batchDeleteCmsContents(ids: number[], remark?: string) {
+  return http.delete<null>('/admin/cms/contents/batch', { remark }, { data: { ids } })
 }
 
-/** 下架 POST /api/admin/cms/contents/:id/offline */
-export function offlineCmsContent(id: number) {
-  return http.post<null>(`/admin/cms/contents/${id}/offline`)
-}
-
-/** 批量发布/下架 POST /api/admin/cms/contents/batch-status */
-export function batchUpdateCmsContentStatus(ids: number[], action: 'publish' | 'offline') {
-  return http.post<BatchResult>('/admin/cms/contents/batch-status', { ids, action })
-}
-
-/** 定时上下架 POST /api/admin/cms/contents/:id/schedule */
-export function scheduleCmsContent(id: number, data: { publish_at?: number; offline_at?: number }) {
-  return http.post<null>(`/admin/cms/contents/${id}/schedule`, data)
-}
-
-/** 批量删除 DELETE /api/admin/cms/contents/batch（软删） */
-export function batchDeleteCmsContents(ids: number[]) {
-  return http.delete<null>('/admin/cms/contents/batch', { ids })
-}
-
-/** 删除内容 DELETE /api/admin/cms/contents/:id（软删） */
-export function deleteCmsContent(id: number) {
-  return http.delete<null>(`/admin/cms/contents/${id}`)
+/** 删除内容 DELETE /api/admin/cms/contents/:id（swagger：remark 为 query 选填） */
+export function deleteCmsContent(id: number, remark?: string) {
+  return http.delete<null>(`/admin/cms/contents/${id}`, { remark })
 }
 
 /* ------------------------------------------------------------------ */
@@ -122,29 +99,38 @@ export interface CmsCategoryDTO {
   children?: CmsCategoryDTO[]
 }
 
-/** 分类树 GET /api/admin/cms/categories */
-export function getCmsCategories() {
-  return http.get<CmsCategoryDTO[]>('/admin/cms/categories')
+/** 分类新增 / 编辑入参（swagger admin.ReqCreateCmsCategory：仅 name 必填） */
+export interface CmsCategorySaveBody {
+  name: string
+  /** 分类编码（唯一） */
+  code?: string
+  /** 1-启用 9-禁用 */
+  status?: CommonStatus
+}
+
+/** 分类列表 GET /api/admin/cms/categories（swagger：page / page_size / parent_id，0 为顶级） */
+export function getCmsCategories(params?: ApiPageParams & { parent_id?: number }) {
+  return http.get<ApiPageResult<CmsCategoryDTO>>('/admin/cms/categories', { ...params })
 }
 
 /** 新增分类 POST /api/admin/cms/categories */
-export function createCmsCategory(data: Omit<CmsCategoryDTO, 'id' | 'children'>) {
+export function createCmsCategory(data: CmsCategorySaveBody) {
   return http.post<null>('/admin/cms/categories', data)
 }
 
 /** 编辑分类 PUT /api/admin/cms/categories/:id */
-export function updateCmsCategory(id: number, data: Partial<Omit<CmsCategoryDTO, 'id' | 'children'>>) {
+export function updateCmsCategory(id: number, data: CmsCategorySaveBody) {
   return http.put<null>(`/admin/cms/categories/${id}`, data)
 }
 
-/** 启停分类 POST /api/admin/cms/categories/:id/status */
-export function updateCmsCategoryStatus(id: number, status: CommonStatus) {
-  return http.post<null>(`/admin/cms/categories/${id}/status`, { status })
+/** 启停分类 POST /api/admin/cms/categories/:id/status（swagger：body {status}，remark 为 query 选填） */
+export function updateCmsCategoryStatus(id: number, status: CommonStatus, remark?: string) {
+  return http.post<null>(`/admin/cms/categories/${id}/status`, { status }, { params: { remark } })
 }
 
-/** 删除分类 DELETE /api/admin/cms/categories/:id（有内容引用不可物理删） */
-export function deleteCmsCategory(id: number) {
-  return http.delete<null>(`/admin/cms/categories/${id}`)
+/** 删除分类 DELETE /api/admin/cms/categories/:id（swagger：remark 为 query 选填） */
+export function deleteCmsCategory(id: number, remark?: string) {
+  return http.delete<null>(`/admin/cms/categories/${id}`, { remark })
 }
 
 /* ------------------------------------------------------------------ */
@@ -177,12 +163,12 @@ export interface BannerDTO {
   status: CommonStatus
 }
 
-/** 轮播新增 / 编辑入参 */
+/** 轮播新增 / 编辑入参（swagger admin.ReqCreateBanner：image_url / title 必填） */
 export type BannerSaveBody = Omit<BannerDTO, 'id' | 'link_id' | 'link_title'>
 
-/** 轮播列表 GET /api/admin/banners（按平台/位置/状态/时间，含分页） */
+/** 轮播列表 GET /api/admin/banners（swagger：page / page_size / status） */
 export function getBanners(
-  params?: ApiPageParams & { platform?: BannerPlatform; position?: string; status?: CommonStatus },
+  params?: ApiPageParams & { status?: CommonStatus },
 ) {
   return http.get<ApiPageResult<BannerDTO>>('/admin/banners', { ...params })
 }
@@ -197,27 +183,22 @@ export function updateBanner(id: number, data: Partial<BannerSaveBody>) {
   return http.put<null>(`/admin/banners/${id}`, data)
 }
 
-/** 启停 POST /api/admin/banners/:id/status */
-export function updateBannerStatus(id: number, status: CommonStatus) {
-  return http.post<null>(`/admin/banners/${id}/status`, { status })
+/** 启停 POST /api/admin/banners/:id/status（swagger：body {status}，remark 为 query 选填） */
+export function updateBannerStatus(id: number, status: CommonStatus, remark?: string) {
+  return http.post<null>(`/admin/banners/${id}/status`, { status }, { params: { remark } })
 }
 
-/** 批量启停 POST /api/admin/banners/batch-status */
-export function batchUpdateBannerStatus(ids: number[], status: CommonStatus) {
-  return http.post<BatchResult>('/admin/banners/batch-status', { ids, status })
+/** 批量启停 POST /api/admin/banners/batch-status（swagger：body {ids,status}，remark 为 query 选填） */
+export function batchUpdateBannerStatus(ids: number[], status: CommonStatus, remark?: string) {
+  return http.post<BatchResult>('/admin/banners/batch-status', { ids, status }, { params: { remark } })
 }
 
-/** 排序 POST /api/admin/banners/:id/sort */
-export function sortBanner(id: number, sort: number) {
-  return http.post<null>(`/admin/banners/${id}/sort`, { sort })
+/** 排序 POST /api/admin/banners/:id/sort（swagger：body {sort}，remark 为 query 选填） */
+export function sortBanner(id: number, sort: number, remark?: string) {
+  return http.post<null>(`/admin/banners/${id}/sort`, { sort }, { params: { remark } })
 }
 
-/** 批量排序 PUT /api/admin/banners/sort（按数组顺序整体重排） */
-export function batchSortBanners(data: { position: string; platform: BannerPlatform; ordered_ids: number[] }) {
-  return http.put<null>('/admin/banners/sort', data)
-}
-
-/** 删除轮播 DELETE /api/admin/banners/:id（软删） */
-export function deleteBanner(id: number) {
-  return http.delete<null>(`/admin/banners/${id}`)
+/** 删除轮播 DELETE /api/admin/banners/:id（swagger：remark 为 query 选填） */
+export function deleteBanner(id: number, remark?: string) {
+  return http.delete<null>(`/admin/banners/${id}`, { remark })
 }

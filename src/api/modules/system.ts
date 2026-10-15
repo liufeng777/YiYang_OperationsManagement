@@ -93,17 +93,12 @@ export interface AdminSaveBody {
   role_ids?: number[]
 }
 
-/** 管理员列表筛选入参 */
+/** 管理员列表筛选入参（swagger：page / page_size / keyword / status） */
 export interface AdminListParams extends ApiPageParams {
-  /** 姓名 / 手机号 / 登录账号模糊搜索 */
+  /** 关键字（账号/昵称） */
   keyword?: string
-  /** 所属角色 ID */
-  role_id?: number
-  /** 账号状态：1 启用 / 9 停用 */
+  /** 状态过滤：1-启用 9-禁用，0 或不传不过滤 */
   status?: number
-  /** 最近登录时间范围（UTC 秒），用于「今日登录 / 7 日内登录」筛选 */
-  login_start_time?: number
-  login_end_time?: number
 }
 
 /** 管理员列表 GET /api/admin/admins */
@@ -131,9 +126,9 @@ export function resetAdminPassword(id: number, data: {new_password: string }) {
   return http.post<null>(`/admin/admins/${id}/reset-password`, data)
 }
 
-/** 启用/禁用 POST /api/admin/admins/:id/status */
-export function updateAdminStatus(id: number, status: number) {
-  return http.post<null>(`/admin/admins/${id}/status`, { status })
+/** 启用/禁用 POST /api/admin/admins/:id/status（swagger：body {status}，remark 为 query 选填） */
+export function updateAdminStatus(id: number, status: number, remark?: string) {
+  return http.post<null>(`/admin/admins/${id}/status`, { status }, { params: { remark } })
 }
 
 /** 分配角色 POST /api/admin/admins/:id/roles */
@@ -141,9 +136,9 @@ export function assignAdminRoles(id: number, roleIds: number[]) {
   return http.post<null>(`/admin/admins/${id}/roles`, { role_ids: roleIds })
 }
 
-/** 删除管理员 DELETE /api/admin/admins/:id */
-export function deleteAdmin(id: number) {
-  return http.delete<null>(`/admin/admins/${id}`)
+/** 删除管理员 DELETE /api/admin/admins/:id（swagger：remark 为 query 选填） */
+export function deleteAdmin(id: number, remark?: string) {
+  return http.delete<null>(`/admin/admins/${id}`, { remark })
 }
 
 /* ------------------------------------------------------------------ */
@@ -197,8 +192,8 @@ export interface RoleSaveBody {
   permission_ids?: number[]
 }
 
-/** 角色列表 GET /api/admin/roles（?all=1 返回全部） */
-export function getRoles(params?: ApiPageParams & { all?: 0 | 1; keyword?: string }) {
+/** 角色列表 GET /api/admin/roles（swagger：page / page_size / all=1 返回全部） */
+export function getRoles(params?: ApiPageParams & { all?: 0 | 1 }) {
   return http.get<ApiPageResult<RoleItem>>('/admin/roles', { ...params })
 }
 
@@ -222,14 +217,14 @@ export function assignRolePermissions(id: number, permissionIds: number[]) {
   return http.post<null>(`/admin/roles/${id}/permissions`, { permission_ids: permissionIds })
 }
 
-/** 启用/禁用角色 POST /api/admin/roles/:id/status */
-export function updateRoleStatus(id: number, status: number) {
-  return http.post<null>(`/admin/roles/${id}/status`, { status })
+/** 启用/禁用角色 POST /api/admin/roles/:id/status（swagger：body {status}，remark 为 query 选填） */
+export function updateRoleStatus(id: number, status: number, remark?: string) {
+  return http.post<null>(`/admin/roles/${id}/status`, { status }, { params: { remark } })
 }
 
-/** 删除角色 DELETE /api/admin/roles/:id */
-export function deleteRole(id: number) {
-  return http.delete<null>(`/admin/roles/${id}`)
+/** 删除角色 DELETE /api/admin/roles/:id（swagger：remark 为 query 选填） */
+export function deleteRole(id: number, remark?: string) {
+  return http.delete<null>(`/admin/roles/${id}`, { remark })
 }
 
 /* ------------------------------------------------------------------ */
@@ -280,16 +275,17 @@ export interface OperationLogItem {
   error_message: string
 }
 
-/** 操作日志筛选入参 */
+/** 操作日志筛选入参（swagger：page / page_size / admin_id / action / resource / start_time / end_time） */
 export interface OperationLogParams extends ApiPageParams {
+  /** 操作人 ID */
   admin_id?: number
-  /** 业务模块 */
-  module?: string
-  /** 操作动作 */
+  /** 动作（create/update/delete） */
   action?: string
-  /** 操作人 / IP / 操作对象 / 请求路径模糊搜索 */
-  keyword?: string
+  /** 资源名 */
+  resource?: string
+  /** 开始时间（UTC 秒） */
   start_time?: number
+  /** 结束时间（UTC 秒） */
   end_time?: number
 }
 

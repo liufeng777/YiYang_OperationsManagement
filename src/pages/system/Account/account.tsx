@@ -7,7 +7,7 @@
  * 统计卡片：暂不接入（待后端提供统计接口后填充，不用列表接口凑数）
  * 重置密码：弹框填写 new_password 后调用 systemApi.resetAdminPassword
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { App, Button, Card, Form, Input, Modal, Select, Space, Tag } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
@@ -61,13 +61,12 @@ export default function AccountList() {
   const [resetting, setResetting] = useState(false)
   const [resetForm] = Form.useForm<{ new_password: string }>()
 
-  /** 组装查询参数：筛选条件全部下推后端（登录时间按 UTC 秒区间传递） */
+  /** 组装查询参数：关键字 / 状态下推后端（swagger 仅支持 keyword / status）；角色后端未提供参数，当前页本地过滤 */
   const buildParams = useCallback((targetPage: number, filters: AccountFilters, size: number = PAGE_SIZE) => {
     return {
       page: targetPage,
       page_size: size,
       keyword: filters.keyword || undefined,
-      role_id: !filters.role ? undefined : Number(filters.role),
       status:
         !filters.status
           ? undefined
@@ -214,6 +213,13 @@ export default function AccountList() {
       setResetting(false)
     }
   }
+
+  /** 角色筛选后端未提供查询参数，对当前页结果本地过滤 */
+  const filteredRows = useMemo(() => {
+    if (!applied.role) return rows
+    const roleId = Number(applied.role)
+    return rows.filter((r) => r.role_ids?.includes(roleId))
+  }, [rows, applied.role])
 
   const columns: ColumnsType<AdminItem> = [
     {
@@ -381,7 +387,7 @@ export default function AccountList() {
             size="small"
             loading={loading}
             columns={columns}
-            dataSource={rows}
+            dataSource={filteredRows}
             pagination={{
               current: page,
               pageSize,

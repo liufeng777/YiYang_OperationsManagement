@@ -168,8 +168,8 @@ export default function ActivityList() {
           page: targetPage,
           page_size: pageSize,
           keyword: applied.keyword || undefined,
-          // 筛选入参名为 type（后端约定），非 activity_type
-          type: applied.type ?? undefined,
+          // 筛选入参名为 type（swagger 标注 string 类型），非 activity_type
+          type: applied.type != null ? String(applied.type) : undefined,
           institution_id: applied.institution_id ?? undefined,
           status: applied.status ?? undefined,
         })
@@ -235,7 +235,6 @@ export default function ActivityList() {
       // 列表数据不一定含完整字段（图文详情 / 封面等），先取详情再整体提交，避免把后端数据写空
       const detail = await activityApi.getActivity(id)
       await activityApi.updateActivity(id, {
-        code: detail.code,
         title: detail.title,
         title_en: detail.title_en,
         activity_type: detail.activity_type,

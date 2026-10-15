@@ -110,7 +110,7 @@ export default function RefundList() {
       page_size: size,
       // 关键字后端暂未提供筛选参数，先下推、同时由当前页本地兜底过滤
       keyword: filters.keyword || undefined,
-      refund_status: filters.refund_status ?? undefined,
+      status: filters.refund_status ?? undefined,
       start_time: filters.range?.[0] ? filters.range[0].startOf('day').unix() : undefined,
       end_time: filters.range?.[1] ? filters.range[1].endOf('day').unix() : undefined,
     }),
@@ -141,9 +141,9 @@ export default function RefundList() {
     try {
       const [all, pending, refunding, refunded] = await Promise.all([
         refundApi.getRefunds({ page: 1, page_size: 1 }),
-        refundApi.getRefunds({ page: 1, page_size: 1, refund_status: 1 }),
-        refundApi.getRefunds({ page: 1, page_size: 1, refund_status: 3 }),
-        refundApi.getRefunds({ page: 1, page_size: 1, refund_status: 4 }),
+        refundApi.getRefunds({ page: 1, page_size: 1, status: 1 }),
+        refundApi.getRefunds({ page: 1, page_size: 1, status: 3 }),
+        refundApi.getRefunds({ page: 1, page_size: 1, status: 4 }),
       ])
       setStats({
         all: all.total ?? 0,

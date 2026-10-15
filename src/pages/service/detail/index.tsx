@@ -238,15 +238,20 @@ export default function ServiceEditorPage() {
       name_en: detail?.name_en ?? '',
       description, // 富文本 JSON 字符串
       duration: values.duration,
-      // 后端字段名为 support_consum（1-涉及耗材 0-不涉及）
-      support_consum: values.consumable === '1' ? 1 : 0,
+      // swagger 字段名为 is_consumable_supported（boolean）
+      is_consumable_supported: values.consumable === '1',
       price: String(values.price),
       unit: values.unit,
       status: targetStatus === 'on' ? 1 : 9,
       service_type: values.service_type,
       service_process: stringifyProcessSteps(processSteps),
+      // swagger admin.PackageItem：价格为字符串（保留两位小数）
       packages: (packageEnabled ? packages : packages.filter((item) => item.fixed)).map(
-        ({ count, price, price_with_consum }) => ({ count, price, price_with_consum }),
+        ({ count, price, price_with_consum }) => ({
+          count,
+          price: price.toFixed(2),
+          price_with_consum: price_with_consum.toFixed(2),
+        }),
       ),
       // 封面使用上传接口返回的服务器地址（无新上传时沿用原值）
       cover_url: coverServerUrl || (detail?.cover_url ?? ''),

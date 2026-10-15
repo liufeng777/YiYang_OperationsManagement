@@ -34,22 +34,35 @@ export interface MessageDTO {
   created_at: number
 }
 
-/** 发送站内消息入参（指定/批量/群发） */
+/** 发送站内消息入参（swagger admin.ReqCreateMessage：title / content 必填） */
 export interface MessageSendBody {
   title: string
   content: string
-  message_type: number
-  /** 指定接收者 ID 数组；群发传空 */
+  /** 消息类型（system/order/activity/...） */
+  message_type?: string
+  /** 发送渠道（site/wechat/sms/...） */
+  channel?: string
+  /** 推送方式（single/batch/group） */
+  push_type?: string
+  /** 目标范围（all/member/staff/institution/...） */
+  target?: string
+  /** 指定接收者 ID 数组（批量/指定）；群发传空 */
   receiver_ids?: number[]
+  /** 过期时间（UTC 秒） */
+  expire_at?: number
 }
 
-/** 消息列表筛选入参 */
+/** 消息列表筛选入参（swagger：page / page_size / receiver_id / message_type / is_read / start_time / end_time） */
 export interface MessageListParams extends ApiPageParams {
   receiver_id?: number
-  message_type?: number
-  is_read?: 0 | 1
-  /** 标题 / 接收者关键字 */
-  keyword?: string
+  /** 消息类型 */
+  message_type?: string
+  /** 是否已读：1-已读 0-未读 */
+  is_read?: string
+  /** 开始时间（UTC 秒） */
+  start_time?: number
+  /** 结束时间（UTC 秒） */
+  end_time?: number
 }
 
 /** 消息列表 GET /api/admin/messages（接收者/类型/是否已读/时间） */
@@ -98,12 +111,28 @@ export interface MessageTemplateDTO {
   variables?: string
 }
 
-/** 模板列表筛选入参 */
+/** 模板列表筛选入参（swagger：page / page_size / type / status） */
 export interface MessageTemplateParams extends ApiPageParams {
-  template_type?: number
+  /** 模板类型（order/verify/activity/...） */
+  type?: string
   status?: CommonStatus
-  /** 模板名称 / 编码关键字 */
-  keyword?: string
+}
+
+/** 模板新增 / 编辑入参（swagger admin.ReqCreateMessageTemplate：name / type / content 必填） */
+export interface MessageTemplateSaveBody {
+  /** 模板名称，必填 */
+  name: string
+  /** 模板类型（order/verify/activity/...），必填 */
+  type: string
+  /** 内容（含占位符 {xxx}），必填 */
+  content: string
+  /** 标题（含占位符） */
+  title?: string
+  /** 模板渠道（site/wechat/sms/...） */
+  channel?: string
+  /** 状态 1-启用 9-停用 */
+  status?: CommonStatus
+  remark?: string
 }
 
 /** 模板列表 GET /api/admin/message-templates（按类型/状态） */
@@ -117,23 +146,23 @@ export function getMessageTemplate(id: number) {
 }
 
 /** 新增模板 POST /api/admin/message-templates */
-export function createMessageTemplate(data: Omit<MessageTemplateDTO, 'id'>) {
+export function createMessageTemplate(data: MessageTemplateSaveBody) {
   return http.post<null>('/admin/message-templates', data)
 }
 
 /** 编辑模板 PUT /api/admin/message-templates/:id */
-export function updateMessageTemplate(id: number, data: Partial<Omit<MessageTemplateDTO, 'id'>>) {
+export function updateMessageTemplate(id: number, data: Partial<MessageTemplateSaveBody>) {
   return http.put<null>(`/admin/message-templates/${id}`, data)
 }
 
-/** 启停模板 POST /api/admin/message-templates/:id/status */
-export function updateMessageTemplateStatus(id: number, status: CommonStatus) {
-  return http.post<null>(`/admin/message-templates/${id}/status`, { status })
+/** 启停模板 POST /api/admin/message-templates/:id/status（swagger：body {status}，remark 为 query 选填） */
+export function updateMessageTemplateStatus(id: number, status: CommonStatus, remark?: string) {
+  return http.post<null>(`/admin/message-templates/${id}/status`, { status }, { params: { remark } })
 }
 
-/** 删除模板 DELETE /api/admin/message-templates/:id */
-export function deleteMessageTemplate(id: number) {
-  return http.delete<null>(`/admin/message-templates/${id}`)
+/** 删除模板 DELETE /api/admin/message-templates/:id（swagger：remark 为 query 选填） */
+export function deleteMessageTemplate(id: number, remark?: string) {
+  return http.delete<null>(`/admin/message-templates/${id}`, { remark })
 }
 
 /* ------------------------------------------------------------------ */
@@ -151,11 +180,12 @@ export interface SmsLogDTO {
   created_at: number
 }
 
-/** 短信记录筛选入参 */
+/** 短信记录筛选入参（swagger：page / page_size / phone / status / start_time / end_time） */
 export interface SmsLogParams extends ApiPageParams {
-  /** 手机号关键字 */
+  /** 手机号 */
   phone?: string
-  status?: number
+  /** 状态（delivered/failed） */
+  status?: string
   start_time?: number
   end_time?: number
 }
@@ -166,7 +196,7 @@ export function getSmsLogs(params?: SmsLogParams) {
 }
 
 /* ------------------------------------------------------------------ */
-/* §9.4 系统公告（预留，权限 system:announcement）                       */
+/* §9.4 系统公告（⚠️ swagger 未收录，接口以后端实际为准，页面仍在使用）     */
 /* ------------------------------------------------------------------ */
 
 /** 系统公告 DTO（后端当前列表为空，字段按接口文档契约） */

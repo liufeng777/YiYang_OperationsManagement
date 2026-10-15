@@ -1,7 +1,8 @@
 /**
  * 消息通知管理 - 站内消息（§9.1 / system:message）
  * 数据来源：messageApi.getMessages / sendMessage / pushMessage
- * 说明：后端当前列表为空，字段按接口文档契约；关键字 / 类型 / 已读状态全部下推后端（前端不做本地过滤）
+ * 说明：后端当前列表为空，字段按接口文档契约；类型 / 已读状态下推后端（swagger 均为字符串），
+ *       关键字后端未提供查询参数，当前页本地过滤
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { App, Button, Card, Drawer, Form, Input, Radio, Select, Space, Tag } from 'antd'
@@ -53,14 +54,13 @@ export default function MessagesTab() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
-  /** 组装查询参数：筛选条件全部下推后端 */
+  /** 组装查询参数：类型 / 已读状态下推后端（swagger 均为字符串）；关键字后端未提供参数，当前页本地过滤 */
   const buildParams = useCallback(
     (targetPage: number, filters: MessageFilters, size: number = PAGE_SIZE) => ({
       page: targetPage,
       page_size: size,
-      keyword: filters.keyword || undefined,
-      message_type: filters.message_type ?? undefined,
-      is_read: filters.is_read === 'all' ? undefined : ((filters.is_read === 'read' ? 1 : 0) as 0 | 1),
+      message_type: filters.message_type != null ? String(filters.message_type) : undefined,
+      is_read: filters.is_read === 'all' ? undefined : filters.is_read === 'read' ? '1' : '0',
     }),
     [],
   )
@@ -142,7 +142,9 @@ export default function MessagesTab() {
       await messageApi.sendMessage({
         title: values.title.trim(),
         content: values.content.trim(),
-        message_type: values.message_type,
+        message_type: String(values.message_type),
+        channel: 'site',
+        target: values.send_mode === 'target' ? 'member' : 'all',
         receiver_ids: values.send_mode === 'target' ? (values.receiver_ids ?? []) : [],
       })
       message.success('站内消息已发送')
@@ -234,6 +236,18 @@ export default function MessagesTab() {
     [modal, message],
   )
 
+  /** 关键字后端未提供查询参数，对当前页结果本地过滤（标题 / 接收者） */
+  const filteredRows = useMemo(() => {
+    const kw = applied.keyword
+    if (!kw) return rows
+    return rows.filter(
+      (r) =>
+        r.title.includes(kw) ||
+        (r.receiver_name ?? '').includes(kw) ||
+        (r.receiver_id != null && String(r.receiver_id).includes(kw)),
+    )
+  }, [rows, applied.keyword])
+
   return (
     <>
       <div className="message-add-btn">
@@ -287,7 +301,7 @@ export default function MessagesTab() {
           size="small"
           loading={loading}
           columns={columns}
-          dataSource={rows}
+          dataSource={filteredRows}
           pagination={{
             current: page,
             pageSize,

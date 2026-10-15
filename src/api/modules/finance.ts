@@ -43,17 +43,18 @@ export interface ReconcileItem {
   detail_lines?: ReconciliationDetailLine[]
 }
 
-/** 生成对账单 POST /api/admin/reconciliations */
+/** 生成对账单 POST /api/admin/reconciliations（swagger admin.ReqCreateReconciliation）
+ *  start_date / end_date 必填（YYYY-MM-DD）；channel_type 0-全部渠道 1-微信 2-支付宝；reconciliation_type 1-日结 2-周结 3-月结 */
 export function createReconciliation(data: {
   start_date: string
   end_date: string
-  reconciliation_type: number
-  channel_id: number
+  reconciliation_type?: number
+  channel_type?: number
 }) {
   return http.post<null>('/admin/reconciliations', data)
 }
 
-/** 对账报表列表 GET /api/admin/reconciliations（按类型/状态/时间） */
+/** 对账报表列表 GET /api/admin/reconciliations（swagger：page / page_size / reconciliation_type / status / start_date / end_date） */
 export function getReconciliations(
   params?: ApiPageParams & {
     reconciliation_type?: number
@@ -70,20 +71,20 @@ export function getReconciliation(id: number) {
   return http.get<ReconcileItem>(`/admin/reconciliations/${id}`)
 }
 
-/** 对账完成/平账 POST /api/admin/reconciliations/:id/reconcile */
-export function finishReconciliation(id: number) {
-  return http.post<null>(`/admin/reconciliations/${id}/reconcile`)
+/** 对账完成/平账 POST /api/admin/reconciliations/:id/reconcile（swagger：remark 为 query 选填） */
+export function finishReconciliation(id: number, remark?: string) {
+  return http.post<null>(`/admin/reconciliations/${id}/reconcile`, undefined, { params: { remark } })
 }
 
-/** 差异明细列表 GET /api/admin/reconciliations/:id/details */
+/** 差异明细列表 GET /api/admin/reconciliations/:id/details（swagger：page / page_size / match_status） */
 export function getReconciliationDetails(id: number, params?: ApiPageParams & { match_status?: number }) {
   return http.get<ApiPageResult<ReconciliationDetailLine>>(`/admin/reconciliations/${id}/details`, {
     ...params,
   })
 }
 
-/** 对账导出 GET /api/admin/reconciliations/export */
-export function exportReconciliations(params?: ApiPageParams) {
+/** 对账导出 GET /api/admin/reconciliations/export（swagger：reconciliation_type / status） */
+export function exportReconciliations(params?: { reconciliation_type?: number; status?: number }) {
   return http.get<Blob>('/admin/reconciliations/export', { ...params }, { responseType: 'blob' })
 }
 
@@ -106,11 +107,14 @@ export interface PaymentChannelLog {
   created_at: number
 }
 
-/** 渠道流水列表 GET /api/admin/payment-channel-logs */
+/** 渠道流水列表 GET /api/admin/payment-channel-logs
+ *  swagger：page / page_size / channel_type(1-微信 2-支付宝) / status / match_status / start_time / end_time */
 export function getPaymentChannelLogs(
   params?: ApiPageParams & {
-    channel_id?: number
+    channel_type?: number
     status?: number
+    /** 匹配状态 */
+    match_status?: number
     start_time?: number
     end_time?: number
   },

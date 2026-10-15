@@ -123,7 +123,6 @@ export default function ServiceInstitutionPage() {
           page: targetPage,
           page_size: targetPageSize,
           keyword: filters.keyword || undefined,
-          service_type: filters.type ?? undefined,
           status: (filters.status ?? undefined) as CommonStatus | undefined,
         })
         if (seq !== serviceSeq.current) return

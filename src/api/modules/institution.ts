@@ -68,22 +68,22 @@ export function updateInstitution(id: number, data: Partial<InstitutionSaveBody>
   return http.put<null>(`/admin/institutions/${id}`, data)
 }
 
-/** 启用/禁用 POST /api/admin/institutions/:id/status */
+/** 启用/禁用 POST /api/admin/institutions/:id/status（swagger：body {status}，remark 为 query 选填） */
 export function updateInstitutionStatus(id: number, status: CommonStatus, remark?: string) {
-  return http.post<null>(`/admin/institutions/${id}/status`, { status, remark })
+  return http.post<null>(`/admin/institutions/${id}/status`, { status }, { params: { remark } })
 }
 
-/** 批量启用/禁用 POST /api/admin/institutions/batch-status */
+/** 批量启用/禁用 POST /api/admin/institutions/batch-status（swagger：body {ids,status}，remark 为 query 选填） */
 export function batchUpdateInstitutionStatus(ids: number[], status: CommonStatus, remark?: string) {
-  return http.post<BatchResult>('/admin/institutions/batch-status', { ids, status, remark })
+  return http.post<BatchResult>('/admin/institutions/batch-status', { ids, status }, { params: { remark } })
 }
 
-/** 删除机构 DELETE /api/admin/institutions/:id */
-export function deleteInstitution(id: number) {
-  return http.delete<null>(`/admin/institutions/${id}`)
+/** 删除机构 DELETE /api/admin/institutions/:id（swagger：remark 为 query 选填） */
+export function deleteInstitution(id: number, remark?: string) {
+  return http.delete<null>(`/admin/institutions/${id}`, { remark })
 }
 
-/** 服务半径变更 POST /api/admin/institutions/:id/radius（备用） */
+/** 服务半径变更 POST /api/admin/institutions/:id/radius（swagger admin.ReqSetInstitutionRadius） */
 export function updateInstitutionRadius(id: number, radiusKm: number, note?: string) {
   return http.post<null>(`/admin/institutions/${id}/radius`, { radius_km: radiusKm, note })
 }
@@ -92,13 +92,26 @@ export function updateInstitutionRadius(id: number, radiusKm: number, note?: str
 /* §5.4 机构服务关联配置 institution_services（权限 service:manage）      */
 /* ------------------------------------------------------------------ */
 
-// 批量新增机构服务关联入参
+/** 机构服务关联新增 / 编辑入参（swagger admin.ReqInstitutionService） */
+export interface InstitutionServiceSaveBody {
+  /** 机构 ID，必填 */
+  institution_id: number
+  /** 服务 ID，必填 */
+  service_id: number
+  /** 1-上门 2-非上门，选填 */
+  is_home_service?: 1 | 2
+  /** 机构特定价（元，字符串），选填 */
+  price_override?: string
+  /** 排序，选填 */
+  sort?: number
+  /** 机构维度上下架：1-上架 9-下架，选填 */
+  status?: CommonStatus
+}
+
+/** 批量新增机构服务关联入参（swagger admin.ReqBatchCreateInstitutionService） */
 export interface InstitutionServiceBatchCreateBody {
-  institution_id: number;
-  items: {
-    service_id: number;
-    institution_id: number;
-  }[];
+  institution_id: number
+  items: InstitutionServiceSaveBody[]
 }
 
 /** 机构服务关联（出参：关联记录 + 服务/分类平铺信息） */
@@ -130,13 +143,12 @@ export interface InstitutionServicePage extends ApiPageResult<InstitutionService
 }
 
 /** 机构服务列表 GET /api/admin/institutions/:id/services
- *  分页 + 关键字 / 服务方式 / 状态查询参数一并下推（keyword 来自 ApiPageParams）
+ *  swagger 查询参数：page / page_size / service_id / status(1-上架 9-下架)
  *  注：后端当前仅实现了 page / page_size 分页，其余筛选参数会被忽略，前端因此对当前页再做一次本地兜底过滤 */
 export function getInstitutionServiceList(
   institutionId: number,
   params?: ApiPageParams & {
     service_id?: number
-    service_type?: number
     status?: CommonStatus
   },
 ) {
@@ -151,35 +163,33 @@ export function getInstitutionService(id: number) {
   return http.get<InstitutionServiceRow>(`/admin/institution-services/${id}`)
 }
 
-// /** 新增机构服务关联 POST /api/admin/institution-services */
-// export function createInstitutionService(data: InstitutionServiceSaveBody) {
-//   return http.post<null>('/admin/institution-services', data)
-// }
+/** 新增机构服务关联 POST /api/admin/institution-services */
+export function createInstitutionService(data: InstitutionServiceSaveBody) {
+  return http.post<null>('/admin/institution-services', data)
+}
 
 /** 机构批量关联服务 POST /api/admin/institution-services/batch-create */
 export function batchCreateInstitutionService(data: InstitutionServiceBatchCreateBody) {
   return http.post<null>('/admin/institution-services/batch-create', data)
 }
 
-// /** 编辑关联 PUT /api/admin/institution-services/:id（改机构特定价/排序/上门标记） */
-// export function updateInstitutionService(id: number, data: Partial<InstitutionServiceSaveBody>) {
-//   return http.put<null>(`/admin/institution-services/${id}`, data)
-// }
+/** 批量删除机构服务关联 POST /api/admin/institution-services/batch-delete（swagger：body {ids}） */
+export function batchDeleteInstitutionService(ids: number[]) {
+  return http.post<BatchResult>('/admin/institution-services/batch-delete', { ids })
+}
+
+/** 编辑机构服务关联 PUT /api/admin/institution-services/:id */
+export function updateInstitutionService(id: number, data: InstitutionServiceSaveBody) {
+  return http.put<null>(`/admin/institution-services/${id}`, data)
+}
 
 /** 机构服务上下架 POST /api/admin/institution-services/:id/status
- *  注：契约中此接口一度注释，但后端实测仍可用（返回「状态已更新」），页面上下架功能依赖它 */
-export function updateInstitutionServiceStatus(id: number, status: CommonStatus) {
-  return http.post<null>(`/admin/institution-services/${id}/status`, { status })
+ *  swagger：body {status}，remark（删除/上下架/启停原因）为 query 选填 */
+export function updateInstitutionServiceStatus(id: number, status: CommonStatus, remark?: string) {
+  return http.post<null>(`/admin/institution-services/${id}/status`, { status }, { params: { remark } })
 }
 
-/** 删除关联 DELETE /api/admin/institution-services/:id（软删，校验无在途订单引用） */
-export function deleteInstitutionService(id: number) {
-  return http.delete<null>(`/admin/institution-services/${id}`)
+/** 删除关联 DELETE /api/admin/institution-services/:id（swagger：remark 为 query 选填） */
+export function deleteInstitutionService(id: number, remark?: string) {
+  return http.delete<null>(`/admin/institution-services/${id}`, { remark })
 }
-
-/** 批量同步 POST /api/admin/institutions/:id/services/sync（一次开通/回收多个服务） */
-// export function syncInstitutionServices(institutionId: number, serviceIds: number[]) {
-//   return http.post<BatchResult>(`/admin/institutions/${institutionId}/services/sync`, {
-//     service_ids: serviceIds,
-//   })
-// }

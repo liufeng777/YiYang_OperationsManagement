@@ -41,10 +41,13 @@ export interface MemberDTO {
   status: number // 1-未实名 2-已实名 9-禁用
 }
 
-/** 会员列表 GET /api/admin/members（按名称/手机/机构/标签/风险等级筛选） */
+/** 会员列表 GET /api/admin/members（swagger：page / page_size / keyword / institution_id / level_id / status） */
 export function getMembers(
   params?: ApiPageParams & {
     institution_id?: number
+    /** 会员等级 ID */
+    level_id?: number
+    /** 状态 1-未实名 2-已实名 9-禁用 */
     status?: number
   },
 ) {
@@ -56,51 +59,74 @@ export function getMember(id: number) {
   return http.get<MemberDTO>(`/admin/members/${id}`)
 }
 
+/** 会员新增 / 编辑入参（swagger admin.ReqCreateMember：institution_id / name / phone 必填） */
+export interface MemberSaveBody {
+  institution_id: number
+  name: string
+  phone: string
+  /** 出生日期 yyyy-MM-dd */
+  birthday?: string
+  emergency_contact?: string
+  emergency_phone?: string
+  /** 性别 1-男 2-女 */
+  gender?: 1 | 2
+  id_card?: string
+  /** 会员等级 ID */
+  level_id?: number
+  /** 会员标签 ID 数组 */
+  tag_ids?: number[]
+}
+
 /** 新增会员 POST /api/admin/members */
-// export function createMember(data: Partial<MemberDTO>) {
-//   return http.post<null>('/admin/members', data)
-// }
+export function createMember(data: MemberSaveBody) {
+  return http.post<null>('/admin/members', data)
+}
 
 /** 编辑会员 PUT /api/admin/members/:id */
-// export function updateMember(id: number, data: Partial<MemberDTO>) {
-//   return http.put<null>(`/admin/members/${id}`, data)
-// }
+export function updateMember(id: number, data: MemberSaveBody) {
+  return http.put<null>(`/admin/members/${id}`, data)
+}
 
-/** 会员标签打标 POST /api/admin/members/:id/tags（仅会员经营标签） */
+/** 删除会员 DELETE /api/admin/members/:id（swagger：remark 为 query 选填） */
+export function deleteMember(id: number, remark?: string) {
+  return http.delete<null>(`/admin/members/${id}`, { remark })
+}
+
+/** 会员标签打标 POST /api/admin/members/:id/tags（swagger admin.ReqSetMemberTags） */
 export function addMemberTags(id: number, tagIds: number[], note?: string) {
   return http.post<null>(`/admin/members/${id}/tags`, { tag_ids: tagIds, note })
 }
 
-/** 会员标签解除 DELETE /api/admin/members/:id/tags/:tagId */
-export function removeMemberTag(id: number, tagId: number) {
-  return http.delete<null>(`/admin/members/${id}/tags/${tagId}`)
+/** 会员标签解除 DELETE /api/admin/members/:id/tags/:tagId（swagger：remark 为 query 选填） */
+export function removeMemberTag(id: number, tagId: number, remark?: string) {
+  return http.delete<null>(`/admin/members/${id}/tags/${tagId}`, { remark })
 }
 
-/** 会员批量打标签 POST /api/admin/members/batch-tags */
-export function batchAddMemberTags(memberIds: number[], tagIds: number[], note?: string) {
+/** 会员批量打标签 POST /api/admin/members/batch-tags（swagger admin.ReqBatchMemberTags：单标签 tag_id） */
+export function batchAddMemberTags(memberIds: number[], tagId: number, note?: string) {
   return http.post<BatchResult>('/admin/members/batch-tags', {
     member_ids: memberIds,
-    tag_ids: tagIds,
+    tag_id: tagId,
     note,
   })
 }
 
-/** 会员批量解除标签 POST /api/admin/members/batch-untag */
-export function batchRemoveMemberTags(memberIds: number[], tagIds: number[]) {
+/** 会员批量解除标签 POST /api/admin/members/batch-untag（swagger admin.ReqRemoveMemberTagBatch：单标签 tag_id） */
+export function batchRemoveMemberTags(memberIds: number[], tagId: number) {
   return http.post<BatchResult>('/admin/members/batch-untag', {
     member_ids: memberIds,
-    tag_ids: tagIds,
+    tag_id: tagId,
   })
 }
 
-/** 会员禁用 POST /api/admin/members/:id/status */
-export function updateMemberStatus(id: number, status: number) {
-  return http.post<null>(`/admin/members/${id}/status`, { status })
+/** 会员启用/禁用 POST /api/admin/members/:id/status（swagger：body {status}，remark 为 query 选填） */
+export function updateMemberStatus(id: number, status: number, remark?: string) {
+  return http.post<null>(`/admin/members/${id}/status`, { status }, { params: { remark } })
 }
 
-/** 会员批量启用/禁用 POST /api/admin/members/batch-status */
-export function batchUpdateMemberStatus(ids: number[], status: CommonStatus) {
-  return http.post<BatchResult>('/admin/members/batch-status', { ids, status })
+/** 会员批量启用/禁用 POST /api/admin/members/batch-status（swagger：body {ids,status}，remark 为 query 选填） */
+export function batchUpdateMemberStatus(ids: number[], status: CommonStatus, remark?: string) {
+  return http.post<BatchResult>('/admin/members/batch-status', { ids, status }, { params: { remark } })
 }
 
 /* ------------------------------------------------------------------ */
@@ -144,36 +170,47 @@ export interface TagDictDTO {
   status: CommonStatus
 }
 
-/** 标签列表 GET /api/admin/tag-dicts（按机构/类型过滤） */
-export function getTagDicts(params?: { institution_id?: number; tag_type?: number }) {
-  return http.get<TagDictDTO[]>('/admin/tag-dicts', { ...params })
+/** 标签字典新增 / 编辑入参（swagger admin.ReqCreateTagDict：tag_name / tag_type 必填） */
+export interface TagDictSaveBody {
+  tag_name: string
+  tag_type: number
+  /** 机构 ID（0 为全局） */
+  institution_id?: number
+  tag_color?: string
+  sort_order?: number
+  status?: CommonStatus
+}
+
+/** 标签列表 GET /api/admin/tag-dicts（swagger：page / page_size / institution_id / tag_type） */
+export function getTagDicts(params?: ApiPageParams & { institution_id?: number; tag_type?: number }) {
+  return http.get<ApiPageResult<TagDictDTO>>('/admin/tag-dicts', { ...params })
 }
 
 /** 新增标签 POST /api/admin/tag-dicts */
-export function createTagDict(data: Omit<TagDictDTO, 'id'>) {
+export function createTagDict(data: TagDictSaveBody) {
   return http.post<null>('/admin/tag-dicts', data)
 }
 
 /** 编辑标签 PUT /api/admin/tag-dicts/:id */
-export function updateTagDict(id: number, data: Partial<Omit<TagDictDTO, 'id'>>) {
+export function updateTagDict(id: number, data: Partial<TagDictSaveBody>) {
   return http.put<null>(`/admin/tag-dicts/${id}`, data)
 }
 
-/** 启停标签 POST /api/admin/tag-dicts/:id/status */
-export function updateTagDictStatus(id: number, status: CommonStatus) {
-  return http.post<null>(`/admin/tag-dicts/${id}/status`, { status })
+/** 启停标签 POST /api/admin/tag-dicts/:id/status（swagger：body {status}，remark 为 query 选填） */
+export function updateTagDictStatus(id: number, status: CommonStatus, remark?: string) {
+  return http.post<null>(`/admin/tag-dicts/${id}/status`, { status }, { params: { remark } })
 }
 
-/** 删除标签 DELETE /api/admin/tag-dicts/:id */
-export function deleteTagDict(id: number) {
-  return http.delete<null>(`/admin/tag-dicts/${id}`)
+/** 删除标签 DELETE /api/admin/tag-dicts/:id（swagger：remark 为 query 选填） */
+export function deleteTagDict(id: number, remark?: string) {
+  return http.delete<null>(`/admin/tag-dicts/${id}`, { remark })
 }
 
 /* ------------------------------------------------------------------ */
 /* §4.5 会员等级配置（预留，权限 member:level-config）                    */
 /* ------------------------------------------------------------------ */
 
-/** 会员等级 DTO（积分字段属二期，一期不体现） */
+/** 会员等级 DTO（积分/折扣字段属二期，一期不体现） */
 export interface MemberLevelDTO {
   id: number
   level_name: string
@@ -182,24 +219,99 @@ export interface MemberLevelDTO {
   status: CommonStatus
 }
 
+/** 会员等级新增 / 编辑入参（swagger admin.ReqCreateMemberLevel：level_code / level_name 必填） */
+export interface MemberLevelSaveBody {
+  level_code: string
+  level_name: string
+  /** 权益列表 */
+  benefits?: unknown[]
+  /** 折扣率（二期） */
+  discount_rate?: number
+  /** 升级所需积分（二期） */
+  min_points?: number
+  status?: CommonStatus
+}
+
 /** 等级列表 GET /api/admin/member-levels */
 export function getMemberLevels() {
   return http.get<MemberLevelDTO[]>('/admin/member-levels')
 }
 
 /** 新增等级 POST /api/admin/member-levels */
-export function createMemberLevel(data: Omit<MemberLevelDTO, 'id'>) {
+export function createMemberLevel(data: MemberLevelSaveBody) {
   return http.post<null>('/admin/member-levels', data)
 }
 
 /** 编辑等级 PUT /api/admin/member-levels/:id */
-export function updateMemberLevel(id: number, data: Partial<Omit<MemberLevelDTO, 'id'>>) {
+export function updateMemberLevel(id: number, data: Partial<MemberLevelSaveBody>) {
   return http.put<null>(`/admin/member-levels/${id}`, data)
 }
 
-/** 启用/停用等级 POST /api/admin/member-levels/:id/status */
-export function updateMemberLevelStatus(id: number, status: CommonStatus) {
-  return http.post<null>(`/admin/member-levels/${id}/status`, { status })
+/** 启用/停用等级 POST /api/admin/member-levels/:id/status（swagger：body {status}，remark 为 query 选填） */
+export function updateMemberLevelStatus(id: number, status: CommonStatus, remark?: string) {
+  return http.post<null>(`/admin/member-levels/${id}/status`, { status }, { params: { remark } })
+}
+
+/* ------------------------------------------------------------------ */
+/* 会员绑定医护人员 member-staff-relations（swagger：会员管理-健管师绑定） */
+/* ------------------------------------------------------------------ */
+
+/** 会员绑定医护人员入参（swagger admin.ReqMemberStaffRelation） */
+export interface MemberStaffRelationSaveBody {
+  /** 会员 ID，必填 */
+  member_id: number
+  /** 医护人员（健管师）ID，必填 */
+  staff_id: number
+  /** 绑定来源：1-用户指定 2-医护人员指定 3-运营人员指定，默认 1 */
+  bind_type?: 1 | 2 | 3
+  /** 绑定时间（UTC 秒），0=当前时间 */
+  bound_at?: number
+  /** 绑定/解绑备注 */
+  comment?: string
+  /** 医护岗位编码（Doctor/HealthMgr/Caregiver 等） */
+  staff_position_code?: string
+}
+
+/** 会员绑定医护人员记录 */
+export interface MemberStaffRelationDTO extends MemberStaffRelationSaveBody {
+  id: number
+  member_name?: string
+  staff_name?: string
+  /** 解绑时间（UTC 秒），0/空=未解绑 */
+  unbound_at?: number
+}
+
+/** 绑定列表 GET /api/admin/member-staff-relations
+ *  swagger：page / page_size / member_id / staff_id / staff_position_code / active_only(1-只看未解绑) */
+export function getMemberStaffRelations(
+  params?: ApiPageParams & {
+    member_id?: number
+    staff_id?: number
+    staff_position_code?: string
+    active_only?: 0 | 1
+  },
+) {
+  return http.get<ApiPageResult<MemberStaffRelationDTO>>('/admin/member-staff-relations', { ...params })
+}
+
+/** 新增绑定 POST /api/admin/member-staff-relations */
+export function createMemberStaffRelation(data: MemberStaffRelationSaveBody) {
+  return http.post<null>('/admin/member-staff-relations', data)
+}
+
+/** 绑定详情 GET /api/admin/member-staff-relations/:id */
+export function getMemberStaffRelation(id: number) {
+  return http.get<MemberStaffRelationDTO>(`/admin/member-staff-relations/${id}`)
+}
+
+/** 更新绑定 PUT /api/admin/member-staff-relations/:id */
+export function updateMemberStaffRelation(id: number, data: MemberStaffRelationSaveBody) {
+  return http.put<null>(`/admin/member-staff-relations/${id}`, data)
+}
+
+/** 解除绑定 DELETE /api/admin/member-staff-relations/:id（swagger：remark 为 query 选填） */
+export function deleteMemberStaffRelation(id: number, remark?: string) {
+  return http.delete<null>(`/admin/member-staff-relations/${id}`, { remark })
 }
 
 /* ------------------------------------------------------------------ */
@@ -229,17 +341,17 @@ export interface UserDTO {
   avatar_url: string | null
   /** 脱敏手机号 */
   phone: string
-  /** 1-正常 2-禁用 */
-  status: 1 | 2
+  /** 1-正常 9-禁用 */
+  status: 1 | 9
   last_login_at: number | null
   login_ip: string | null
   bind_members: BindMemberBrief[]
   created_at: number
 }
 
-/** 用户列表 GET /api/admin/users（按昵称/手机号/OpenID/状态） */
+/** 用户列表 GET /api/admin/users（swagger：page / page_size / nickname / phone / wx_openid / status） */
 export function getUsers(
-  params?: ApiPageParams & { nickname?: string; phone?: string; wx_openid?: string; status?: 1 | 2 },
+  params?: ApiPageParams & { nickname?: string; phone?: string; wx_openid?: string; status?: 1 | 9 },
 ) {
   return http.get<ApiPageResult<UserDTO>>('/admin/users', { ...params })
 }
@@ -249,9 +361,9 @@ export function getUser(id: number) {
   return http.get<UserDTO>(`/admin/users/${id}`)
 }
 
-/** 用户启用/禁用 POST /api/admin/users/:id/status */
-export function updateUserStatus(id: number, status: 1 | 2) {
-  return http.post<null>(`/admin/users/${id}/status`, { status })
+/** 用户启用/禁用 POST /api/admin/users/:id/status（swagger：body {status}，remark 为 query 选填） */
+export function updateUserStatus(id: number, status: 1 | 9, remark?: string) {
+  return http.post<null>(`/admin/users/${id}/status`, { status }, { params: { remark } })
 }
 
 /* ------------------------------------------------------------------ */
@@ -279,7 +391,7 @@ export function updateBinding(
   return http.put<null>(`/admin/bindings/${relationId}`, data)
 }
 
-/** 解绑 DELETE /api/admin/users/:id/bindings/:relationId */
-export function unbindMember(userId: number, relationId: number) {
-  return http.delete<null>(`/admin/users/${userId}/bindings/${relationId}`)
+/** 解绑 DELETE /api/admin/users/:id/bindings/:relationId（swagger：remark 为 query 选填） */
+export function unbindMember(userId: number, relationId: number, remark?: string) {
+  return http.delete<null>(`/admin/users/${userId}/bindings/${relationId}`, { remark })
 }

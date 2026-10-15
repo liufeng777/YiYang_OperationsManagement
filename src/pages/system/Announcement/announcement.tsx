@@ -1,11 +1,12 @@
 /**
  * 系统设置 - 系统公告
- * 后端接口未对接：页面以 Alert 提示、不展示业务数据；
- * 接口就绪后接入 systemApi 公告接口并恢复筛选与公告表格
+ * 数据来源：messageApi 公告接口（getAnnouncements / createAnnouncement / updateAnnouncement /
+ *          publishAnnouncement / withdrawAnnouncement / deleteAnnouncement，swagger 未收录，以后端实际为准）
+ * 说明：与「消息通知管理 - 系统公告」Tab 为同一业务，直接复用 AnnouncementsTab 组件
  */
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
-import ApiPendingAlert from '@/components/ApiPendingAlert'
+import AnnouncementsTab from '../Message/manage/AnnouncementsTab'
 import './announcement.less'
 
 export default function AnnouncementList() {
@@ -27,7 +28,7 @@ export default function AnnouncementList() {
           </button>
           <span>公告仅用于影响患者使用的运营异常通知</span>
         </div>
-        <ApiPendingAlert feature="系统公告" />
+        <AnnouncementsTab />
       </div>
     </PageContainer>
   )

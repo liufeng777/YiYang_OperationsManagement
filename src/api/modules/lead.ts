@@ -1,8 +1,8 @@
 /**
- * 线索（Lead）模块 — admin 端
- * 权威依据：《线索-前端对接与测试指南》（2026-09-26，对齐 gateway/shared/lead.go、lead_auto_job.go）
+ * 线索（Lead）模块 — admin 端（swagger：活动报名-线索管理）
  * 网关前缀 /api/v1/admin（dev 代理由 /api 统一补 /v1，见 vite.config.ts）
  * 权限：lead:view（列表/详情）/ lead:edit（新增/认领/跟进）/ lead:manage（转派/转化/流失/导入/导出）
+ * 注：咨询 / 预约记录接口 swagger 未收录，已移除。
  */
 import { http } from '@/utils/request'
 import type { AxiosResponse } from 'axios'
@@ -113,45 +113,45 @@ export function createLead(data: {
 }
 
 /**
- * 认领 PUT /admin/leads/:id/assign（lead:edit）
- * body {assignee: 员工ID}；仅 1-待跟进 / 4-转化失败 可认领，成功后 → 2-跟进中
+ * 认领 PUT /admin/leads/:id/assign（lead:edit；swagger：body {assignee}，remark 为 query 选填）
+ * 仅 1-待跟进 / 4-转化失败 可认领，成功后 → 2-跟进中
  */
-export function assignLead(id: number, assignee: number) {
-  return http.put<null>(`/admin/leads/${id}/assign`, { assignee })
+export function assignLead(id: number, assignee: number, remark?: string) {
+  return http.put<null>(`/admin/leads/${id}/assign`, { assignee }, { params: { remark } })
 }
 
 /**
- * 跟进 POST /admin/leads/:id/followup（lead:edit）
- * 仅 2-跟进中 可跟进；跟进人由 JWT 登录态落库，前端无需传 operator
+ * 跟进 POST /admin/leads/:id/followup（lead:edit；swagger admin.ReqFollowupLead）
+ * content 必填；followup_type：1-语音 2-文字 3-视频 4-在店 5-上门；跟进人由 JWT 登录态落库，前端无需传 operator
  */
 export function addLeadFollowup(
   id: number,
-  data: { followup_type: LeadFollowupType; content: string; result?: string },
+  data: { content: string; followup_type?: LeadFollowupType; operator?: string; result?: string },
 ) {
   return http.post<null>(`/admin/leads/${id}/followup`, data)
 }
 
 /**
- * 转派 POST /admin/leads/:id/transfer（lead:manage，留痕）
+ * 转派 POST /admin/leads/:id/transfer（lead:manage，留痕；swagger：remark 为 query 选填）
  * body {new_assignee, reason?}；仅 1/2/4 可转派，转派后统一 → 2-跟进中
  */
-export function transferLead(id: number, newAssignee: number, reason?: string) {
+export function transferLead(id: number, newAssignee: number, reason?: string, remark?: string) {
   return http.post<null>(`/admin/leads/${id}/transfer`, {
     new_assignee: newAssignee,
     reason,
-  })
+  }, { params: { remark } })
 }
 
 /**
- * 批量转派 POST /admin/leads/batch-transfer（lead:manage）
+ * 批量转派 POST /admin/leads/batch-transfer（lead:manage；swagger：remark 为 query 选填）
  * body {lead_ids, new_assignee, reason?}；终态 3/9 行服务端静默跳过，其余 → 2-跟进中
  */
-export function batchTransferLeads(leadIds: number[], newAssignee: number, reason?: string) {
+export function batchTransferLeads(leadIds: number[], newAssignee: number, reason?: string, remark?: string) {
   return http.post<null>('/admin/leads/batch-transfer', {
     lead_ids: leadIds,
     new_assignee: newAssignee,
     reason,
-  })
+  }, { params: { remark } })
 }
 
 /**
@@ -164,17 +164,17 @@ export function convertLead(id: number) {
 }
 
 /**
- * 流失/无效 POST /admin/leads/:id/lost（lead:manage）
+ * 流失/无效 POST /admin/leads/:id/lost（lead:manage；swagger admin.ReqMarkLeadLost，remark 为 query 选填）
  * body {status: 9, reason?}；权威口径 9-流失（6 已废弃禁用）；仅 1/2/4 可标记，终态报错
  */
-export function loseLead(id: number, reason?: string) {
-  return http.post<null>(`/admin/leads/${id}/lost`, { status: 9, reason })
+export function loseLead(id: number, reason?: string, remark?: string) {
+  return http.post<null>(`/admin/leads/${id}/lost`, { status: 9, reason }, { params: { remark } })
 }
 
 /**
  * CSV 导入 POST /admin/leads/import（lead:manage）
  * multipart 字段 file，仅 .csv；表头兼容 name/姓名/联系人、phone/电话/手机号/联系电话；
- * 重复手机号（库内活跃线索 / 同批内）跳过不报错，整体算成功
+ * 重复手机号（库内活跃线索 / 同批内）跳过不报错，整体算成功（先整体校验，格式/机构错误则拒绝导入零落库并返回行级明细）
  */
 export function importLeads(file: File) {
   const formData = new FormData()
@@ -191,46 +191,4 @@ export function importLeads(file: File) {
  */
 export function exportLeads(params?: LeadListParams) {
   return http.get<AxiosResponse<Blob>>('/admin/leads/export', { ...params }, { responseType: 'blob' })
-}
-
-/* ------------------------------------------------------------------ */
-/* 咨询与预约（运营后台端-API设计 §8.3，仅列表查看，新指南未覆盖，暂保留）      */
-/* ------------------------------------------------------------------ */
-
-/** 咨询记录 DTO */
-export interface ConsultationDTO {
-  id: number
-  member_id: number
-  member_name: string
-  consult_type: number
-  status: number
-  content: string
-  created_at: number
-}
-
-/** 咨询列表 GET /api/admin/consultations（按类型/状态/时间） */
-export function getConsultations(
-  params?: ApiPageParams & { consult_type?: number; status?: number; start_time?: number; end_time?: number },
-) {
-  return http.get<ApiPageResult<ConsultationDTO>>('/admin/consultations', { ...params })
-}
-
-/** 预约记录 DTO（状态见共通 §6.6） */
-export interface AppointmentDTO {
-  id: number
-  member_id: number
-  member_name: string
-  institution_id: number
-  /** yyyy-MM-dd */
-  appointment_date: string
-  /** 1-待确认 2-已确认 3-已到院 4-已完成 6-已取消 7-未到 */
-  status: 1 | 2 | 3 | 4 | 6 | 7
-  created_at: number
-}
-
-/** 预约列表 GET /api/admin/appointments（按机构/状态/日期） */
-export function getAppointments(
-  params?: ApiPageParams & { institution_id?: number; status?: number; appointment_date?: string },
-) {
-  return http.get<ApiPageResult<AppointmentDTO>>('/admin/appointments', { ...params })
 }

@@ -5,7 +5,7 @@
  * 筛选：关键字 / 模块 / 动作 / 时间范围全部下推后端（前端不做本地过滤）
  * 请求参数：JSON 字符串，列内以「查看」按钮触发 Popover 展示格式化后的 JSON
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Card, DatePicker, Input, Popover, Select, Space, Tag } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
@@ -103,14 +103,13 @@ export default function SystemLog() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
-  /** 组装查询参数（筛选全部下推；时间范围按操作时间转 UTC 秒） */
+  /** 组装查询参数：模块（resource）/ 动作 / 时间范围下推后端（swagger 无 keyword 参数，关键字当前页本地过滤） */
   const buildParams = useCallback(
     (targetPage: number, filters: LogFilters, size: number = PAGE_SIZE) => ({
       page: targetPage,
       page_size: size,
-      keyword: filters.keyword || undefined,
       action: filters.action === 'all' ? undefined : filters.action,
-      module: filters.module === 'all' ? undefined : filters.module,
+      resource: filters.module === 'all' ? undefined : filters.module,
       start_time: filters.range?.[0] ? filters.range[0].startOf('day').unix() : undefined,
       end_time: filters.range?.[1] ? filters.range[1].endOf('day').unix() : undefined,
     }),
@@ -156,6 +155,19 @@ export default function SystemLog() {
     setPage(1)
     void fetchList(1, emptyFilters, pageSize)
   }
+
+  /** 关键字后端未提供查询参数，对当前页结果本地过滤（操作人 / IP / 操作对象 / 请求地址） */
+  const filteredRows = useMemo(() => {
+    const kw = applied.keyword
+    if (!kw) return rows
+    return rows.filter(
+      (r) =>
+        (r.operator ?? '').includes(kw) ||
+        (r.ip ?? '').includes(kw) ||
+        (r.target ?? '').includes(kw) ||
+        (r.path ?? '').includes(kw),
+    )
+  }, [rows, applied.keyword])
 
   const columns: ColumnsType<OperationLogItem> = [
     {
@@ -281,7 +293,7 @@ export default function SystemLog() {
             size="small"
             loading={loading}
             columns={columns}
-            dataSource={rows}
+            dataSource={filteredRows}
             pagination={{
               current: page,
               pageSize,

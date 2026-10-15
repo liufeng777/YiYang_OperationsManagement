@@ -59,7 +59,7 @@ export default function OrderDetailPage() {
     setWorkOrderLoading(true)
     try {
       const res = await workorderApi.getWorkOrders({
-        order_id: String(orderId),
+        order_id: Number(orderId),
         page: 1,
         page_size: 100,
       })

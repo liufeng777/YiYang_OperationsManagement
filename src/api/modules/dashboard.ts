@@ -1,36 +1,19 @@
 /**
  * 数据看板（运营后台端-API设计 §11）
  * 权限 dashboard:view；聚合接口出参不受分页包装约束（共通 §1.4）
- * 说明：上半部分为运营首页展示用类型（接口未对接，页面以 Alert 提示），下半部分对齐文档 §11 看板接口。
+ * 说明：运营首页已接入 §11 看板接口（overview / service-trend），
+ *       上半部分为页面展示用类型（由看板接口 / 订单列表数据映射而来）。
  */
 import { http } from '@/utils/request'
 
 /* ------------------------------------------------------------------ */
-/* 运营首页展示类型（接口未对接，接后端后切换到下方看板接口）              */
+/* 运营首页展示类型（由 §11 看板接口与订单列表映射填充）                    */
 /* ------------------------------------------------------------------ */
 
-/** 经营指标总览（运营首页指标卡） */
-export interface OverviewData {
-  /** 今日订单数 */
-  todayOrderCount: number
-  /** 今日订单数较昨日增长率（%） */
-  todayOrderRate: number
-  /** 今日活动报名数 */
-  activitySignupCount: number
-  /** 今日活动报名较昨日增长率（%） */
-  activitySignupRate: number
-  /** 待审核退款笔数 */
-  pendingRefundCount: number
-  /** 待办事项总数 */
-  pendingTodoCount: number
-  /** 合作机构数 */
-  totalInstitution: number
-  /** 资料待完善机构数 */
-  pendingInstitutionCount: number
-}
-
-/** 近期订单 */
+/** 近期订单（由 orderApi.getOrders 列表项映射） */
 export interface RecentOrder {
+  /** 订单 ID（跳转详情用） */
+  id: number
   /** 订单编号 */
   orderNo: string
   /** 业务类型：上门服务 / 活动报名 / 适老商品 / 老龄旅游 */
@@ -43,13 +26,13 @@ export interface RecentOrder {
   amount: number
   /** 下单时间 */
   orderTime: string
-  /** 订单状态：1=待服务 2=已确认 3=退款审核 4=已完成 */
+  /** 订单状态：1-待支付 2-待确认 3-生效中 4-已完成 5-已取消 6-已退款 */
   status: number
 }
 
 /** 待办提醒项 */
 export interface DashboardTodo {
-  /** 唯一标识：refund / institution / content */
+  /** 唯一标识：refund / institution / content / warn */
   key: string
   /** 待办标题 */
   title: string
@@ -73,8 +56,8 @@ export interface TrendPoint {
 export interface TrendStat {
   /** 累计订单数 */
   totalOrders: number
-  /** 较上周增长率（%） */
-  totalRate: number
+  /** 较上周增长率（%）；上周无数据时为 null */
+  totalRate: number | null
   /** 逐日订单量 */
   daily: TrendPoint[]
 }
@@ -131,15 +114,22 @@ export interface InstitutionRateItem {
   completion_rate?: number
 }
 
-/** 全局指标总览 GET /api/admin/dashboard/overview */
-export function getDashboardOverview() {
-  return http.get<DashboardOverview>('/admin/dashboard/overview')
+/** 全局指标总览 GET /api/admin/dashboard/overview
+ *  swagger：scope（self/all，默认 self）/ institution_id / start_ts / end_ts（UTC 秒，选填） */
+export function getDashboardOverview(params?: {
+  scope?: 'self' | 'all'
+  institution_id?: number
+  start_ts?: number
+  end_ts?: number
+}) {
+  return http.get<DashboardOverview>('/admin/dashboard/overview', { ...params })
 }
 
-/** 服务趋势 GET /api/admin/dashboard/service-trend?start&end&granularity */
+/** 服务趋势 GET /api/admin/dashboard/service-trend
+ *  swagger：start / end（UTC 秒）/ granularity（day/week/month，默认 day） */
 export function getServiceTrend(params: {
-  start: string
-  end: string
+  start: number
+  end: number
   granularity?: 'day' | 'week' | 'month'
 }) {
   return http.get<{ list: ServiceTrendPoint[]; total: number }>('/admin/dashboard/service-trend', {
@@ -147,17 +137,23 @@ export function getServiceTrend(params: {
   })
 }
 
-/** 服务完成率 GET /api/admin/dashboard/service-completion（按机构分组） */
-export function getServiceCompletion() {
-  return http.get<{ list: InstitutionRateItem[]; total: number }>('/admin/dashboard/service-completion')
+/** 服务完成率 GET /api/admin/dashboard/service-completion（按机构分组；swagger：institution_id 选填） */
+export function getServiceCompletion(params?: { institution_id?: number }) {
+  return http.get<{ list: InstitutionRateItem[]; total: number }>('/admin/dashboard/service-completion', {
+    ...params,
+  })
 }
 
-/** 活动数据 GET /api/admin/dashboard/activity（活动报名/签到统计） */
-export function getActivityStats() {
-  return http.get<{ list: Array<Record<string, unknown>>; total: number }>('/admin/dashboard/activity')
+/** 活动数据 GET /api/admin/dashboard/activity（活动报名/签到统计；swagger：start_ts / end_ts 选填） */
+export function getActivityStats(params?: { start_ts?: number; end_ts?: number }) {
+  return http.get<{ list: Array<Record<string, unknown>>; total: number }>('/admin/dashboard/activity', {
+    ...params,
+  })
 }
 
-/** 健康/预警 GET /api/admin/dashboard/health（评估/预警/方案/效果评估） */
-export function getHealthStats() {
-  return http.get<{ list: InstitutionRateItem[]; total: number }>('/admin/dashboard/health')
+/** 健康/预警 GET /api/admin/dashboard/health（评估/预警/方案/效果评估；swagger：start_ts / end_ts 选填） */
+export function getHealthStats(params?: { start_ts?: number; end_ts?: number }) {
+  return http.get<{ list: InstitutionRateItem[]; total: number }>('/admin/dashboard/health', {
+    ...params,
+  })
 }

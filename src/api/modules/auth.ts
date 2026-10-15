@@ -1,6 +1,6 @@
 /**
- * 认证与会话（运营后台端-API设计 §1）
- * baseURL 已含 /api，路径前缀 /admin
+ * 认证与会话（swagger：认证）
+ * baseURL 已含 /api，路径前缀 /admin（dev 代理统一补 /v1，见 vite.config.ts）
  */
 import { http } from '@/utils/request'
 
@@ -23,11 +23,13 @@ export interface AdminProfile {
   permissions?: string[]
 }
 
-/** 后台登录入参 */
+/** 后台登录入参（swagger admin.AdminLoginRequest） */
 export interface LoginParams {
   username: string
   password: string
-  /** 图形验证码（可选） */
+  /** 前端分组标识，如 admin（选填） */
+  client_type?: string
+  /** 图形验证码（swagger 未收录，预留） */
   captcha?: string
   captcha_id?: string
 }
@@ -50,9 +52,9 @@ export function getProfile() {
   return http.get<AdminProfile>('/admin/auth/profile')
 }
 
-/** 修改密码 POST /api/admin/auth/change-password */
-export function changePassword(data: { old_password: string; new_password: string }) {
-  return http.post<null>('/admin/auth/change-password', data)
+/** 刷新 Token POST /api/admin/auth/refresh（swagger admin.AdminRefreshRequest，body {token}） */
+export function refreshToken(token: string) {
+  return http.post<{ token: string; expire_in?: number }>('/admin/auth/refresh', { token })
 }
 
 /** 登出 POST /api/admin/auth/logout */

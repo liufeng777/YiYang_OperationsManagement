@@ -55,7 +55,8 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    gap: @spacing-sm;
+    // justify-content: space-between;
   }
   &__item {
     display: flex;
@@ -90,6 +91,10 @@
     &--content {
       background: fade(@color-info, 12%);
       color: @color-info;
+    }
+    &--warn {
+      background: fade(@color-warning, 12%);
+      color: @color-warning;
     }
   }
 

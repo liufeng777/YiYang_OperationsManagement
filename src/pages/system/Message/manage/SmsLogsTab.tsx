@@ -38,13 +38,13 @@ export default function SmsLogsTab() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
-  /** 组装查询参数：筛选条件全部下推后端 */
+  /** 组装查询参数：筛选条件全部下推后端（swagger：status 为字符串 delivered/failed） */
   const buildParams = useCallback(
     (targetPage: number, filters: SmsFilters, size: number = PAGE_SIZE) => ({
       page: targetPage,
       page_size: size,
       phone: filters.phone || undefined,
-      status: filters.status === 'all' ? undefined : Number(filters.status),
+      status: filters.status === 'all' ? undefined : filters.status,
     }),
     [],
   )
@@ -138,9 +138,8 @@ export default function SmsLogsTab() {
           onChange={setStatus}
           options={[
             { label: '全部状态', value: 'all' },
-            { label: '成功', value: '1' },
-            { label: '失败', value: '2' },
-            { label: '未送达', value: '9' },
+            { label: '已送达', value: 'delivered' },
+            { label: '失败', value: 'failed' },
           ]}
         />
         <Button onClick={handleReset}>重置</Button>

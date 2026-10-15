@@ -1,9 +1,11 @@
 /**
- * 耗材包管理（运营后台端-API设计 §5.2）
+ * 耗材包管理（swagger：服务与耗材-耗材管理）
  * 权限 service:manage
+ * 说明：swagger 仅收录 列表 / 详情 / 新增 / 编辑 四个接口；
+ *       上下架通过编辑接口提交 status 字段（1-上架 9-下架）。
  */
 import { http } from '@/utils/request'
-import type { ApiPageParams, ApiPageResult, BatchResult, CommonStatus } from '@/types/api'
+import type { ApiPageParams, ApiPageResult, CommonStatus } from '@/types/api'
 
 /** 耗材包 DTO */
 export interface ConsumableDTO {
@@ -20,10 +22,28 @@ export interface ConsumableDTO {
   status: CommonStatus
 }
 
-/** 耗材新增 / 编辑入参 */
-export type ConsumableSaveBody = Omit<ConsumableDTO, 'id'>
+/** 耗材新增 / 编辑入参（swagger admin.ReqConsumable：category / code / name / price / unit 必填） */
+export interface ConsumableSaveBody {
+  /** 分类，必填 */
+  category: number
+  /** 编码，必填 */
+  code: string
+  /** 名称，必填 */
+  name: string
+  /** 单价（元，字符串），必填 */
+  price: string
+  /** 单位，必填 */
+  unit: string
+  name_en?: string
+  /** 规格 */
+  spec?: string
+  /** JSON 描述 */
+  description?: string
+  /** 1-上架 9-下架 */
+  status?: CommonStatus
+}
 
-/** 耗材包列表 GET /api/admin/consumables（按分类/状态/关键字） */
+/** 耗材包列表 GET /api/admin/consumables（swagger：page / page_size / keyword / category / status） */
 export function getConsumables(
   params?: ApiPageParams & { category?: number; status?: CommonStatus },
 ) {
@@ -40,24 +60,7 @@ export function createConsumable(data: ConsumableSaveBody) {
   return http.post<null>('/admin/consumables', data)
 }
 
-/** 编辑耗材包 PUT /api/admin/consumables/:id */
+/** 编辑耗材包 PUT /api/admin/consumables/:id（上下架通过 status 字段提交） */
 export function updateConsumable(id: number, data: Partial<ConsumableSaveBody>) {
   return http.put<null>(`/admin/consumables/${id}`, data)
-}
-
-/** 上架/下架 POST /api/admin/consumables/:id/status */
-export function updateConsumableStatus(id: number, status: CommonStatus) {
-  return http.post<null>(`/admin/consumables/${id}/status`, { status })
-}
-
-/** 批量上下架 POST /api/admin/consumables/batch-status */
-export function batchUpdateConsumableStatus(ids: number[], status: CommonStatus) {
-  return http.post<BatchResult>('/admin/consumables/batch-status', { ids, status })
-}
-
-/** 服务-耗材关联 POST /api/admin/services/:id/consumables */
-export function linkServiceConsumables(serviceId: number, consumableIds: number[]) {
-  return http.post<null>(`/admin/services/${serviceId}/consumables`, {
-    consumable_ids: consumableIds,
-  })
 }

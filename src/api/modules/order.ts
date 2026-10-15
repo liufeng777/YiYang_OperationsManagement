@@ -1,7 +1,8 @@
 /**
- * 服务订单管理（运营后台端-API设计 §6.1）
- * 权限 order:view / order:manage；订单状态枚举见共通 §6.1
- * 说明：字段名与单位以后端实测返回为准——金额单位为「分」，列表/详情不返回 service_id、start_time 等
+ * 服务订单管理（swagger：订单支付与对账-订单管理）
+ * 权限 order:view / order:manage
+ * 说明：swagger 仅收录 列表 / 导出 / 详情 / 退款发起 四个接口；
+ *       字段名与单位以后端实测返回为准——金额单位为「分」
  */
 import type { AxiosResponse } from 'axios'
 import { http } from '@/utils/request'
@@ -39,31 +40,7 @@ export interface OrderDetail {
   created_at: number
 }
 
-/** 后台代下单 / 编辑订单入参（契约全集） */
-export interface OrderSaveBody {
-  /** 注册会员（用户ID） */
-  user_id: number
-  /** 服务对象（会员ID） */
-  member_id: number
-  institution_id: number
-  /** 服务项目ID */
-  service_id: number
-  /** 购买服务次数 */
-  service_count: number
-  /** 下单金额（分） */
-  amount: number
-  /** 1-不带耗材（默认） 2-带耗材 */
-  is_use_consumables: number
-  /** 意向服务人员ID */
-  expect_staff_id?: number
-  /** 服务地址ID */
-  member_address_id?: number
-  contact_name: string
-  contact_phone: string
-  remark: string
-}
-
-/** 订单列表筛选入参 */
+/** 订单列表筛选入参（swagger：page / page_size / order_status / institution_id / member_id / order_no / start_time / end_time） */
 export interface OrderListParams extends ApiPageParams {
   order_status?: number
   institution_id?: number
@@ -74,17 +51,7 @@ export interface OrderListParams extends ApiPageParams {
   end_time?: number
 }
 
-/** 订单确认入参 */
-export interface OrderConfirmBody {
-  /** 服务人员ID */
-  staff_id: number
-  /** 确认结果：1-通过 2-拒绝 */
-  result: number
-  /** 确认结果说明 */
-  reason?: string
-}
-
-/** 订单退款入参 */
+/** 订单退款入参（swagger admin.ReqRefundOrder：amount / reason / type 必填） */
 export interface OrderRefundBody {
   /** 退款金额（分） */
   amount: number
@@ -93,7 +60,7 @@ export interface OrderRefundBody {
   reason: string
 }
 
-/** 订单列表 GET /api/admin/orders */
+/** 订单列表 GET /api/admin/orders（swagger：page / page_size / order_status / institution_id / member_id / order_no / start_time / end_time） */
 export function getOrders(params?: OrderListParams) {
   return http.get<ApiPageResult<OrderDetail>>('/admin/orders', { ...params })
 }
@@ -101,26 +68,6 @@ export function getOrders(params?: OrderListParams) {
 /** 订单详情 GET /api/admin/orders/:id */
 export function getOrder(id: number) {
   return http.get<OrderDetail>(`/admin/orders/${id}`)
-}
-
-/** 后台代下单 POST /api/admin/orders */
-export function createOrder(data: OrderSaveBody) {
-  return http.post<null>('/admin/orders', data)
-}
-
-/** 编辑订单 PUT /api/admin/orders/:id */
-export function updateOrder(id: number, data: Partial<OrderSaveBody>) {
-  return http.put<null>(`/admin/orders/${id}`, data)
-}
-
-/** 订单确认 POST /api/admin/orders/:id/confirm（待确认 2 → 生效中 3） */
-export function confirmOrder(id: number, data: OrderConfirmBody) {
-  return http.post<null>(`/admin/orders/${id}/confirm`, data)
-}
-
-/** 订单取消 POST /api/admin/orders/:id/cancel */
-export function cancelOrder(id: number, reason: string) {
-  return http.post<null>(`/admin/orders/${id}/cancel`, { reason })
 }
 
 /** 订单退款发起 POST /api/admin/orders/:id/refund */
