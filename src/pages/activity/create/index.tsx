@@ -100,8 +100,7 @@ export default function ActivityCreate() {
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
   /** 封面服务器地址（上传成功后写入 cover_url） */
   const [coverServerUrl, setCoverServerUrl] = useState('')
-  /** 编辑态原始数据：PUT 为全量覆盖，未在表单暴露的字段（code）与原封面需原值回写 */
-  const [originCode, setOriginCode] = useState('')
+  /** 编辑态原始封面：无新上传时原值回写，避免写入失效地址 */
   const [originCoverUrl, setOriginCoverUrl] = useState('')
   /** 编辑态原始状态：仅草稿（1）允许再次「存为草稿」 */
   const [originStatus, setOriginStatus] = useState<number | null>(null)
@@ -160,7 +159,6 @@ export default function ActivityCreate() {
         setCoverUrl(detail.cover_url || null)
         setCoverServerUrl(detail.cover_url ?? '')
         setOriginCoverUrl(detail.cover_url ?? '')
-        setOriginCode(detail.code ?? '')
         setOriginStatus(detail.status ?? null)
         setOriginMeta({
           start: detail.start_date ?? 0,
@@ -185,7 +183,7 @@ export default function ActivityCreate() {
 
   /**
    * 提交：组装 ActivitySaveBody（契约见 api/modules/activity.ts）
-   * 注意 PUT 为全量覆盖：表单未暴露的字段（code）与原封面需原值回写，避免清空后端数据
+   * 注意 PUT 为全量覆盖：表单未暴露的原封面需原值回写，避免清空后端数据
    */
   const buildPayload = (
     values: Record<string, unknown>,
@@ -197,7 +195,6 @@ export default function ActivityCreate() {
     return {
       title: String(values.name ?? ''),
       title_en: String(values.title_en ?? '').trim(),
-      code: originCode,
       activity_type: labelToTypeValue(values.type),
       description: descriptionValue,
       // 封面：使用上传接口返回的服务器地址（无新上传时沿用编辑态原值，避免写入失效地址）

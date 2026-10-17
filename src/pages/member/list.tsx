@@ -1,78 +1,121 @@
 /**
- * 会员管理 - 注册会员列表
- * 数据来源：memberApi.getMembers（分页 + 实名状态筛选）
- * 关键字：后端仅提供 phone 筛选参数，姓名/手机号关键字由当前页本地兜底过滤（与退款列表同策略）
- * 状态：1-未实名 2-已实名 9-禁用
- * 查看详情：MemberDetailDrawer（memberApi.getMember）
- * Excel 导入：下载模板（getMemberImportTemplate）+ 上传导入（importMembers，multipart/form-data）
+ * 会员管理 - 注册会员列表（注册会员管理 / 我的会员 双视图）
+ * 数据来源：memberApi.getMembers（分页 + keyword 姓名/手机号 + 实名状态）
+ * 视图：
+ *   - 注册会员管理：导出拉新明细、记录沟通跟进
+ *   - 我的会员（普通运营）：owner_id 归属过滤参数已预留，swagger 未支持（页面有 Alert 提示）
+ * 接口缺口（swagger.json 未提供，详见 api/modules/memberOperation.ts）：
+ *   分配状态/购买状态/注册来源/运营归属等列表字段与筛选、导出拉新明细、沟通跟进保存
+ * 保留能力：会员档案 Excel 导入 / 模板下载（memberApi）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Input, Select, Space, Upload } from 'antd'
+import { useNavigate } from 'react-router-dom'
+import { Alert, App, Button, Card, Input, Segmented, Select, Space, Upload } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
-import { BarChartOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons'
+import { DownloadOutlined, UploadOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
-import { institutionApi, memberApi, tagApi } from '@/api'
-import type { MemberDTO } from '@/api/modules/member'
+import { institutionApi, memberApi, systemApi, tagApi } from '@/api'
 import type { tagItem } from '@/api/modules/tag'
-import { downloadBlob } from '@/utils'
-import MemberDetailDrawer from './components/MemberDetailDrawer'
-import { MEMBER_STATUS_TAG_COLOR, MEMBER_STATUS_TEXT } from './constants'
+import type { RegisteredMemberRow } from '@/api/modules/memberOperation'
+import { downloadBlob, formatAmount, formatDateTime } from '@/utils'
+import { useUserStore } from '@/store/modules/user'
+import FollowupDrawer from './components/FollowupDrawer'
+import ExportRecruitModal from './components/ExportRecruitModal'
 import './list.less'
 
 const PAGE_SIZE = 10
 
+/** 列表快捷范围 Tab */
+type RangeTab = 'all' | 'unassigned' | 'due'
+/** 页面视图：all-注册会员管理 / mine-我的会员（普通运营） */
+type ViewMode = 'all' | 'mine'
+
+/** 分配状态选项（字段待后端返回，当前为当前页本地兜底过滤） */
+const ASSIGN_STATUS_OPTIONS = [
+  { value: 1, label: '已分配' },
+  { value: 2, label: '未分配' },
+]
+
+/** 购买状态选项（字段待后端返回） */
+const PURCHASE_STATUS_OPTIONS = [
+  { value: 1, label: '已购买' },
+  { value: 2, label: '未购买' },
+]
+
+/** 注册来源选项（字典待后端定义，按设计稿文案占位） */
+const SOURCE_OPTIONS = [
+  { value: 1, label: '员工邀请' },
+  { value: 2, label: '会员邀请' },
+  { value: 3, label: '无邀请归因' },
+]
+
 export default function MemberList() {
   const { message, modal } = App.useApp()
-  const [rows, setRows] = useState<MemberDTO[]>([])
+  const navigate = useNavigate()
+  const userInfo = useUserStore((state) => state.userInfo)
+
+  const [viewMode, setViewMode] = useState<ViewMode>('all')
+  const [rows, setRows] = useState<RegisteredMemberRow[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
+  /** 筛选条件（分配状态/购买状态/注册来源/运营人员的后端参数缺失，当前页本地兜底） */
   const [keyword, setKeyword] = useState('')
-  const [institutionId, setInstitutionId] = useState<number | null>(null)
-  const [status, setStatus] = useState<number | null>(null)
-  const [appliedKeyword, setAppliedKeyword] = useState('')
-  const [appliedStatus, setAppliedStatus] = useState<number | null>(null)
+  const [assignStatus, setAssignStatus] = useState<number | null>(null)
+  const [purchaseStatus, setPurchaseStatus] = useState<number | null>(null)
+  const [sourceType, setSourceType] = useState<number | null>(null)
+  const [operatorId, setOperatorId] = useState<number | null>(null)
 
-  /** 会员详情 Drawer */
-  const [detailId, setDetailId] = useState<number | null>(null)
-  const [detailOpen, setDetailOpen] = useState(false)
+  const [rangeTab, setRangeTab] = useState<RangeTab>('all')
+
+  /** 记录沟通跟进 Drawer */
+  const [followupOpen, setFollowupOpen] = useState(false)
+  const [followupMember, setFollowupMember] = useState<RegisteredMemberRow | null>(null)
+  /** 导出拉新明细 Modal */
+  const [exportOpen, setExportOpen] = useState(false)
   /** 模板下载 / Excel 导入进行中状态 */
   const [templateLoading, setTemplateLoading] = useState(false)
   const [importing, setImporting] = useState(false)
-  /** 机构字典：institution_id → 机构名称（列表 / 详情共用） */
-  const [institutionMap, setInstitutionMap] = useState<Map<number, string>>(new Map())
-  /** 标签字典：tag_id → 标签（tag_name / tag_color，列表 / 详情共用） */
-  const [tagMap, setTagMap] = useState<Map<number, tagItem>>(new Map())
+  /** 机构 / 标签字典：挂载时拉取一次（详情展示备用） */
+  const [, setInstitutionMap] = useState<Map<number, string>>(new Map())
+  const [, setTagMap] = useState<Map<number, tagItem>>(new Map())
+  /** 运营人员候选（筛选下拉，数据源为管理员列表） */
+  const [operatorOptions, setOperatorOptions] = useState<{ value: number; label: string }[]>([])
 
-  /** 拉取会员列表 */
-  const fetchList = useCallback(async (targetPage: number, targetInstitutionId: number | null,  targetStatus: number | null, size: number = PAGE_SIZE) => {
-    setLoading(true)
-    try {
-      const res = await memberApi.getMembers({
-        page: targetPage,
-        page_size: size,
-        status: targetStatus ?? undefined,
-        institution_Id: targetInstitutionId ?? undefined,
-      })
-      setRows(res.list ?? [])
-      setTotal(res.total ?? 0)
-    } catch {
-      /* 错误提示由 request 拦截器统一处理 */
-      setRows([])
-      setTotal(0)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  /** 拉取注册会员列表（keyword 由后端筛选；我的会员视图预留 owner_id，swagger 未支持） */
+  const fetchList = useCallback(
+    async (targetPage: number, kw: string, size: number, mode: ViewMode) => {
+      setLoading(true)
+      try {
+        const res = await memberApi.getMembers({
+          page: targetPage,
+          page_size: size,
+          keyword: kw || undefined,
+          // TODO(接口缺失)：我的会员归属过滤，swagger 未支持 owner_id，当前会被后端忽略
+          ...(mode === 'mine' && userInfo ? { owner_id: userInfo.id } : {}),
+        } as Parameters<typeof memberApi.getMembers>[0])
+        setRows((res.list ?? []) as RegisteredMemberRow[])
+        setTotal(res.total ?? 0)
+      } catch {
+        /* 错误提示由 request 拦截器统一处理 */
+        setRows([])
+        setTotal(0)
+      } finally {
+        setLoading(false)
+      }
+    },
+    [userInfo],
+  )
 
   useEffect(() => {
-    void fetchList(1, null, null, pageSize)
-  }, [fetchList])
+    void fetchList(1, '', pageSize, viewMode)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode])
 
-  // 机构 / 标签字典：挂载时各拉取一次，供列表与详情名称匹配
+  // 机构 / 标签 / 运营人员字典：挂载时各拉取一次
   useEffect(() => {
     institutionApi
       .getInstitutions({ page: 1, page_size: 200 })
@@ -90,28 +133,45 @@ export default function MemberList() {
       .catch(() => {
         /* 错误提示由 request 拦截器统一处理 */
       })
+    systemApi
+      .getAdminList({ page: 1, page_size: 100, status: 1 })
+      .then((res) => {
+        setOperatorOptions(
+          (res.list ?? []).map((item) => ({
+            value: item.id,
+            label: item.nickname || item.username,
+          })),
+        )
+      })
+      .catch(() => {
+        /* 错误提示由 request 拦截器统一处理 */
+      })
   }, [])
 
   const applyFilters = () => {
-    setAppliedKeyword(keyword.trim())
-    setAppliedStatus(status)
     setPage(1)
-    void fetchList(1, institutionId, status, pageSize)
+    void fetchList(1, keyword.trim(), pageSize, viewMode)
   }
 
   const handleReset = () => {
     setKeyword('')
-    setStatus(null)
-    setAppliedKeyword('')
-    setAppliedStatus(null)
+    setAssignStatus(null)
+    setPurchaseStatus(null)
+    setSourceType(null)
+    setOperatorId(null)
     setPage(1)
-    void fetchList(1, null, null, pageSize)
+    void fetchList(1, '', pageSize, viewMode)
   }
 
-  /** 查看会员详情 */
-  const handleOpenDetail = (record: MemberDTO) => {
-    setDetailId(record.id)
-    setDetailOpen(true)
+  /** 查看会员详情（跳转详情页） */
+  const handleOpenDetail = (record: RegisteredMemberRow) => {
+    navigate(`/member/registered/detail/${record.id}`)
+  }
+
+  /** 记录沟通跟进 */
+  const handleFollowup = (record: RegisteredMemberRow) => {
+    setFollowupMember(record)
+    setFollowupOpen(true)
   }
 
   /** 下载导入模板（拦截器对 blob 响应返回完整 AxiosResponse，失败时错误提示已统一处理） */
@@ -158,8 +218,8 @@ export default function MemberList() {
       } else {
         message.success(`导入成功 ${result.success_count} 条`)
       }
-      void fetchList(1, institutionId, appliedStatus, pageSize)
       setPage(1)
+      void fetchList(1, keyword.trim(), pageSize, viewMode)
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
     } finally {
@@ -167,185 +227,250 @@ export default function MemberList() {
     }
   }
 
-  /** 当前页兜底过滤：关键字匹配姓名 / 手机号（后端未提供姓名筛选参数） */
+  /**
+   * 当前页兜底过滤：Tab（全部 / 未分配 / 到期需联系）与分配状态 / 购买状态 / 运营人员
+   * 注意：运营归属、购买等字段 swagger 未返回，相关过滤在字段就绪前不产生效果
+   */
   const filteredRows = useMemo(() => {
-    const kw = appliedKeyword.trim()
-    if (!kw) return rows
-    return rows.filter(
-      (item) => (item.name ?? '').includes(kw) || (item.phone ?? '').includes(kw),
-    )
-  }, [appliedKeyword, rows])
+    let list = rows
+    if (rangeTab === 'unassigned') {
+      list = list.filter((item) => item.operator_id == null && !item.operator_name)
+    } else if (rangeTab === 'due') {
+      const now = Date.now()
+      list = list.filter(
+        (item) => item.next_contact_at != null && item.next_contact_at * 1000 <= now,
+      )
+    }
+    if (assignStatus === 1) {
+      list = list.filter((item) => item.operator_id != null || !!item.operator_name)
+    } else if (assignStatus === 2) {
+      list = list.filter((item) => item.operator_id == null && !item.operator_name)
+    }
+    if (purchaseStatus === 1) {
+      list = list.filter((item) => (item.valid_order_count ?? 0) > 0)
+    } else if (purchaseStatus === 2) {
+      list = list.filter((item) => !item.valid_order_count)
+    }
+    if (operatorId != null) {
+      list = list.filter((item) => item.operator_id === operatorId)
+    }
+    return list
+  }, [rows, rangeTab, assignStatus, purchaseStatus, operatorId])
 
-  const columns: ColumnsType<MemberDTO> = [
+  const columns: ColumnsType<RegisteredMemberRow> = [
     {
-      title: '会员',
+      title: '注册会员 / 手机号',
       key: 'member',
       render: (_, record) => (
         <div className="member-cell">
           <strong>{record.name}</strong>
-          <span>{record.gender === 1 ? '男' : record.gender === 2 ? '女' : '—'}</span>
+          <span>{record.phone || '—'}</span>
         </div>
       ),
     },
     {
-      title: '所属机构',
-      dataIndex: 'institution_id',
-      key: 'institution_id',
-      render: (value?: number | null) =>
-        value ? (institutionMap.get(value) ?? `#${value}`) : '—',
-    },
-    {
-      title: '手机号',
-      dataIndex: 'phone',
-      key: 'phone',
-      render: (value?: string) => value || '—',
-    },
-    {
-      title: '会员等级',
-      key: 'level',
-      dataIndex: 'level',
-    },
-    // {
-    //   title: '标签',
-    //   key: 'tags',
-    //   width: 180,
-    //   render: (_, record) => {
-    //     const tags = resolveMemberTags(record, tagMap)
-    //     return tags.length ? (
-    //       <span className="member-tags">
-    //         {tags.map((tag) => (
-    //           <Tag key={tag.id} color={tag.color}>
-    //             {tag.name}
-    //           </Tag>
-    //         ))}
-    //       </span>
-    //     ) : (
-    //       '—'
-    //     )
-    //   },
-    // },
-    {
-      title: '实名状态',
-      key: 'status',
+      title: '注册来源 / 邀请人',
+      key: 'source',
       render: (_, record) => (
-        <span className={`status-btn status--${MEMBER_STATUS_TAG_COLOR[record.status]}`}>
-          {MEMBER_STATUS_TEXT[record.status] ?? record.status}
-        </span>
+        <div className="member-cell">
+          <strong>{record.source_text || '—'}</strong>
+          <span>{record.inviter_name || '—'}</span>
+        </div>
       ),
     },
-    // {
-    //   title: '注册时间',
-    //   key: 'created_at',
-    //   width: 150,
-    //   render: (_, record) =>
-    //     record.created_at ? formatDateTime(record.created_at * 1000, 'YYYY-MM-DD HH:mm') : '—',
-    // },
+    {
+      title: '负责运营',
+      key: 'operator',
+      render: (_, record) => record.operator_name || '未分配',
+    },
+    {
+      title: '最近联系',
+      key: 'last_contact_at',
+      width: 120,
+      render: (_, record) =>
+        record.last_contact_at
+          ? formatDateTime(record.last_contact_at * 1000, 'MM-DD HH:mm')
+          : '—',
+    },
+    {
+      title: '下次联系',
+      key: 'next_contact_at',
+      width: 120,
+      render: (_, record) =>
+        record.next_contact_at
+          ? formatDateTime(record.next_contact_at * 1000, 'MM-DD HH:mm')
+          : '—',
+    },
+    {
+      title: '有效订单数',
+      key: 'valid_order_count',
+      width: 100,
+      render: (_, record) => record.valid_order_count ?? '—',
+    },
+    {
+      title: '实付金额',
+      key: 'paid_amount_total',
+      width: 110,
+      render: (_, record) =>
+        record.paid_amount_total != null ? formatAmount(record.paid_amount_total / 100) : '—',
+    },
     {
       title: '操作',
       key: 'action',
-      width: 150,
+      width: 180,
       render: (_, record) => (
         <Space size={0}>
           <Button type="link" size="small" onClick={() => handleOpenDetail(record)}>
             查看详情
           </Button>
-          {/* <Button type="link" size="small" danger={record.status !== 9} onClick={() => handleToggleStatus(record)}>
-            {record.status === 9 ? '启用' : '禁用'}
-          </Button> */}
+          <Button type="link" size="small" onClick={() => handleFollowup(record)}>
+            记录跟进
+          </Button>
         </Space>
       ),
     },
   ]
 
-  const metrics = [
-    { key: 'all', label: '全部会员', value: total, note: '平台全部注册会员', tone: 'success' },
-    { key: 'verified', label: '已实名', value: '—', note: '已完成实名认证', tone: 'info' },
-    { key: 'unverified', label: '未实名', value: '—', note: '待完成实名认证', tone: 'warning' },
-    { key: 'disabled', label: '已禁用', value: '—', note: '已被平台禁用', tone: 'danger' },
-  ]
+  const rangeTabOptions: { value: RangeTab; label: string }[] =
+    viewMode === 'all'
+      ? [
+          { value: 'all', label: '全部' },
+          { value: 'unassigned', label: '未分配' },
+          { value: 'due', label: '到期需联系' },
+        ]
+      : [
+          { value: 'all', label: '全部' },
+          { value: 'due', label: '到期需联系' },
+        ]
 
   return (
     <PageContainer
       fixed
-      title="注册会员"
-      description="管理平台注册会员的实名状态、等级、标签与启停用"
+      title={viewMode === 'all' ? '注册会员管理' : '我的会员'}
+      description={
+        viewMode === 'all'
+          ? '记录沟通与服务推荐，查看会员下单结果。'
+          : '联系您负责的会员，记录沟通与服务推荐，查看下单结果'
+      }
+      extra={<Button color="primary" variant='outlined' icon={<DownloadOutlined />} onClick={() => setExportOpen(true)}>导出拉新明细</Button>}
     >
       <div className="member-list">
-        <div className="metric-cards">
-          {metrics.map((metric) => (
-            <Card variant="borderless" className="metric-card" key={metric.key}>
-              <div className="metric-card__head">
-                <span className="metric-card__label">{metric.label}</span>
-                <i className={`metric-card__icon status--${metric.tone}`}>
-                  <BarChartOutlined />
-                </i>
-              </div>
-              <strong className="metric-card__value">{metric.value}</strong>
-              <em className={`metric-card__note status--${metric.tone}`}>{metric.note}</em>
-            </Card>
-          ))}
+        <div className="member-list__view-switch">
+          <Segmented<ViewMode>
+            value={viewMode}
+            onChange={(value) => {
+              setViewMode(value)
+              setRangeTab('all')
+              setPage(1)
+            }}
+            options={[
+              { value: 'all', label: '注册会员管理' },
+              { value: 'mine', label: '我的会员' },
+            ]}
+          />
         </div>
+
+        {viewMode === 'mine' && (
+          <Alert
+            className="member-list__pending-alert"
+            type="warning"
+            showIcon
+            message="接口未对接"
+            description="「我的会员」的运营归属过滤（owner_id）尚未在 swagger.json 中提供，当前列表为全量会员；归属过滤将在接口对接后生效。"
+          />
+        )}
 
         <Card variant="borderless" className="filter-bar member-list__filter">
           <Input
             allowClear
-            placeholder="会员姓名或手机号"
+            placeholder="注册会员姓名或手机号"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             onPressEnter={applyFilters}
           />
+          {viewMode === 'all' && (
+            <Select
+              value={assignStatus}
+              onChange={(value) => setAssignStatus(value ?? null)}
+              options={ASSIGN_STATUS_OPTIONS}
+              allowClear
+              placeholder="全部分配状态"
+            />
+          )}
           <Select
-            value={institutionId}
-            onChange={(value) => setInstitutionId(value ?? null)}
-            options={Array.from(institutionMap, ([value, label]) => ({ value, label }))}
+            value={purchaseStatus}
+            onChange={(value) => setPurchaseStatus(value ?? null)}
+            options={PURCHASE_STATUS_OPTIONS}
             allowClear
-            placeholder="所属机构"
+            placeholder="全部购买状态"
           />
           <Select
-            value={status}
-            onChange={(value) => setStatus(value ?? null)}
-            options={Object.entries(MEMBER_STATUS_TEXT).map(([key, label]) => ({
-              label,
-              value: Number(key),
-            }))}
+            value={sourceType}
+            onChange={(value) => setSourceType(value ?? null)}
+            options={SOURCE_OPTIONS}
             allowClear
-            placeholder="实名状态"
+            placeholder="全部注册来源"
           />
-          <Button onClick={handleReset}>重置</Button>
+          {viewMode === 'all' && (
+            <Select
+              value={operatorId}
+              onChange={(value) => setOperatorId(value ?? null)}
+              options={operatorOptions}
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              placeholder="全部运营人员"
+            />
+          )}
           <Button type="primary" onClick={applyFilters}>
             查询
           </Button>
+          <Button onClick={handleReset}>重置</Button>
         </Card>
 
         <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
               <span className="list-card__header__title">注册会员列表</span>
+              <p className="list-card__header__sub">
+                {viewMode === 'all'
+                  ? '本月工作：联系 / 跟进 / 推荐 / 下单统计接口待补充'
+                  : '仅统计本人负责的会员及沟通、推荐与下单结果（归属过滤接口待补充）'}
+              </p>
             </div>
             <div className="member-list__actions">
-              <Button
-                icon={<DownloadOutlined />}
-                loading={templateLoading}
-                onClick={() => void handleDownloadTemplate()}
-              >
-                下载模板
-              </Button>
-              <Upload
-                accept=".xlsx,.xls"
-                showUploadList={false}
-                disabled={importing}
-                beforeUpload={(file) => {
-                  void handleImport(file)
-                  return Upload.LIST_IGNORE
-                }}
-              >
-                <Button type="primary" icon={<UploadOutlined />} loading={importing}>
-                  Excel 导入
-                </Button>
-              </Upload>
+              <Segmented<RangeTab>
+                value={rangeTab}
+                onChange={setRangeTab}
+                options={rangeTabOptions}
+              />
+              {viewMode === 'all' && (
+                <>
+                  <Button
+                    icon={<DownloadOutlined />}
+                    loading={templateLoading}
+                    onClick={() => void handleDownloadTemplate()}
+                  >
+                    下载模板
+                  </Button>
+                  <Upload
+                    accept=".xlsx,.xls"
+                    showUploadList={false}
+                    disabled={importing}
+                    beforeUpload={(file) => {
+                      void handleImport(file)
+                      return Upload.LIST_IGNORE
+                    }}
+                  >
+                    <Button icon={<UploadOutlined />} loading={importing}>
+                      Excel 导入
+                    </Button>
+                  </Upload>
+                </>
+              )}
             </div>
           </div>
-          <FillTable<MemberDTO>
+          <FillTable<RegisteredMemberRow>
             rowKey="id"
             size="small"
             loading={loading}
@@ -358,7 +483,7 @@ export default function MemberList() {
               onChange: (nextPage, nextPageSize) => {
                 setPage(nextPage)
                 setPageSize(nextPageSize)
-                void fetchList(nextPage, institutionId, appliedStatus, nextPageSize)
+                void fetchList(nextPage, keyword.trim(), nextPageSize, viewMode)
               },
               showTotal: (count) => `共 ${count} 条`,
             }}
@@ -366,13 +491,12 @@ export default function MemberList() {
         </Card>
       </div>
 
-      <MemberDetailDrawer
-        memberId={detailId}
-        open={detailOpen}
-        onClose={() => setDetailOpen(false)}
-        institutionMap={institutionMap}
-        tagMap={tagMap}
+      <FollowupDrawer
+        open={followupOpen}
+        member={followupMember}
+        onClose={() => setFollowupOpen(false)}
       />
+      <ExportRecruitModal open={exportOpen} onClose={() => setExportOpen(false)} />
     </PageContainer>
   )
 }

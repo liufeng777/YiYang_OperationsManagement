@@ -1,0 +1,37 @@
+/**
+ * 记录沟通跟进 Drawer 样式
+ */
+
+.followup-drawer {
+  &__subtitle {
+    margin: 0 0 @spacing-xs;
+    .text-auxiliary();
+  }
+
+  &__member {
+    margin: 0 0 @spacing-2xs;
+    .text-body-medium();
+  }
+
+  &__hint {
+    margin: 0 0 @spacing-md;
+    .text-auxiliary();
+  }
+
+  &__services {
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-xs;
+  }
+
+  &__note {
+    margin: 0 0 @spacing-2xs;
+    .text-auxiliary();
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: @spacing-xs;
+  }
+}

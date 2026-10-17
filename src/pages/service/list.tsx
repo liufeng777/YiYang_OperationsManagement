@@ -22,7 +22,7 @@ import PageContainer from '@/components/PageContainer'
 import type { MenuProps } from 'antd'
 import { serviceApi } from '@/api'
 import type { CommonStatus } from '@/types/api'
-import type { ServiceCategory, ServiceItem } from '@/api/modules/service'
+import type { ServiceCategory, ServiceCategorySaveBody, ServiceItem } from '@/api/modules/service'
 import ServiceCategoryEditor, { type ServiceCategoryFill } from './components/ServiceCategoryEditor';
 import StatusTargetModal from './components/StatusTargetModal'
 import './list.less'
@@ -204,14 +204,14 @@ export default function ServicePoolList() {
   }
   /** 保存分类：新增 / 编辑（后端 PUT 为全量覆盖，需带全部字段） */
   const handleCategorySaved = async (values: ServiceCategoryFill) => {
-    const payload = {
+    const payload: ServiceCategorySaveBody = {
       name: values.name,
       name_en: values.name_en ?? '',
       code: values.code,
       brief: values.brief,
       brief_en: values.brief_en ?? '',
       sort_order: values.sort_order,
-      status: values.status,
+      status: values.status as CommonStatus,
     }
     try {
       if (editingCategory) {

@@ -234,6 +234,11 @@ export const routes: RouteConfig[] = [
         component: lazy(() => import('@/pages/member/list')),
       },
       {
+        path: 'registered/detail/:id',
+        meta: { title: '会员详情', hideInMenu: true },
+        component: lazy(() => import('@/pages/member/detail/index')),
+      },
+      {
         path: 'leads',
         meta: { title: '线索管理' },
         component: lazy(() => import('@/pages/member/leads')),

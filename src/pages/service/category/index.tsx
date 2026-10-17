@@ -11,7 +11,8 @@ import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import { serviceApi } from '@/api'
-import type { ServiceCategory } from '@/api/modules/service'
+import type { ServiceCategory, ServiceCategorySaveBody } from '@/api/modules/service'
+import type { CommonStatus } from '@/types/api'
 import ServiceCategoryEditor, { type ServiceCategoryFill } from '../components/ServiceCategoryEditor'
 import './index.less'
 
@@ -53,14 +54,14 @@ export default function ServiceCategoryPage() {
 
   /** 保存分类（新增 / 编辑；后端 PUT 为全量覆盖） */
   const handleSaved = async (values: ServiceCategoryFill) => {
-    const payload = {
+    const payload: ServiceCategorySaveBody = {
       name: values.name,
       name_en: values.name_en ?? '',
       code: values.code,
       brief: values.brief,
       brief_en: values.brief_en ?? '',
       sort_order: values.sort_order ?? 0,
-      status: values.status,
+      status: values.status as CommonStatus,
     }
     try {
       if (editingCategory) {
