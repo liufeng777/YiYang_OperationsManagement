@@ -17,7 +17,7 @@ import type { OrderDetail, OrderListParams } from '@/api/modules/order'
 import { downloadBlob, formatAmount, formatDateTime } from '@/utils'
 import './list.less'
 
-const ORDER_STATUS_TEXT: Record<number, string> = {
+export const ORDER_STATUS_TEXT: Record<number, string> = {
   1: '待支付',
   2: '待确认',
   3: '生效中',

@@ -1,23 +1,19 @@
 /**
  * 会员运营（注册会员运营视角）
  *
- * 设计稿来源：注册会员管理（导出拉新明细 / 记录沟通跟进 / 我的会员 / 会员详情）
+ * 设计稿来源：注册会员管理（导出拉新明细 / 会员详情）
  *
  * 接口对接现状（对照 src/api/swagger.json）：
  * ✅ 已具备：
- *   - 推荐服务候选：GET /admin/services（status 过滤）
- *   - 会员订单记录：GET /admin/orders（member_id 过滤）
+ *   - 注册用户列表：GET /admin/users（keyword 昵称/手机号模糊、wx_openid、register_source 注册来源、has_order 购买状态）
+ *   - 注册用户详情：GET /admin/users/:id（含绑定会员 bound_members 与订单记录 order_records）
  *   - 拉新注册事件：GET /admin/referral-events（event_type=100 注册，start_time/stop_time）
  * ❌ swagger.json 未提供（下方以 ApiPendingError 占位，页面捕获后统一提示「接口未对接」）：
  *   - 导出拉新明细（按注册时间导出邀请来源明细）
  *   - 注册会员沟通跟进记录的新增 / 列表（沟通要点、推荐服务、下次联系时间）
- *   - 会员列表的运营归属字段与筛选（分配状态 / 购买状态 / 最近联系 / 下次联系 / 有效订单数 / 实付金额）
- *   - 我的会员（按当前登录运营归属过滤）
- *   - 会员详情关联家属的健康会员接入状态
  */
-import { http } from '@/utils/request'
 import type { ApiPageParams, ApiPageResult } from '@/types/api'
-import type { MemberDTO } from './member'
+import type { UserDTO } from './member'
 
 /* ------------------------------------------------------------------ */
 /* 通用：接口未对接错误                                                  */
@@ -37,31 +33,37 @@ export function isApiPendingError(error: unknown): error is ApiPendingError {
 }
 
 /* ------------------------------------------------------------------ */
-/* 注册会员列表行（MemberDTO + 运营归属扩展字段，后端尚未返回，先做兼容渲染） */
+/* 注册会员（注册用户）列表行                                            */
 /* ------------------------------------------------------------------ */
 
-/** 注册会员列表行：swagger MemberDTO 之上预留的运营字段（未返回时页面展示「—」/「未分配」） */
-export interface RegisteredMemberRow extends MemberDTO {
-  /** 负责运营人员 ID（swagger 未返回） */
+/**
+ * 注册会员列表行：GET /admin/users 返回的 UserDTO
+ * 注册来源 / OpenID 筛选已对接（register_source / wx_openid）；
+ * 运营归属字段接口未返回，在此以可选字段预留（FollowupDrawer 展示用）
+ */
+export interface RegisteredUserRow extends UserDTO {
+  /** 负责运营人员 ID / 姓名（接口未返回，预留） */
   operator_id?: number | null
-  /** 负责运营人员姓名（swagger 未返回） */
   operator_name?: string | null
-  /** 注册来源文案，如 员工邀请 / 会员邀请 / 无邀请归因（swagger 未返回） */
-  source_text?: string | null
-  /** 邀请人姓名（swagger 未返回） */
-  inviter_name?: string | null
-  /** 邀请人编号（swagger 未返回） */
-  inviter_code?: string | null
-  /** 最近联系时间（UTC 秒，swagger 未返回） */
-  last_contact_at?: number | null
-  /** 下次联系时间（UTC 秒，swagger 未返回） */
-  next_contact_at?: number | null
-  /** 有效订单数（swagger 未返回） */
-  valid_order_count?: number | null
-  /** 实付金额合计（分，swagger 未返回） */
-  paid_amount_total?: number | null
-  /** 注册时间（UTC 秒，swagger 未返回） */
-  registered_at?: number | null
+}
+
+/** 注册来源 → 文案（swagger 筛选字典：1-员工邀请 2-会员邀请 3-客服邀请 4-无邀请归因） */
+export const REGISTER_SOURCE_TEXT: Record<number, string> = {
+  1: '员工邀请',
+  2: '会员邀请',
+  3: '客服邀请',
+  4: '无邀请归因',
+}
+
+/** 列表行注册来源展示：register_source 为后端文案直接展示；若为数字字符串则按字典映射 */
+export function registerSourceText(row: RegisteredUserRow): string {
+  const raw = row.register_source
+  if (!raw) return '—'
+  const asNumber = Number(raw)
+  if (!Number.isNaN(asNumber) && REGISTER_SOURCE_TEXT[asNumber]) {
+    return REGISTER_SOURCE_TEXT[asNumber]
+  }
+  return raw
 }
 
 /* ------------------------------------------------------------------ */
@@ -138,25 +140,4 @@ export function getMemberFollowups(
   _params?: ApiPageParams,
 ): Promise<ApiPageResult<MemberFollowupRecord>> {
   return Promise.reject(new ApiPendingError('跟进历史'))
-}
-
-/* ------------------------------------------------------------------ */
-/* 我的会员（❌ 列表接口缺少运营归属过滤）                                 */
-/* ------------------------------------------------------------------ */
-
-/**
- * 我的会员列表入参：在会员列表参数上预留 owner_id（当前登录运营）
- * TODO(接口缺失)：GET /admin/members 尚无 owner_id / 分配状态 / 购买状态 / 注册来源等过滤参数，
- * 当前传参会被后端忽略，页面已加提示。
- */
-export interface MyMemberListParams extends ApiPageParams {
-  keyword?: string
-  /** 当前登录运营人员 ID（swagger 未支持，预留） */
-  owner_id?: number
-  status?: number
-}
-
-/** 我的会员列表：复用 GET /admin/members，owner_id 待后端支持后生效 */
-export function getMyMembers(params?: MyMemberListParams) {
-  return http.get<ApiPageResult<RegisteredMemberRow>>('/admin/members', { ...params })
 }

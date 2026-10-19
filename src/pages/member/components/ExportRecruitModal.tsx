@@ -11,11 +11,12 @@ import dayjs from 'dayjs'
 import { exportRecruitDetail, isApiPendingError } from '@/api/modules/memberOperation'
 import './ExportRecruitModal.less'
 
-/** 邀请来源选项（字典待后端定义，先按设计稿文案占位） */
+/** 邀请来源选项（swagger register_source：1-员工邀请 2-会员邀请 3-客服邀请 4-无邀请归因） */
 const SOURCE_OPTIONS = [
   { value: 1, label: '员工邀请' },
   { value: 2, label: '会员邀请' },
-  { value: 3, label: '无邀请归因' },
+  { value: 3, label: '客服邀请' },
+  { value: 4, label: '无邀请归因' },
 ]
 
 interface ExportRecruitModalProps {

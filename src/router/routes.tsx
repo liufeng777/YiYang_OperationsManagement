@@ -284,6 +284,11 @@ export const routes: RouteConfig[] = [
         meta: { title: '消息通知管理' },
         component: lazy(() => import('@/pages/system/Message/MessageManage')),
       },
+      {
+        path: 'settings',
+        meta: { title: '运营参数配置' },
+        component: lazy(() => import('@/pages/system/Settings/settings')),
+      },
       // {
       //   path: 'payment',
       //   meta: { title: '支付设置' },

@@ -315,48 +315,93 @@ export function deleteMemberStaffRelation(id: number, remark?: string) {
 }
 
 /* ------------------------------------------------------------------ */
-/* §4.6 用户账号 users（权限 user:view / user:manage）                   */
+/* §4.6 注册用户 users（权限 user:view / user:manage）                   */
 /* ------------------------------------------------------------------ */
 
 /** 用户绑定会员片段 */
 export interface BindMemberBrief {
-  relation_id: number
+  age: number
+  gender: number
+  /** 健康会员接入状态文案 */
+  health_access_status: string
+  member_id: number
+  name: string
+  phone: string
+  /** 关系 1-子女 2-配偶 3-兄弟姐妹 4-其他 */
+  relation: number
+  relation_text: string
+}
+
+/** 订单记录片段 */
+export interface OrderRecordBrief {
+  created_at: number
+  /** 优惠金额（元，字符串） */
+  discount_amount: string
+  id: number
+  institution_name: string
+  /** 是否使用耗材 0 | 1 */
+  is_use_consumables: number
   member_id: number
   member_name: string
-  member_phone: string
-  /** 1-子女 2-配偶 3-兄弟姐妹 4-其他 */
-  relation: 1 | 2 | 3 | 4
-  relation_name: string
-  /** 1-默认 0-非默认 */
-  is_default: 0 | 1
+  order_no: string
+  /** 订单状态 1-待支付 2-待确认 3-生效中 4-已完成 5-已取消 6-已退款 */
+  order_status: number
+  /** 实付金额（元，字符串） */
+  paid_amount: string
+  paid_at: number
+  /** 服务次数 */
+  service_count: number
+  service_name: string
+  /** 订单总金额（元，字符串） */
+  total_amount: string
 }
 
-/** 用户 DTO */
+/** 用户 DTO（GET /admin/users 列表 / 详情实测返回） */
 export interface UserDTO {
   id: number
-  wx_openid: string
-  wx_unionid: string | null
-  app_openid: string | null
-  nickname: string
-  avatar_url: string | null
-  /** 脱敏手机号 */
-  phone: string
-  /** 1-正常 9-禁用 */
-  status: 1 | 9
-  last_login_at: number | null
-  login_ip: string | null
-  bind_members: BindMemberBrief[]
+  openid: string
+  avatar: string | null
   created_at: number
+  /** 邀请人姓名 */
+  inviter_name?: string | null
+  nickname: string
+  /** 实付金额（元，字符串） */
+  paid_amount: string
+  phone: string
+  referral_code: string
+  /** 注册来源文案（筛选时按 register_source 1-员工邀请 2-会员邀请 3-客服邀请 4-无邀请归因 下推） */
+  register_source: string
+  /** 1-正常 9-禁用 */
+  status: number
+  /** 有效订单数 */
+  valid_order_count: number
+  /** 绑定会员列表（本人关联家属） */
+  bound_members: BindMemberBrief[]
+  /** 订单记录（详情返回） */
+  order_records: OrderRecordBrief[]
 }
 
-/** 用户列表 GET /api/admin/users（swagger：page / page_size / nickname / phone / wx_openid / status） */
+/**
+ * 用户列表 GET /api/admin/users（swagger：会员管理-注册用户）
+ * 参数：page / page_size / keyword（昵称或手机号模糊）/ nickname / phone / wx_openid / status
+ *      / register_source（1-员工邀请 2-会员邀请 3-客服邀请 4-无邀请归因）
+ *      / has_order（0-无有效订单 1-有有效订单，传 0 需显式传 has_order=0）
+ */
 export function getUsers(
-  params?: ApiPageParams & { nickname?: string; phone?: string; wx_openid?: string; status?: 1 | 9 },
+  params?: ApiPageParams & {
+    keyword?: string
+    nickname?: string
+    phone?: string
+    wx_openid?: string
+    status?: 1 | 9
+    register_source?: number
+    has_order?: number
+  },
 ) {
   return http.get<ApiPageResult<UserDTO>>('/admin/users', { ...params })
 }
 
-/** 用户详情 GET /api/admin/users/:id（含绑定会员列表） */
+/** 用户详情 GET /api/admin/users/:id（含绑定会员 bound_members 与订单记录 order_records） */
 export function getUser(id: number) {
   return http.get<UserDTO>(`/admin/users/${id}`)
 }
@@ -364,34 +409,4 @@ export function getUser(id: number) {
 /** 用户启用/禁用 POST /api/admin/users/:id/status（swagger：body {status}，remark 为 query 选填） */
 export function updateUserStatus(id: number, status: 1 | 9, remark?: string) {
   return http.post<null>(`/admin/users/${id}/status`, { status }, { params: { remark } })
-}
-
-/* ------------------------------------------------------------------ */
-/* §4.7 用户绑定会员管理（权限 user:binding）                            */
-/* ------------------------------------------------------------------ */
-
-/** 绑定列表 GET /api/admin/users/:id/bindings */
-export function getUserBindings(userId: number) {
-  return http.get<BindMemberBrief[]>(`/admin/users/${userId}/bindings`)
-}
-
-/** 用户绑定会员 POST /api/admin/users/:id/bindings */
-export function bindMember(
-  userId: number,
-  data: { member_id: number; relation: 1 | 2 | 3 | 4; is_default: 0 | 1 },
-) {
-  return http.post<null>(`/admin/users/${userId}/bindings`, data)
-}
-
-/** 调整关系/设置默认 PUT /api/admin/bindings/:relationId */
-export function updateBinding(
-  relationId: number,
-  data: { relation?: 1 | 2 | 3 | 4; is_default?: 0 | 1 },
-) {
-  return http.put<null>(`/admin/bindings/${relationId}`, data)
-}
-
-/** 解绑 DELETE /api/admin/users/:id/bindings/:relationId（swagger：remark 为 query 选填） */
-export function unbindMember(userId: number, relationId: number, remark?: string) {
-  return http.delete<null>(`/admin/users/${userId}/bindings/${relationId}`, { remark })
 }

@@ -4,26 +4,7 @@
  */
 
 .member-list {
-  &__view-switch {
-    display: flex;
-    justify-content: flex-start;
-  }
-
-  &__pending-alert {
-    margin-top: @spacing-sm;
-  }
-
-  &__filter {
-    margin-top: @spacing-md;
-  }
-
-  /* 列表卡片头部副标题（本月工作统计 / 视图说明） */
-  .list-card__header__sub {
-    margin: @spacing-2xs 0 0;
-    .text-auxiliary();
-  }
-
-  /* 筛选栏右侧操作区：下载模板 / Excel 导入 */
+  /* 列表卡片头部右侧操作区：下载模板 / Excel 导入 */
   &__actions {
     margin-left: auto;
     display: flex;
@@ -42,12 +23,6 @@
     span {
       margin-top: 2px;
       .text-auxiliary();
-    }
-  }
-
-  .member-tags {
-    .ant-tag {
-      margin-inline-end: 4px;
     }
   }
 }

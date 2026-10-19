@@ -11,12 +11,12 @@ import { App, Button, Checkbox, DatePicker, Drawer, Form, Input } from 'antd'
 import dayjs from 'dayjs'
 import { serviceApi } from '@/api'
 import { addMemberFollowup, isApiPendingError } from '@/api/modules/memberOperation'
-import type { RegisteredMemberRow } from '@/api/modules/memberOperation'
+import type { RegisteredUserRow } from '@/api/modules/memberOperation'
 import './FollowupDrawer.less'
 
 interface FollowupDrawerProps {
   open: boolean
-  member: RegisteredMemberRow | null
+  member: RegisteredUserRow | null
   onClose: () => void
   /** 保存成功后的回调（接口就绪后触发） */
   onSuccess?: () => void
@@ -95,7 +95,7 @@ export default function FollowupDrawer(props: FollowupDrawerProps) {
     >
       <p className="followup-drawer__subtitle">记下需求、购买顾虑与推荐内容，方便下次继续沟通。</p>
       <p className="followup-drawer__member">
-        {member ? `${member.name} · 会员编号 M-${String(member.id).padStart(6, '0')}` : '—'}
+        {member ? `${member.nickname || '—'} · 用户编号 U-${String(member.id).padStart(6, '0')}` : '—'}
         {member?.operator_name ? ` · 当前运营人员：${member.operator_name}` : ''}
       </p>
       <p className="followup-drawer__hint">
@@ -106,7 +106,7 @@ export default function FollowupDrawer(props: FollowupDrawerProps) {
         <Form.Item label="沟通对象" required>
           <Input
             disabled
-            value={member ? `${member.name}（注册会员） · ${member.phone || '—'}` : ''}
+            value={member ? `${member.nickname || '—'}（注册会员） · ${member.phone || '—'}` : ''}
           />
         </Form.Item>
         <Form.Item

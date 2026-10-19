@@ -1,0 +1,26 @@
+.settings-page {
+  &__extra {
+    display: flex;
+    gap: @spacing-sm;
+  }
+
+  &__filter {
+    .ant-input {
+      max-width: 320px;
+    }
+  }
+
+  .setting-key {
+    .text-body-medium();
+    color: @color-text-primary;
+  }
+
+  .setting-key-input {
+    font-family: @font-family-base;
+  }
+
+  .setting-value-input {
+    width: 100%;
+    max-width: 240px;
+  }
+}

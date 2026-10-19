@@ -1245,46 +1245,6 @@
               }
           }
       },
-      "/api/v1/admin/bindings/{relationId}": {
-          "put": {
-              "consumes": [
-                  "application/json"
-              ],
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "会员管理-用户绑定"
-              ],
-              "summary": "调整绑定关系/设置默认",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "绑定关系ID",
-                      "name": "relationId",
-                      "in": "path",
-                      "required": true
-                  },
-                  {
-                      "description": "调整参数",
-                      "name": "body",
-                      "in": "body",
-                      "required": true,
-                      "schema": {
-                          "$ref": "#/definitions/admin.ReqUpdateUserBinding"
-                      }
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          }
-      },
       "/api/v1/admin/cms/categories": {
           "get": {
               "produces": [
@@ -3287,193 +3247,6 @@
               "responses": {
                   "200": {
                       "description": "OK",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          }
-      },
-      "/api/v1/admin/member-staff-relations": {
-          "get": {
-              "description": "分页查询会员与医护人员（健管师）的绑定关系，可按会员/医护人员/岗位/是否生效过滤",
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "会员管理-健管师绑定"
-              ],
-              "summary": "会员绑定医护人员列表",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "页码，默认1",
-                      "name": "page",
-                      "in": "query"
-                  },
-                  {
-                      "type": "integer",
-                      "description": "每页条数，默认10，最大100",
-                      "name": "page_size",
-                      "in": "query"
-                  },
-                  {
-                      "type": "integer",
-                      "description": "会员ID，选填",
-                      "name": "member_id",
-                      "in": "query"
-                  },
-                  {
-                      "type": "integer",
-                      "description": "医护人员ID，选填",
-                      "name": "staff_id",
-                      "in": "query"
-                  },
-                  {
-                      "type": "string",
-                      "description": "医护岗位编码，选填",
-                      "name": "staff_position_code",
-                      "in": "query"
-                  },
-                  {
-                      "type": "integer",
-                      "description": "仅看当前生效(1-只看未解绑，0-全部)，默认0",
-                      "name": "active_only",
-                      "in": "query"
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "绑定关系列表",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          },
-          "post": {
-              "consumes": [
-                  "application/json"
-              ],
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "会员管理-健管师绑定"
-              ],
-              "summary": "新增会员绑定医护人员",
-              "parameters": [
-                  {
-                      "description": "新增绑定参数",
-                      "name": "body",
-                      "in": "body",
-                      "required": true,
-                      "schema": {
-                          "$ref": "#/definitions/admin.ReqMemberStaffRelation"
-                      }
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "创建成功",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          }
-      },
-      "/api/v1/admin/member-staff-relations/{id}": {
-          "get": {
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "会员管理-健管师绑定"
-              ],
-              "summary": "会员绑定医护人员详情",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "绑定记录ID",
-                      "name": "id",
-                      "in": "path",
-                      "required": true
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "绑定关系详情",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          },
-          "put": {
-              "consumes": [
-                  "application/json"
-              ],
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "会员管理-健管师绑定"
-              ],
-              "summary": "更新会员绑定医护人员",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "绑定记录ID",
-                      "name": "id",
-                      "in": "path",
-                      "required": true
-                  },
-                  {
-                      "description": "更新绑定参数",
-                      "name": "body",
-                      "in": "body",
-                      "required": true,
-                      "schema": {
-                          "$ref": "#/definitions/admin.ReqMemberStaffRelation"
-                      }
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "更新成功",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          },
-          "delete": {
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "会员管理-健管师绑定"
-              ],
-              "summary": "解除会员与医护人员绑定",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "绑定记录ID",
-                      "name": "id",
-                      "in": "path",
-                      "required": true
-                  },
-                  {
-                      "type": "string",
-                      "description": "操作备注",
-                      "name": "remark",
-                      "in": "query"
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "删除成功",
                       "schema": {
                           "$ref": "#/definitions/pkg.Response"
                       }
@@ -7298,7 +7071,7 @@
                   "application/json"
               ],
               "tags": [
-                  "会员管理-用户账号"
+                  "会员管理-注册用户"
               ],
               "summary": "用户列表",
               "parameters": [
@@ -7312,6 +7085,12 @@
                       "type": "integer",
                       "description": "每页条数，默认10，选填",
                       "name": "page_size",
+                      "in": "query"
+                  },
+                  {
+                      "type": "string",
+                      "description": "关键名（昵称或手机号模糊匹配），选填",
+                      "name": "keyword",
                       "in": "query"
                   },
                   {
@@ -7337,6 +7116,18 @@
                       "description": "状态 1-正常 9-禁用，选填",
                       "name": "status",
                       "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "注册来源 1-员工邀请 2-会员邀请 3-客服邀请 4-无邀请归因，选填",
+                      "name": "register_source",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "购买状态：0-无有效订单 1-有有效订单；缺省或不传为不限。注意传0需显式传 has_order=0，选填",
+                      "name": "has_order",
+                      "in": "query"
                   }
               ],
               "responses": {
@@ -7356,7 +7147,7 @@
                   "application/json"
               ],
               "tags": [
-                  "会员管理-用户账号"
+                  "会员管理-注册用户"
               ],
               "summary": "用户详情",
               "parameters": [
@@ -7379,114 +7170,6 @@
               }
           }
       },
-      "/api/v1/admin/users/{id}/bindings": {
-          "get": {
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "会员管理-用户绑定"
-              ],
-              "summary": "用户绑定会员列表",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "用户ID",
-                      "name": "id",
-                      "in": "path",
-                      "required": true
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "绑定会员列表",
-                      "schema": {
-                          "type": "object",
-                          "additionalProperties": true
-                      }
-                  }
-              }
-          },
-          "post": {
-              "consumes": [
-                  "application/json"
-              ],
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "会员管理-用户绑定"
-              ],
-              "summary": "用户绑定会员",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "用户ID",
-                      "name": "id",
-                      "in": "path",
-                      "required": true
-                  },
-                  {
-                      "description": "绑定会员参数",
-                      "name": "body",
-                      "in": "body",
-                      "required": true,
-                      "schema": {
-                          "$ref": "#/definitions/admin.ReqCreateUserBinding"
-                      }
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          }
-      },
-      "/api/v1/admin/users/{id}/bindings/{relationId}": {
-          "delete": {
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "会员管理-用户绑定"
-              ],
-              "summary": "解除绑定关系",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "用户ID",
-                      "name": "id",
-                      "in": "path",
-                      "required": true
-                  },
-                  {
-                      "type": "integer",
-                      "description": "绑定关系ID",
-                      "name": "relationId",
-                      "in": "path",
-                      "required": true
-                  },
-                  {
-                      "type": "string",
-                      "description": "操作原因/备注，选填",
-                      "name": "remark",
-                      "in": "query"
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          }
-      },
       "/api/v1/admin/users/{id}/status": {
           "post": {
               "consumes": [
@@ -7496,7 +7179,7 @@
                   "application/json"
               ],
               "tags": [
-                  "会员管理-用户账号"
+                  "会员管理-注册用户"
               ],
               "summary": "用户启用/禁用",
               "parameters": [
@@ -8717,27 +8400,6 @@
               }
           }
       },
-      "admin.ReqCreateUserBinding": {
-          "type": "object",
-          "required": [
-              "member_id",
-              "relation"
-          ],
-          "properties": {
-              "is_default": {
-                  "description": "1-默认 0-非默认，选填",
-                  "type": "integer"
-              },
-              "member_id": {
-                  "description": "被绑定会员ID，必填",
-                  "type": "integer"
-              },
-              "relation": {
-                  "description": "关系 1子女 2配偶 3兄弟姐妹 4其他，必填",
-                  "type": "integer"
-              }
-          }
-      },
       "admin.ReqFollowupLead": {
           "type": "object",
           "required": [
@@ -8808,40 +8470,6 @@
               "status": {
                   "description": "目标状态，必填：9-流失(models.LeanStatusLost)，无效可复用 4-转化失败",
                   "type": "integer"
-              }
-          }
-      },
-      "admin.ReqMemberStaffRelation": {
-          "description": "绑定关系：member_id 指定会员，staff_id 指定医护人员（健管师），bind_type 绑定时来源（1-用户指定 2-医护人员指定 3-运营人员指定）",
-          "type": "object",
-          "properties": {
-              "bind_type": {
-                  "description": "绑定来源枚举 1-用户指定 2-医护人员指定 3-运营人员指定，默认1，选填",
-                  "type": "integer"
-              },
-              "bound_at": {
-                  "description": "绑定时间(UTC秒)，0=当前时间，选填",
-                  "type": "integer"
-              },
-              "comment": {
-                  "description": "绑定/解绑备注，选填",
-                  "type": "string"
-              },
-              "id": {
-                  "description": "绑定记录ID，更新时必填，创建时为 0",
-                  "type": "integer"
-              },
-              "member_id": {
-                  "description": "会员ID，必填",
-                  "type": "integer"
-              },
-              "staff_id": {
-                  "description": "医护人员（健管师）ID，必填",
-                  "type": "integer"
-              },
-              "staff_position_code": {
-                  "description": "医护岗位编码（Doctor/HealthMgr/Caregiver等），选填",
-                  "type": "string"
               }
           }
       },
@@ -9382,19 +9010,6 @@
               "value": {
                   "description": "参数值，必填",
                   "type": "string"
-              }
-          }
-      },
-      "admin.ReqUpdateUserBinding": {
-          "type": "object",
-          "properties": {
-              "is_default": {
-                  "description": "1-默认 0-非默认，选填",
-                  "type": "integer"
-              },
-              "relation": {
-                  "description": "关系 1子女 2配偶 3兄弟姐妹 4其他，选填",
-                  "type": "integer"
               }
           }
       },
