@@ -43,12 +43,15 @@ export interface ApiPageParams {
   [key: string]: unknown
 }
 
-/** 文档契约：列表分页响应（共通 §1.2，列表接口唯一契约） */
+/** 文档契约：列表分页响应（共通 §1.2，列表接口唯一契约）
+ *  stats：列表统计信息（各状态计数等），由后端随列表一并返回，key 由各自接口约定 */
 export interface ApiPageResult<T = unknown> {
   list: T[]
   total: number
   page: number
   page_size: number
+  /** 顶部统计卡数据（选填，swagger 未逐一列明 key，页面防御性读取） */
+  stats?: Record<string, number>
 }
 
 /** 文档契约：批量操作结果（共通 §8） */

@@ -5,7 +5,7 @@
  * 金额单位：后端返回「分」，展示统一换算为「元」
  * 入口：列表「查看详情」进入对账详情页（detail_lines 仅在详情页展示）
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { App, Button, Card, DatePicker, Select } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
@@ -58,7 +58,7 @@ export default function ReconcileList() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
   /** 顶部统计：全部 / 对账中 / 已平账 / 有差异 */
-  const [stats, setStats] = useState({ all: 0, checking: 0, balanced: 0, diff: 0 })
+  const [stats, setStats] = useState<any>(null)
 
   const [type, setType] = useState<number | null>(null)
   const [status, setStatus] = useState<number | null>(null)
@@ -78,7 +78,7 @@ export default function ReconcileList() {
     [],
   )
 
-  /** 拉取对账单列表 */
+  /** 拉取对账单列表（顶部统计随列表响应的 stats 字段一并返回） */
   const fetchList = useCallback(
     async (targetPage: number, filters: ReconcileFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
@@ -86,6 +86,7 @@ export default function ReconcileList() {
         const res = await financeApi.getReconciliations(buildParams(targetPage, filters, size))
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
+        setStats(res.stats ?? null)
       } catch {
         /* 错误提示由 request 拦截器统一处理 */
         setRows([])
@@ -100,30 +101,6 @@ export default function ReconcileList() {
   useEffect(() => {
     void fetchList(1, emptyFilters, pageSize)
   }, [fetchList])
-
-  /** 顶部统计：各状态各取 1 条拿 total */
-  const fetchStats = useCallback(async () => {
-    try {
-      const [all, checking, balanced, diff] = await Promise.all([
-        financeApi.getReconciliations({ page: 1, page_size: 1 }),
-        financeApi.getReconciliations({ page: 1, page_size: 1, status: 1 }),
-        financeApi.getReconciliations({ page: 1, page_size: 1, status: 2 }),
-        financeApi.getReconciliations({ page: 1, page_size: 1, status: 3 }),
-      ])
-      setStats({
-        all: all.total ?? 0,
-        checking: checking.total ?? 0,
-        balanced: balanced.total ?? 0,
-        diff: diff.total ?? 0,
-      })
-    } catch {
-      /* 错误提示由 request 拦截器统一处理 */
-    }
-  }, [])
-
-  useEffect(() => {
-    void fetchStats()
-  }, [fetchStats])
 
   const applyFilters = () => {
     const nextFilters: ReconcileFilters = { reconciliation_type: type, status, range }
@@ -153,7 +130,6 @@ export default function ReconcileList() {
           await financeApi.finishReconciliation(Number(record.id))
           message.success('该对账单已平账')
           void fetchList(page, applied, pageSize)
-          void fetchStats()
         } catch {
           /* 错误提示由 request 拦截器统一处理 */
         }
@@ -254,12 +230,15 @@ export default function ReconcileList() {
     },
   ]
 
-  const metrics = [
-    { key: 'all', label: '全部账单', value: stats.all, note: '当前系统全部对账单', tone: 'success' },
-    { key: 'checking', label: '对账中', value: stats.checking, note: '等待核对完成', tone: 'warning' },
-    { key: 'balanced', label: '已平账', value: stats.balanced, note: '平台与渠道金额一致', tone: 'info' },
-    { key: 'diff', label: '有差异', value: stats.diff, note: '存在金额或笔数差异', tone: 'danger' },
-  ]
+  const metrics = useMemo(() => {
+    return [
+      { key: 'all', label: '全部账单', value: stats?.total, note: '当前系统全部对账单', tone: 'success' },
+      { key: 'checking', label: '对账中', value: stats?.reconciling, note: '等待核对完成', tone: 'warning' },
+      { key: 'balanced', label: '已平账', value: stats?.balanced, note: '平台与渠道金额一致', tone: 'info' },
+      { key: 'diff', label: '有差异', value: stats?.diff, note: '存在金额或笔数差异', tone: 'danger' },
+    ]
+  }, [stats])
+
 
   return (
     <PageContainer

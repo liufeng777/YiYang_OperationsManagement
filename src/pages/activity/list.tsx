@@ -125,6 +125,7 @@ export default function ActivityList() {
   const { message, modal } = App.useApp()
   const [institutions, setInstitutions] = useState<InstitutionItem[]>([])
   const [data, setData] = useState<ActivityItem[]>([])
+  const [stats, setStats] = useState<any>(null)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -175,10 +176,12 @@ export default function ActivityList() {
         })
         setData(result.list ?? [])
         setTotal(result.total ?? 0)
+        setStats(result.stats ?? null)
       } catch {
         // 错误提示由 request 拦截器统一处理
         setData([])
         setTotal(0)
+        setStats(null)
       } finally {
         setLoading(false)
       }
@@ -192,14 +195,13 @@ export default function ActivityList() {
 
   /** 顶部统计：活动总数与各状态数量（基于当前列表数据汇总） */
   const metrics = useMemo(() => {
-    const countBy = (target: number) => data.filter((item) => item.status === target).length
     return [
-      { key: 0, label: '全部活动', value: total, badge: '按当前筛选条件统计', tone: 'primary' },
-      { key: 2, label: '报名中', value: countBy(2), badge: '本页报名中活动', tone: 'info' },
-      { key: 1, label: '待发布', value: countBy(1), badge: '本页待发布活动', tone: 'danger' },
-      { key: 3, label: '已结束', value: countBy(3), badge: '本页已结束活动', tone: 'warning' },
+      { key: 0, label: '全部活动', value: stats?.total, badge: '按当前筛选条件统计', tone: 'primary' },
+      { key: 2, label: '报名中', value: stats?.registering, badge: '报名中活动', tone: 'info' },
+      { key: 1, label: '待发布', value: stats?.draft, badge: '待发布活动', tone: 'danger' },
+      { key: 3, label: '已结束', value: stats?.ended, badge: '已结束活动', tone: 'warning' },
     ]
-  }, [data, total])
+  }, [stats])
 
   const applyFilters = () => {
     setPage(1)
@@ -448,12 +450,12 @@ export default function ActivityList() {
               <Card variant="borderless" className="metric-card">
                 <div className="metric-card__head">
                   <span className="metric-card__label">{metric.label}</span>
-                  <i className={`metric-card__icon metric-card__icon--${metric.tone} metric-card__icon--round`}>
+                  <i className={`metric-card__icon status--${metric.tone}`}>
                     <BarChartOutlined />
                   </i>
                 </div>
                 <div className="metric-card__value">{metric.value}</div>
-                <span className={`metric-card__note metric-card__note--${metric.tone}`}>
+                <span className={`metric-card__note status--${metric.tone}`}>
                   {metric.badge}
                 </span>
               </Card>

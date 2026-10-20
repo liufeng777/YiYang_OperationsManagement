@@ -37,6 +37,10 @@ export interface StaffDTO {
   id_card: string
   avatar_url: string | null
   position_id: number
+  /** 岗位名称（列表接口返回时随记录携带） */
+  position_name?: string
+  /** 推广码（人员参与推广时返回） */
+  referral_code?: string
   title: string
   /** 服务 ID 数组 */
   services: number[]

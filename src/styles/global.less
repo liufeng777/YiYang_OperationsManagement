@@ -136,6 +136,12 @@ body {
   background: @color-bg-active;
 }
 
+// 主色（品牌绿，等同 success；部分页面统计卡 tone 为 primary）
+.status--primary {
+  color: @color-primary;
+  background: @color-primary-light;
+}
+
 .ant-form-item {
   .ant-form-item-label {
     padding-bottom: @spacing-2xs;
@@ -168,3 +174,18 @@ body {
     font-size: 12px;
   }
 }
+
+.table-cell {
+  display: flex;
+  flex-direction: column;
+
+  strong {
+    .text-body-medium();
+  }
+
+  span {
+    margin-top: 2px;
+    .text-auxiliary();
+  }
+}
+

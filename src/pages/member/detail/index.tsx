@@ -99,7 +99,7 @@ export default function MemberDetailPage() {
       title: '姓名',
       key: 'name',
       render: (_, record) => (
-        <div className="member-detail__order-cell">
+        <div className="table-cell">
           <strong>{record.name}</strong>
           {record.phone && <span>{record.phone}</span>}
         </div>
@@ -136,7 +136,7 @@ export default function MemberDetailPage() {
       title: '服务 / 购买次数',
       key: 'server_info',
       render: (_, record) => (
-        <div className="member-detail__order-cell">
+        <div className="table-cell">
           <strong>{record.service_name || '—'}</strong>
           <span>
             购买服务 {record.service_count} 次
@@ -149,7 +149,7 @@ export default function MemberDetailPage() {
       title: '服务对象 / 承接机构',
       key: 'target',
       render: (_, record) => (
-        <div className="member-detail__order-cell">
+        <div className="table-cell">
           <strong>{record.member_name || '—'}</strong>
           <span>{record.institution_name || '—'}</span>
         </div>
@@ -162,7 +162,7 @@ export default function MemberDetailPage() {
       render: (_, record) => {
         const discount = Number(record.discount_amount) || 0
         return (
-          <div className="member-detail__order-cell">
+          <div className="table-cell">
             <strong>{formatAmount(record.paid_amount)}</strong>
             <span>
               总额 {formatAmount(record.total_amount)}
@@ -187,7 +187,7 @@ export default function MemberDetailPage() {
       key: 'created_at',
       width: 150,
       render: (_, record) => (
-        <div className="member-detail__order-cell">
+        <div className="table-cell">
           <strong>{formatDateTime(record.created_at * 1000, 'YYYY-MM-DD HH:mm')}</strong>
           <span>{record.paid_at ? `支付 ${formatDateTime(record.paid_at * 1000, 'MM-DD HH:mm')}` : '未支付'}</span>
         </div>

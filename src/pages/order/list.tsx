@@ -58,7 +58,7 @@ export default function OrderList() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
   /** 顶部统计：全部 / 待确认 / 生效中 / 已完成 */
-  const [stats, setStats] = useState({ all: 0, pending: 0, active: 0, finished: 0 })
+  const [stats, setStats] = useState<any>(null)
 
   const [keyword, setKeyword] = useState('')
   const [institution, setInstitution] = useState<number | null>(null)
@@ -103,7 +103,7 @@ export default function OrderList() {
     [],
   )
 
-  /** 拉取订单列表 */
+  /** 拉取订单列表（顶部统计随列表响应的 stats 字段一并返回） */
   const fetchList = useCallback(
     async (targetPage: number, filters: OrderFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
@@ -111,6 +111,7 @@ export default function OrderList() {
         const res = await orderApi.getOrders(buildParams(targetPage, filters, size))
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
+        setStats(res.stats ?? null)
       } catch {
         /* 错误提示由 request 拦截器统一处理 */
         setRows([])
@@ -122,31 +123,10 @@ export default function OrderList() {
     [buildParams],
   )
 
-  /** 顶部统计：各状态各取 1 条拿 total */
-  const fetchStats = useCallback(async () => {
-    try {
-      const [all, pending, active, finished] = await Promise.all([
-        orderApi.getOrders({ page: 1, page_size: 1 }),
-        orderApi.getOrders({ page: 1, page_size: 1, order_status: 2 }),
-        orderApi.getOrders({ page: 1, page_size: 1, order_status: 3 }),
-        orderApi.getOrders({ page: 1, page_size: 1, order_status: 4 }),
-      ])
-      setStats({
-        all: all.total ?? 0,
-        pending: pending.total ?? 0,
-        active: active.total ?? 0,
-        finished: finished.total ?? 0,
-      })
-    } catch {
-      /* 错误提示由 request 拦截器统一处理 */
-    }
-  }, [])
-
-  // 进入页面：加载第 1 页与统计
+  // 进入页面：加载第 1 页
   useEffect(() => {
     void fetchList(1, emptyFilters, pageSize)
-    void fetchStats()
-  }, [fetchList, fetchStats])
+  }, [fetchList])
 
   /** 切换订单状态（状态下拉使用）：回到第 1 页 */
   const changeStatus = (nextStatus: number | null) => {
@@ -219,12 +199,14 @@ export default function OrderList() {
     }
   }
 
-  const metrics = [
-    { key: 'all', label: '全部订单', value: stats.all, note: '当前系统全部订单', tone: 'primary' },
-    { key: 'pending', label: '待确认', value: stats.pending, note: '需运营确认后生效', tone: 'warning' },
-    { key: 'active', label: '生效中', value: stats.active, note: '服务履约进行中', tone: 'info' },
-    { key: 'finished', label: '已完成', value: stats.finished, note: '服务已完成结算', tone: 'primary' },
-  ]
+  const metrics = useMemo(() => {
+    return [
+      { key: 'all', label: '全部订单', value: stats?.total, note: '当前系统全部订单', tone: 'primary' },
+      { key: 'pending', label: '待确认', value: stats?.pending_confirm, note: '需运营确认后生效', tone: 'warning' },
+      { key: 'active', label: '生效中', value: stats?.active, note: '服务履约进行中', tone: 'info' },
+      { key: 'finished', label: '已完成', value: stats?.completed, note: '服务已完成结算', tone: 'primary' },
+    ]
+  }, [stats])
 
   const columns = useMemo<ColumnsType<OrderDetail>>(
     () => [
@@ -313,12 +295,12 @@ export default function OrderList() {
             <Card variant="borderless" className="metric-card" key={metric.key}>
               <div className="metric-card__head">
                 <span className="metric-card__label">{metric.label}</span>
-                <i className={`metric-card__icon metric-card__icon--${metric.tone}`}>
+                <i className={`metric-card__icon status--${metric.tone}`}>
                   <BarChartOutlined />
                 </i>
               </div>
               <strong className="metric-card__value">{metric.value}</strong>
-              <em className={`metric-card__note metric-card__note--${metric.tone}`}>{metric.note}</em>
+              <em className={`metric-card__note status--${metric.tone}`}>{metric.note}</em>
             </Card>
           ))}
         </div>

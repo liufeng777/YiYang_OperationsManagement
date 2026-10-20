@@ -59,12 +59,11 @@ export default function RefundList() {
   const [memberMap, setMemberMap] = useState<Map<number, { name: string; phone: string }>>(new Map())
   const [rows, setRows] = useState<RefundItem[]>([])
   const [total, setTotal] = useState(0)
+  const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
-  /** 顶部统计：全部 / 待审批 / 退款中 / 已退款 */
-  const [stats, setStats] = useState({ all: 0, pending: 0, refunding: 0, refunded: 0 })
 
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState<number | null>(null)
@@ -117,7 +116,7 @@ export default function RefundList() {
     [],
   )
 
-  /** 拉取退款列表 */
+  /** 拉取退款列表（顶部统计随列表响应的 stats 字段一并返回） */
   const fetchList = useCallback(
     async (targetPage: number, filters: RefundFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
@@ -125,6 +124,7 @@ export default function RefundList() {
         const res = await refundApi.getRefunds(buildParams(targetPage, filters, size))
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
+        setStats(res.stats ?? null)
       } catch {
         /* 错误提示由 request 拦截器统一处理 */
         setRows([])
@@ -136,31 +136,10 @@ export default function RefundList() {
     [buildParams],
   )
 
-  /** 顶部统计：各状态各取 1 条拿 total */
-  const fetchStats = useCallback(async () => {
-    try {
-      const [all, pending, refunding, refunded] = await Promise.all([
-        refundApi.getRefunds({ page: 1, page_size: 1 }),
-        refundApi.getRefunds({ page: 1, page_size: 1, status: 1 }),
-        refundApi.getRefunds({ page: 1, page_size: 1, status: 3 }),
-        refundApi.getRefunds({ page: 1, page_size: 1, status: 4 }),
-      ])
-      setStats({
-        all: all.total ?? 0,
-        pending: pending.total ?? 0,
-        refunding: refunding.total ?? 0,
-        refunded: refunded.total ?? 0,
-      })
-    } catch {
-      /* 错误提示由 request 拦截器统一处理 */
-    }
-  }, [])
-
-  // 进入页面：加载第 1 页与统计
+  // 进入页面：加载第 1 页
   useEffect(() => {
     void fetchList(1, emptyFilters, pageSize)
-    void fetchStats()
-  }, [fetchList, fetchStats])
+  }, [fetchList])
 
   /** 切换退款状态（状态下拉使用）：回到第 1 页 */
   const changeStatus = (nextStatus: number | null) => {
@@ -245,12 +224,14 @@ export default function RefundList() {
     }
   }
 
-  const metrics = [
-    { key: 'all', label: '全部退款', value: stats.all, note: '当前系统全部退款单', tone: 'primary' },
-    { key: 'pending', label: '待审批', value: stats.pending, note: '等待财务/运营审批', tone: 'warning' },
-    { key: 'refunding', label: '退款中', value: stats.refunding, note: '款项退回处理中', tone: 'info' },
-    { key: 'refunded', label: '已退款', value: stats.refunded, note: '退款已完成', tone: 'primary' },
-  ]
+  const metrics = useMemo(() => {
+    return [
+      { key: 'all', label: '全部退款', value: stats?.total, note: '当前系统全部退款单', tone: 'primary' },
+      { key: 'pending', label: '待审批', value: stats?.pending_approval, note: '等待财务/运营审批', tone: 'warning' },
+      { key: 'refunding', label: '退款中', value: stats?.refunding, note: '款项退回处理中', tone: 'info' },
+      { key: 'refunded', label: '已退款', value: stats?.refunded, note: '退款已完成', tone: 'primary' },
+    ]
+  }, [stats])
 
   const columns = useMemo<ColumnsType<RefundItem>>(
     () => [
@@ -374,12 +355,12 @@ export default function RefundList() {
             <Card variant="borderless" className="metric-card" key={metric.key}>
               <div className="metric-card__head">
                 <span className="metric-card__label">{metric.label}</span>
-                <i className={`metric-card__icon metric-card__icon--${metric.tone}`}>
+                <i className={`metric-card__icon status--${metric.tone}`}>
                   <BarChartOutlined />
                 </i>
               </div>
               <strong className="metric-card__value">{metric.value}</strong>
-              <em className={`metric-card__note metric-card__note--${metric.tone}`}>{metric.note}</em>
+              <em className={`metric-card__note status--${metric.tone}`}>{metric.note}</em>
             </Card>
           ))}
         </div>
@@ -446,7 +427,6 @@ export default function RefundList() {
         onClose={() => setApproveTarget(null)}
         onSuccess={() => {
           void fetchList(page, applied, pageSize)
-          void fetchStats()
         }}
       />
     </PageContainer>

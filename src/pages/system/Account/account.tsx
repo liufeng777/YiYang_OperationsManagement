@@ -306,12 +306,12 @@ export default function AccountList() {
   ]
 
   /** 统计卡片：待后端统计接口接入，先占位 */
-  const metrics = [
-    { key: 'all', label: '全部用户', note: '运营平台内部用户', tone: 'primary' },
-    { key: 'enabled', label: '启用用户', note: '可登录运营平台', tone: 'info' },
-    { key: 'disabled', label: '停用用户', note: '停用后不允许登录', tone: 'warning' },
-    { key: 'role', label: '角色数量', note: '在角色管理中统一维护', tone: 'danger' },
-  ]
+  // const metrics = [
+  //   { key: 'all', label: '全部用户', note: '运营平台内部用户', tone: 'primary' },
+  //   { key: 'enabled', label: '启用用户', note: '可登录运营平台', tone: 'info' },
+  //   { key: 'disabled', label: '停用用户', note: '停用后不允许登录', tone: 'warning' },
+  //   { key: 'role', label: '角色数量', note: '在角色管理中统一维护', tone: 'danger' },
+  // ]
 
   return (
     <PageContainer
@@ -325,23 +325,22 @@ export default function AccountList() {
       }
     >
       <div className="account-list">
-        <div className="metric-cards">
+        {/* <div className="metric-cards">
           {metrics.map((metric) => (
             <Card variant="borderless" className="metric-card" key={metric.key}>
               <div className="metric-card__head">
                 <span className="metric-card__label">{metric.label}</span>
-                <i className={`metric-card__icon metric-card__icon--${metric.tone}`}>
+                <i className={`metric-card__icon status--${metric.tone}`}>
                   <BarChartOutlined />
                 </i>
               </div>
-              {/* 统计接口未接入，暂以占位展示 */}
               <strong className="metric-card__value">—</strong>
-              <em className={`metric-card__note metric-card__note--${metric.tone}`}>
+              <em className={`metric-card__note status--${metric.tone}`}>
                 {metric.note}
               </em>
             </Card>
           ))}
-        </div>
+        </div> */}
 
         <Card variant="borderless" className="filter-bar account-list__filter">
           <Input

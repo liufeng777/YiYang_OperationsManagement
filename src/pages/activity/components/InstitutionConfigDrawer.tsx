@@ -249,7 +249,7 @@ export default function InstitutionConfigDrawer({
       title: '参与机构',
       key: 'name',
       render: (_, record) => (
-        <div className="institution-cell">
+        <div className="table-cell">
           <strong>{record.name}</strong>
           <span>{record.area || '—'}</span>
         </div>

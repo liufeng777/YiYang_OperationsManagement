@@ -69,7 +69,7 @@ export default function ActivitySignups() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
   /** 顶部统计：报名人数 / 待签到 / 已签到 / 已取消（接口 total） */
-  const [stats, setStats] = useState({ total: 0, signed: 0, checked: 0, cancelled: 0 })
+  const [stats, setStats] = useState<any>(null)
 
   const [keyword, setKeyword] = useState('')
   const [institution, setInstitution] = useState<number | null>(null)
@@ -113,28 +113,7 @@ export default function ActivitySignups() {
     }
   }, [activityId])
 
-  /** 顶部统计：各状态各取 1 条拿 total，避免拉全量名单 */
-  const fetchStats = useCallback(async () => {
-    if (!activityId) return
-    try {
-      const [all, signed, checked, cancelled] = await Promise.all([
-        activityApi.getActivityRegistrations({ activity_id: activityId, page: 1, page_size: 1 }),
-        activityApi.getActivityRegistrations({ activity_id: activityId, page: 1, page_size: 1, status: 1 }),
-        activityApi.getActivityRegistrations({ activity_id: activityId, page: 1, page_size: 1, status: 2 }),
-        activityApi.getActivityRegistrations({ activity_id: activityId, page: 1, page_size: 1, status: 3 }),
-      ])
-      setStats({
-        total: all.total ?? 0,
-        signed: signed.total ?? 0,
-        checked: checked.total ?? 0,
-        cancelled: cancelled.total ?? 0,
-      })
-    } catch {
-      /* 错误提示由 request 拦截器统一处理 */
-    }
-  }, [activityId])
-
-  /** 报名列表：分页与报名状态下推接口（跨活动接口 + activity_id） */
+  /** 报名列表：分页与报名状态下推接口（跨活动接口 + activity_id）；顶部统计随响应 stats 返回 */
   const fetchList = useCallback(
     async (targetPage: number, filters: SignupFilters, size: number = PAGE_SIZE) => {
       if (!activityId) return
@@ -148,6 +127,7 @@ export default function ActivitySignups() {
         })
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
+        setStats(res.stats ?? null)
       } catch {
         /* 错误提示由 request 拦截器统一处理 */
         setRows([])
@@ -159,19 +139,17 @@ export default function ActivitySignups() {
     [activityId],
   )
 
-  // 进入页面 / 切换活动：加载第 1 页与统计
+  // 进入页面 / 切换活动：加载第 1 页
   useEffect(() => {
     setPage(1)
     void fetchList(1, emptyFilters, pageSize)
-    void fetchStats()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityId])
 
-  /** 刷新当前页与统计（签到 / 取消报名后） */
+  /** 刷新当前页（签到 / 取消报名后，统计随列表响应一并刷新） */
   const refresh = useCallback(async () => {
     await fetchList(page, applied, pageSize)
-    void fetchStats()
-  }, [fetchList, fetchStats, page, applied])
+  }, [fetchList, page, applied])
 
   /** 当前页兜底过滤：关键字 / 机构 / 报名日期后端未提供筛选参数，先对返回的本页数据过滤 */
   const filteredRows = useMemo(() => {
@@ -200,7 +178,6 @@ export default function ActivitySignups() {
     setApplied(nextFilters)
     setPage(1)
     void fetchList(1, nextFilters, pageSize)
-    void fetchStats()
   }
 
   const applyFilters = () => {
@@ -223,7 +200,6 @@ export default function ActivitySignups() {
     setApplied(emptyFilters)
     setPage(1)
     void fetchList(1, emptyFilters, pageSize)
-    void fetchStats()
   }
 
   /**
@@ -292,36 +268,30 @@ export default function ActivitySignups() {
     await refresh()
   }
 
-  const metrics = [
-    { key: 'total', label: '报名人数', value: stats.total, badge: '含已签到与已取消', tone: 'primary' },
-    { key: 'signed', label: '待签到', value: stats.signed, badge: '可签到或取消', tone: 'warning' },
-    { key: 'checked', label: '已签到', value: stats.checked, badge: '已签到不可取消', tone: 'info' },
-    { key: 'cancelled', label: '已取消', value: stats.cancelled, badge: '不涉及退款', tone: 'danger' },
-  ]
+  // const metrics = useMemo(() => {
+  //   return [
+  //     { key: 'total', label: '报名人数', value: stats.total, badge: '含已签到与已取消', tone: 'primary' },
+  //     { key: 'signed', label: '待签到', value: stats.signed, badge: '可签到或取消', tone: 'warning' },
+  //     { key: 'checked', label: '已签到', value: stats.checked, badge: '已签到不可取消', tone: 'info' },
+  //     { key: 'cancelled', label: '已取消', value: stats.cancelled, badge: '不涉及退款', tone: 'danger' },
+  //   ]
+  // }, [stats]) 
 
   const columns: ColumnsType<ActivityRegistrationDTO> = useMemo(
     () => [
       {
-        title: '报名 / 参与人',
+        title: '报名人',
         key: 'name',
         render: (_, record) => (
           <div className="signup-user">
             <strong>{record.name || '—'}</strong>
-            <span>报名 #{record.id}</span>
+            <span>{record.phone}</span>
           </div>
         ),
       },
       {
-        title: '联系方式',
-        dataIndex: 'phone',
-        key: 'phone',
-        width: 130,
-        render: (value?: string) => value || '—',
-      },
-      {
         title: '所选机构',
         key: 'institution',
-        width: 160,
         render: (_, record) => institutionName(record),
       },
       {
@@ -335,7 +305,6 @@ export default function ActivitySignups() {
         title: '报名来源',
         dataIndex: 'registered_source',
         key: 'registered_source',
-        width: 120,
         render: (value?: string) => (value ? (sourceText[value] ?? value) : '—'),
       },
       {
@@ -368,12 +337,13 @@ export default function ActivitySignups() {
         dataIndex: 'remark',
         key: 'remark',
         width: 140,
+        ellipsis: true,
         render: (value?: string) => value || '—',
       },
       {
         title: '操作',
         key: 'action',
-        width: 130,
+        width: 120,
         render: (_, record) => {
           /* 已报名：可签到 / 可取消；已签到：不可再取消；已取消：无操作 */
           if (record.status !== 1) return <span>—</span>
@@ -426,24 +396,24 @@ export default function ActivitySignups() {
       }
     >
       <div className="activity-signups">
-        <Row gutter={[16, 16]}>
+        {/* <Row gutter={[16, 16]}>
           {metrics.map((metric) => (
             <Col xs={24} sm={12} lg={6} key={metric.key}>
               <Card variant="borderless" className="metric-card">
                 <div className="metric-card__head">
                   <span className="metric-card__label">{metric.label}</span>
-                  <i className={`metric-card__icon metric-card__icon--${metric.tone} metric-card__icon--round`}>
+                  <i className={`metric-card__icon status--${metric.tone}`}>
                     <BarChartOutlined />
                   </i>
                 </div>
                 <div className="metric-card__value">{metric.value}</div>
-                <span className={`metric-card__note metric-card__note--${metric.tone}`}>
+                <span className={`metric-card__note status--${metric.tone}`}>
                   {metric.badge}
                 </span>
               </Card>
             </Col>
           ))}
-        </Row>
+        </Row> */}
 
         <Card variant="borderless" className="filter-bar activity-signups__filter">
           <Input
@@ -489,13 +459,6 @@ export default function ActivitySignups() {
               <span className="list-card__header__title">报名记录</span>
             </div>
             <Space>
-              {/* <Radio.Group
-                className="list-card__status-filter"
-                optionType="button"
-                value={applied.status == null ? 'all' : String(applied.status)}
-                onChange={(event) => changeStatus(event.target.value === 'all' ? null : Number(event.target.value))}
-                options={tabItems}
-              /> */}
               <Button icon={<DownloadOutlined />} loading={exporting} onClick={handleExport}>
                 导出
               </Button>

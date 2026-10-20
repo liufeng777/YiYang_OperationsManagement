@@ -254,7 +254,7 @@ export default function ReconcileDetail() {
             color="primary"
             variant="outlined"
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/finance')}
+            onClick={() => navigate('/finance/summary')}
           >
             返回账单汇总
           </Button>

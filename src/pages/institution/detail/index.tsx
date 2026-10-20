@@ -14,13 +14,15 @@ import { institutionApi } from '@/api'
 import type { InstitutionItem } from '@/api/modules/institution'
 import InstitutionInfoForm from '../components/InstitutionInfoForm'
 import ServicesTab from '../components/ServicesTab'
+import StaffsTab from '../components/StaffsTab'
 import './index.less'
 
-type DetailTab = 'base' | 'services'
+type DetailTab = 'base' | 'services' | 'staffs'
 
 const detailTabs: { key: DetailTab; label: string }[] = [
   { key: 'base', label: '基础资料' },
   { key: 'services', label: '服务项目' },
+  { key: 'staffs', label: '医护人员' },
 ]
 
 export default function InstitutionDetailPage() {
@@ -33,6 +35,8 @@ export default function InstitutionDetailPage() {
   const [loading, setLoading] = useState(true)
   /** 已关联服务数量（Tab 角标用）：null 表示尚未取到，由详情页与 ServicesTab 共同维护 */
   const [serviceCount, setServiceCount] = useState<number | null>(null)
+  /** 医护人员数量（Tab 角标用）：由 StaffsTab 回传 */
+  const [staffCount, setStaffCount] = useState<number | null>(null)
 
   /** 拉取机构详情 */
   const fetchDetail = useCallback(async () => {
@@ -85,16 +89,17 @@ export default function InstitutionDetailPage() {
 
   const tabItems = useMemo(
     () =>
-      detailTabs.map((item) =>
-        item.key === 'services'
-          ? {
-              ...item,
-              // 数量未取到时只展示标签，避免闪出「服务项目 0」
-              label: serviceCount == null ? item.label : `${item.label} ${serviceCount}`,
-            }
-          : item,
-      ),
-    [serviceCount],
+      detailTabs.map((item) => {
+        // 数量未取到时只展示标签，避免闪出「服务项目 0」
+        if (item.key === 'services') {
+          return { ...item, label: serviceCount == null ? item.label : `${item.label} ${serviceCount}` }
+        }
+        if (item.key === 'staffs') {
+          return { ...item, label: staffCount == null ? item.label : `${item.label} ${staffCount}` }
+        }
+        return item
+      }),
+    [serviceCount, staffCount],
   )
 
   const handleTabChange = (key: string) => {
@@ -170,6 +175,9 @@ export default function InstitutionDetailPage() {
         )}
         {activeTab === 'services' && (
           <ServicesTab detail={detail} onCountChange={setServiceCount} />
+        )}
+        {activeTab === 'staffs' && (
+          <StaffsTab detail={detail} onCountChange={setStaffCount} />
         )}
       </div>
     </PageContainer>

@@ -65,6 +65,7 @@ export default function ServicePoolList() {
   const navigate = useNavigate()
   const { message, modal } = App.useApp()
   const [data, setData] = useState<ServiceItem[]>([])
+  const [stats, setStats] = useState<any>(null)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -102,10 +103,12 @@ export default function ServicePoolList() {
         })
         setData(result.list ?? [])
         setTotal(result.total ?? 0)
+        setStats(result.stats ?? null)
       } catch {
         /* 错误提示由 request 拦截器统一处理 */
         setData([])
         setTotal(0)
+        setStats(null)
       } finally {
         setLoading(false)
       }
@@ -158,14 +161,12 @@ export default function ServicePoolList() {
 
   /** 顶部统计：服务总数取自后端 total，其余按当前页分布统计 */
   const metrics = useMemo(() => {
-    const countBy = (target: number) => data.filter((item) => item.status === target).length
     return [
-      { key: 'all', label: '服务项目', value: total, note: '集团统一定义' },
-      { key: 'on', label: '已启用', value: countBy(1), note: '机构可选择添加' },
-      { key: 'draft', label: '草稿', value: countBy(2), note: '尚未对机构开放' },
-      { key: 'off', label: '已停用', value: countBy(9), note: '不可新增使用' },
+      { key: 'all', label: '服务项目', value: total, note: '集团统一定义', tone: 'info' },
+      { key: 'on', label: '已启用', value: stats?.on_shelf, note: '机构可选择添加', tone: 'success' },
+      { key: 'off', label: '已停用', value: stats?.off_shelf, note: '不可新增使用', tone: 'danger' },
     ]
-  }, [data, total])
+  }, [stats, total])
 
   /** 应用到过滤：把当前输入的筛选条件一次性生效（重置到第 1 页） */
   const applyFilters = () => {
@@ -530,11 +531,11 @@ export default function ServicePoolList() {
       <div className="service-pool">
         <div className="service-pool__metrics">
           {metrics.map((metric) => (
-            <Card variant="borderless" className="pool-metric" key={metric.key}>
+            <Card variant="borderless" className="pool-metric metric-card" key={metric.key}>
               <span>{metric.label}</span>
               <div>
                 <strong>{metric.value}</strong>
-                <em>{metric.note}</em>
+                <span className={`metric-card__note status--${metric.tone}`}>{metric.note}</span>
               </div>
             </Card>
           ))}

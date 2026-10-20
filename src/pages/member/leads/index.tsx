@@ -5,12 +5,12 @@
  * 工具栏：新增线索（§4.2）/ CSV 导入（§4.9）/ CSV 导出（§4.10，携带当前过滤条件）
  * 状态枚举（指南 §2.1）：1-待跟进 2-跟进中 3-已转化 4-转化失败 9-流失（3/9 终态）
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { App, Button, Card, Drawer, Form, Input, Select, Space } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, DownloadOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
+import { useMatch, useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import { institutionApi, leadApi } from '@/api'
 import type { InstitutionItem } from '@/api/modules/institution'
@@ -56,12 +56,10 @@ export default function LeadList() {
   const { message } = App.useApp()
   const [rows, setRows] = useState<LeadDTO[]>([])
   const [total, setTotal] = useState(0)
+  const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
-  /** 顶部统计：全部 / 待跟进(1) / 跟进中(2) / 已转化(3) */
-  // const [stats, setStats] = useState({ all: 0, pending: 0, following: 0, converted: 0 })
-
   const [keyword, setKeyword] = useState('')
   const [status, setStatus] = useState<number | null>(null)
   const [sourceType, setSourceType] = useState<number | null>(null)
@@ -89,6 +87,7 @@ export default function LeadList() {
       })
       setRows(res.list ?? [])
       setTotal(res.total ?? 0)
+      setStats(res.stats ?? null)
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
       setRows([])
@@ -275,12 +274,14 @@ export default function LeadList() {
   ]
 
   /** 顶部统计：全部线索取列表接口 total（真实数据）；分状态统计接口未提供，展示 — */
-  const metrics = [
-    { key: 'all', label: '全部线索', value: total, note: '运营线索总量', tone: 'success' },
-    { key: 'pending', label: '待跟进', value: '—', note: '待认领的新线索', tone: 'warning' },
-    { key: 'following', label: '跟进中', value: '—', note: '已认领正在跟进', tone: 'info' },
-    { key: 'converted', label: '已转化', value: '—', note: '复核达成的线索', tone: 'success' },
-  ]
+  const metrics = useMemo(() => {
+    return [
+      { key: 'all', label: '全部线索', value: stats?.total, note: '运营线索总量', tone: 'success' },
+      { key: 'following', label: '跟进中', value: stats?.contacting, note: '已认领正在跟进', tone: 'info' },
+      { key: 'pending', label: '待跟进', value: stats?.pending, note: '待认领的新线索', tone: 'warning' },
+      { key: 'converted', label: '已转化', value: stats?.converted, note: '复核达成的线索', tone: 'success' },
+    ]
+  }, [stats])
 
   return (
     <PageContainer

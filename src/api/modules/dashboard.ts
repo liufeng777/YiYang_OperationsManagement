@@ -1,100 +1,96 @@
 /**
  * 数据看板（运营后台端-API设计 §11）
  * 权限 dashboard:view；聚合接口出参不受分页包装约束（共通 §1.4）
- * 说明：运营首页已接入 §11 看板接口（overview / service-trend），
- *       上半部分为页面展示用类型（由看板接口 / 订单列表数据映射而来）。
+ * 说明：运营首页使用 getDashboardOverview 一次性取回
+ *       { accounts / dataset_dura / recent_orders / todos } 四块数据。
  */
 import { http } from '@/utils/request'
 
 /* ------------------------------------------------------------------ */
-/* 运营首页展示类型（由 §11 看板接口与订单列表映射填充）                    */
+/* 运营首页总览（GET /admin/dashboard/overview 返回结构）                  */
 /* ------------------------------------------------------------------ */
 
-/** 近期订单（由 orderApi.getOrders 列表项映射） */
-export interface RecentOrder {
-  /** 订单 ID（跳转详情用） */
-  id: number
-  /** 订单编号 */
-  orderNo: string
-  /** 业务类型：上门服务 / 活动报名 / 适老商品 / 老龄旅游 */
-  bizType: string
-  /** 服务机构 */
-  institution: string
-  /** 下单用户 */
-  customer: string
-  /** 实付金额（元） */
-  amount: number
-  /** 下单时间 */
-  orderTime: string
+/** 账号统计 */
+export interface DashboardAccounts {
+  /** 建档会员数 */
+  health_members: number
+  /** 注册用户数 */
+  registered_users: number
+  /** 员工数 */
+  staff_count: number
+}
+
+/** 趋势数据点
+ *  实际返回：ts 为字符串（月视图 "2026-10-01"/"10-02"，日视图 "2026-10-20 00:00"/"10-20 01:00"），
+ *  val 为金额/数量字符串（如 "0.00"）；均兼容数值型 */
+export interface DashboardTrendPoint {
+  /** 时间点：日期/小时字符串（可能省略年份）或 UTC 秒 */
+  ts: string | number
+  /** 数值（字符串或数字） */
+  val: string | number
+}
+
+/** 时间范围数据集（注册 / 首成交 / 支付总额 + 趋势数组） */
+export interface DashboardDatasetDura {
+  /** 首成交用户数 */
+  first_deal_users: number
+  /** 切割粒度：day / week / month */
+  granularity: string
+  /** 支付总额（元） */
+  paid_amount: number
+  /** 支付金额趋势 */
+  paid_trend: DashboardTrendPoint[]
+  /** 注册用户趋势 */
+  registered_trend: DashboardTrendPoint[]
+}
+
+/** 近期订单（字段与订单列表一致，防御性全部可选） */
+export interface DashboardRecentOrder {
+  /** 订单 ID（部分返回用 order_id） */
+  id?: number
+  order_id?: number
+  order_no?: string
+  institution_name?: string
+  institution_id?: number
+  contact_name?: string
+  member_name?: string
+  nickname?: string
+  /** 下单会员姓名 / 手机号 */
+  user_name?: string
+  user_phone?: string
+  /** 实付金额：可能为元（字符串）或分（数值），渲染时兼容 */
+  paid_amount?: string | number
+  created_at?: number
   /** 订单状态：1-待支付 2-待确认 3-生效中 4-已完成 5-已取消 6-已退款 */
-  status: number
+  order_status?: number
 }
 
-/** 待办提醒项 */
-export interface DashboardTodo {
-  /** 唯一标识：refund / institution / content / warn */
-  key: string
-  /** 待办标题 */
-  title: string
-  /** 辅助描述 */
-  desc?: string
-  /** 待办数量（无数量时不展示） */
-  count?: number
-  /** 数量单位：笔 / 家 / 条 */
-  unit?: string
+/** 待办统计（key 由后端约定，页面按 label 映射渲染） */
+export type DashboardTodos = Record<string, number>
+
+/** 全局指标总览响应 */
+export interface DashboardOverviewResult {
+  accounts: DashboardAccounts
+  dataset_dura: DashboardDatasetDura
+  recent_orders: DashboardRecentOrder[]
+  todos: DashboardTodos
 }
 
-/** 单日订单趋势点 */
-export interface TrendPoint {
-  /** 日期标签：如 7/31、今日 */
-  label: string
-  /** 当日订单量 */
-  value: number
-}
-
-/** 近 7 日订单趋势统计 */
-export interface TrendStat {
-  /** 累计订单数 */
-  totalOrders: number
-  /** 较上周增长率（%）；上周无数据时为 null */
-  totalRate: number | null
-  /** 逐日订单量 */
-  daily: TrendPoint[]
+/** 全局指标总览 GET /api/admin/dashboard/overview
+ *  swagger：scope（self/all，默认 self）/ institution_id / start_ts / end_ts（UTC 秒，选填）/ limit（近期订单条数） */
+export function getDashboardOverview(params?: {
+  scope?: 'self' | 'all'
+  institution_id?: number
+  start_ts?: number
+  end_ts?: number
+  limit?: number
+}) {
+  return http.get<DashboardOverviewResult>('/admin/dashboard/overview', { ...params })
 }
 
 /* ------------------------------------------------------------------ */
-/* §11 数据大屏看板（权限 dashboard:view）                               */
+/* §11 其余看板接口（服务趋势 / 完成率 / 活动 / 健康预警）                 */
 /* ------------------------------------------------------------------ */
-
-/** 全局指标总览（§11.1） */
-export interface DashboardOverview {
-  /** 建档人数 */
-  member_registered: number
-  /** 已实名 */
-  member_verified: number
-  /** 活动报名数 */
-  activity_registered: number
-  /** 服务订单数 */
-  service_order_count: number
-  /** 服务预约数 */
-  service_appointment_count: number
-  /** 健康评估次数 */
-  assessment_count: number
-  /** 回访次数（含随访） */
-  followup_count: number
-  warn_pending: number
-  warn_processing: number
-  /** 服务完成率 */
-  service_completion_rate: number
-  /** AI 健康方案生成数 */
-  ai_plan_generated: number
-  /** AI 方案确认数 */
-  ai_plan_confirmed: number
-  /** 预警处置数（闭环） */
-  warn_resolved: number
-  /** 效果评估次数 */
-  effect_assessment_count: number
-}
 
 /** 服务趋势点（§11.2，按日） */
 export interface ServiceTrendPoint {
@@ -112,17 +108,6 @@ export interface InstitutionRateItem {
   warn_resolved?: number
   resolve_rate?: number
   completion_rate?: number
-}
-
-/** 全局指标总览 GET /api/admin/dashboard/overview
- *  swagger：scope（self/all，默认 self）/ institution_id / start_ts / end_ts（UTC 秒，选填） */
-export function getDashboardOverview(params?: {
-  scope?: 'self' | 'all'
-  institution_id?: number
-  start_ts?: number
-  end_ts?: number
-}) {
-  return http.get<DashboardOverview>('/admin/dashboard/overview', { ...params })
 }
 
 /** 服务趋势 GET /api/admin/dashboard/service-trend

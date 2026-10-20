@@ -173,7 +173,7 @@ export default function MemberList() {
       title: '注册会员 / 手机号',
       key: 'member',
       render: (_, record) => (
-        <div className="member-cell">
+        <div className="table-cell">
           <strong>{record.nickname || '—'}</strong>
           <span>{record.phone || '—'}</span>
         </div>
@@ -183,7 +183,7 @@ export default function MemberList() {
       title: '注册来源 / 邀请人',
       key: 'source',
       render: (_, record) => (
-        <div className="member-cell">
+        <div className="table-cell">
           <strong>{registerSourceText(record)}</strong>
           <span>{record.inviter_name || '—'}</span>
         </div>

@@ -207,7 +207,7 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
         title: '服务项目',
         key: 'name',
         render: (_, record) => (
-          <div className="service-cell">
+          <div className="table-cell">
             <strong>{record.service_name}</strong>
             <span>{record.service_category_name}</span>
           </div>
@@ -275,7 +275,7 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
         title: '服务项目',
         key: 'name',
         render: (_: unknown, record: ServiceItem) => (
-          <div className="service-cell">
+          <div className="table-cell">
             <strong>{record.name}</strong>
             <span>{categories.find((item) => item.id === record.category_id)?.name ?? '—'}</span>
           </div>

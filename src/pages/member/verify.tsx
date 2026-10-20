@@ -113,7 +113,7 @@ export default function VerifyList() {
         key: 'target',
         width: 160,
         render: (_, record) => (
-          <div className="verify-cell">
+          <div className="table-cell">
             <strong>{record.targetName}</strong>
             <span>提交人：{record.submitter.split(' · ')[0]}</span>
           </div>
@@ -195,12 +195,12 @@ export default function VerifyList() {
             <Card variant="borderless" className="metric-card" key={metric.key}>
               <div className="metric-card__head">
                 <span className="metric-card__label">{metric.label}</span>
-                <i className={`metric-card__icon metric-card__icon--${metric.tone}`}>
+                <i className={`metric-card__icon status--${metric.tone}`}>
                   <BarChartOutlined />
                 </i>
               </div>
               <strong className="metric-card__value">{metric.value}</strong>
-              <em className={`metric-card__note metric-card__note--${metric.tone}`}>
+              <em className={`metric-card__note status--${metric.tone}`}>
                 {metric.note}
               </em>
             </Card>

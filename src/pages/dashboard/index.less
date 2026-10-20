@@ -47,8 +47,62 @@
   margin-top: @spacing-md;
 }
 
+/* ===== 统计日期筛选行（设计稿：快捷项 + 区间 + 查询 + 数据更新时间） ===== */
+.dashboard-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: @spacing-sm;
+  margin-bottom: @spacing-md;
+
+  &__label {
+    .text-body-medium();
+    color: @color-text-primary;
+  }
+
+  &__quick {
+    display: flex;
+    gap: @spacing-xs;
+  }
+
+  &__quick-btn {
+    height: 32px;
+    padding: 0 @spacing-md;
+    border: none;
+    border-radius: @radius-sm;
+    background: @color-bg-active;
+    color: @color-text-secondary;
+    font-size: @font-size-body;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+
+    &.is-active {
+      background: @color-primary-light;
+      color: @color-primary;
+      font-weight: 500;
+    }
+  }
+
+  &__range {
+    .text-body();
+    color: @color-text-secondary;
+  }
+
+  /* 数据更新时间：右对齐 */
+  &__updated {
+    margin-left: auto;
+    .text-auxiliary();
+  }
+}
+
 /* ===== 待办事项 ===== */
 .dashboard-todo {
+  /* 卡片右上角「当前待处理 · 实时」 */
+  &__realtime {
+    .text-auxiliary();
+    color: @color-primary;
+  }
+
   height: 208px;
   &__list {
     height: 168px;
@@ -136,11 +190,25 @@
   }
 }
 
-/* ===== 近 7 日订单趋势 ===== */
+/* ===== 服务净成交趋势 ===== */
 .dashboard-trend-container {
   display: flex;
   flex-direction: column;
   height: 208px;
+
+  /* 卡片右上角「按所选日期统计 · 单位：元」 */
+  .dashboard-trend__hint {
+    .text-auxiliary();
+    color: @color-primary;
+  }
+
+  /* 标题后的公共时间上下文：2026-10 / 2026-10-20 */
+  .dashboard-trend__context {
+    margin-left: @spacing-xs;
+    .text-auxiliary();
+    color: @color-text-secondary;
+    font-weight: 400;
+  }
 }
 .dashboard-trend {
   flex: 1;
@@ -205,5 +273,41 @@
   &__day {
     .text-auxiliary();
     margin-top: @spacing-xs;
+    white-space: nowrap;
+  }
+
+  /* 密集模式（按小时 24 点 / 整月 30+ 点）：缩小间隙与柱宽，数值与标签缩小 */
+  &--dense {
+    gap: @spacing-2xs;
+
+    .dashboard-trend__plot {
+      gap: 2px;
+    }
+
+    .dashboard-trend__num {
+      font-size: 10px;
+      line-height: 14px;
+      /* 数值过长（如 28,640）允许收缩省略 */
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dashboard-trend__bar {
+      width: 70%;
+      max-width: 16px;
+      min-height: 2px;
+    }
+
+    .dashboard-trend__day {
+      font-size: 10px;
+      line-height: 14px;
+      margin-top: 2px;
+      /* 长标签（如 10-20）允许收缩避免溢出 */
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
   }
 }

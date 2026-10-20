@@ -47,6 +47,7 @@ export default function InstitutionList() {
   const navigate = useNavigate()
   const { message, modal } = App.useApp()
   const [data, setData] = useState<InstitutionItem[]>([])
+  const [stats, setStats] = useState<any>(null)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [keyword, setKeyword] = useState('')
@@ -76,11 +77,15 @@ export default function InstitutionList() {
           type: applied.type ?? undefined,
           status: applied.status ?? undefined,
         })
-        setData(result.list ?? [])
-        setTotal(result.total ?? 0)
+        if (result) {
+          setData(result.list ?? [])
+          setStats(result.stats)
+          setTotal(result.total ?? 0)
+        }
       } catch {
         /* 错误提示由 request 拦截器统一处理 */
         setData([])
+        setStats(null)
         setTotal(0)
       } finally {
         setLoading(false)
@@ -117,17 +122,13 @@ export default function InstitutionList() {
 
   /** 顶部统计：按当前筛选条件下的机构总数分布（基于后端 total 与本页数据汇总） */
   const metrics: MetricCard[] = useMemo(() => {
-    const normal = data.filter((item) => item.status === 1).length
-    const paused = data.filter((item) => item.status === 9).length
-    const nursingHome = data.filter((item) => item.type === 1).length
-    const postStation = data.filter((item) => item.type === 2).length
     return [
-      { key: 'nursingHome', label: '护理院', value: nursingHome, badge: '本页护理院数量', tone: 'info' },
-      { key: 'postStation', label: '驿站', value: postStation, badge: '本页驿站数量', tone: 'info' },
-      { key: 'normal', label: '正常经营', value: normal, badge: `当前筛选共 ${total} 家`, tone: 'success' },
-      { key: 'paused', label: '暂停经营', value: paused, badge: '用户端已停止展示', tone: 'danger' },
+      { key: 'nursingHome', label: '护理院', value: stats?.nursing_homes, badge: '护理院数量', tone: 'info' },
+      { key: 'postStation', label: '驿站', value: stats?.care_stations, badge: '驿站数量', tone: 'info' },
+      { key: 'normal', label: '正常经营', value: stats?.normal_operating, badge: `当前筛选共 ${total} 家`, tone: 'success' },
+      { key: 'paused', label: '暂停经营', value: stats?.suspended, badge: '用户端已停止展示', tone: 'danger' },
     ]
-  }, [data, total])
+  }, [stats])
 
   const handleQuery = () => {
     setPage(1)
@@ -185,7 +186,7 @@ export default function InstitutionList() {
         title: '机构',
         key: 'name',
         render: (_, record) => (
-          <div className="institution-cell">
+          <div className="table-cell">
             <strong>{record.name}</strong>
             <span>{record.name_en || '—'}</span>
           </div>
@@ -195,7 +196,7 @@ export default function InstitutionList() {
         title: '经营地址',
         key: 'address',
         render: (_, record) => (
-          <div className="institution-cell">
+          <div className="table-cell">
             <strong>{record.address}</strong>
             <span>{record.province}.{record.city}.{record.district}</span>
           </div>
@@ -214,7 +215,7 @@ export default function InstitutionList() {
       //   key: 'productService',
       //   width: 110,
       //   render: (_, record) => (
-      //     <div className="institution-cell">
+      //     <div className="table-cell">
       //       <strong>{record.productCount} / {record.serviceTotal}</strong>
       //       <span>商品 / 服务</span>
       //     </div>

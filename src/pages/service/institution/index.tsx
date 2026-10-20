@@ -430,7 +430,7 @@ export default function ServiceInstitutionPage() {
             <div className="inst-panel__list">
               {instLoading ? (
                 <p className="inst-panel__empty">
-                  <Spin size="small" /> 机构列表加载中…
+                  <Spin size="small"> 机构列表加载中…</Spin>
                 </p>
               ) : (
                 <>

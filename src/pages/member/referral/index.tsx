@@ -127,7 +127,7 @@ export default function ReferralList() {
         key: 'user',
         width: 150,
         render: (_, record) => (
-          <div className="referral-cell">
+          <div className="table-cell">
             <strong>{record.user_name || '—'}</strong>
             <span>ID：{record.user_id ?? '—'}</span>
           </div>

@@ -182,7 +182,7 @@ export const routes: RouteConfig[] = [
     meta: { title: '财务对账', icon: <AccountBookOutlined /> },
     children: [
       {
-        path: '',
+        path: 'summary',
         meta: { title: '账单汇总' },
         component: lazy(() => import('@/pages/finance/reconcile')),
       },
@@ -203,8 +203,8 @@ export const routes: RouteConfig[] = [
     meta: { title: '内容配置', icon: <FileTextOutlined /> },
     children: [
       {
-        path: '',
-        meta: { title: '首页配置' },
+        path: 'patient-homepage',
+        meta: { title: '患者端首页配置' },
         component: lazy(() => import('@/pages/content/home')),
       },
       {
@@ -212,11 +212,11 @@ export const routes: RouteConfig[] = [
         meta: { title: '科普内容' },
         component: lazy(() => import('@/pages/content/article')),
       },
-      {
-        path: 'staff',
-        meta: { title: '专业人员' },
-        component: lazy(() => import('@/pages/content/staff')),
-      },
+      // {
+      //   path: 'staff',
+      //   meta: { title: '专业人员' },
+      //   component: lazy(() => import('@/pages/content/staff')),
+      // },
       {
         path: 'article/edit/:id',
         meta: { title: '新建科普内容', hideInMenu: true },

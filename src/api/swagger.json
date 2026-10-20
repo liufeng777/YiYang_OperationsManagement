@@ -1892,40 +1892,6 @@
               }
           }
       },
-      "/api/v1/admin/dashboard/health": {
-          "get": {
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "运营后台-数据大屏"
-              ],
-              "summary": "健康/预警",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "起始时间，选填",
-                      "name": "start_ts",
-                      "in": "query"
-                  },
-                  {
-                      "type": "integer",
-                      "description": "截止时间，选填",
-                      "name": "end_ts",
-                      "in": "query"
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "评估/预警",
-                      "schema": {
-                          "type": "object",
-                          "additionalProperties": true
-                      }
-                  }
-              }
-          }
-      },
       "/api/v1/admin/dashboard/overview": {
           "get": {
               "produces": [
@@ -1934,7 +1900,7 @@
               "tags": [
                   "运营后台-数据大屏"
               ],
-              "summary": "全局指标总览",
+              "summary": "全局指标总览（四块：账号统计/近期订单/待办/时间范围数据集）",
               "parameters": [
                   {
                       "type": "string",
@@ -1958,6 +1924,12 @@
                       "type": "integer",
                       "description": "截止UTC秒数，选填",
                       "name": "end_ts",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "近期订单返回条数，默认 10，选填",
+                      "name": "limit",
                       "in": "query"
                   }
               ],
@@ -2032,6 +2004,40 @@
               "responses": {
                   "200": {
                       "description": "服务趋势（按日趋势）",
+                      "schema": {
+                          "type": "object",
+                          "additionalProperties": true
+                      }
+                  }
+              }
+          }
+      },
+      "/api/v1/admin/dashboard/trend-by-duration": {
+          "get": {
+              "produces": [
+                  "application/json"
+              ],
+              "tags": [
+                  "运营后台-数据大屏"
+              ],
+              "summary": "按时间范围返回数据集A（注册/首成交/支付总额 + 切割粒度 + 趋势数组）",
+              "parameters": [
+                  {
+                      "type": "integer",
+                      "description": "起始UTC秒数，选填，默认近30天",
+                      "name": "start_ts",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "截止UTC秒数，选填",
+                      "name": "end_ts",
+                      "in": "query"
+                  }
+              ],
+              "responses": {
+                  "200": {
+                      "description": "时间段数据集A",
                       "schema": {
                           "type": "object",
                           "additionalProperties": true
