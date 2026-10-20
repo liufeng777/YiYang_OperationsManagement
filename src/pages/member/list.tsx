@@ -2,7 +2,8 @@
  * 会员管理 - 注册会员列表
  * 数据来源：memberApi.getUsers（GET /admin/users，swagger：会员管理-注册用户）
  *   下推后端的筛选：keyword（昵称或手机号模糊）/ wx_openid（微信 OpenID）/ register_source（注册来源）
- * 保留能力：导出拉新明细（接口未对接，ApiPendingError 占位）、会员档案 Excel 导入 / 模板下载
+ * 保留能力：会员档案 Excel 导入 / 模板下载
+ * 注：导出拉新明细已迁移至「会员管理 - 推荐与奖励」页（GET /admin/referral-events/export）
  */
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -15,7 +16,6 @@ import { memberApi } from '@/api'
 import { registerSourceText } from '@/api/modules/memberOperation'
 import type { RegisteredUserRow } from '@/api/modules/memberOperation'
 import { downloadBlob, formatAmount, formatDateTime } from '@/utils'
-import ExportRecruitModal from './components/ExportRecruitModal'
 import './list.less'
 
 const PAGE_SIZE = 10
@@ -53,8 +53,6 @@ export default function MemberList() {
   const [sourceType, setSourceType] = useState<number | null>(null)
   const [applied, setApplied] = useState<AppliedFilters>(emptyFilters)
 
-  /** 导出拉新明细 Modal */
-  const [exportOpen, setExportOpen] = useState(false)
   /** 模板下载 / Excel 导入进行中状态 */
   const [templateLoading, setTemplateLoading] = useState(false)
   const [importing, setImporting] = useState(false)
@@ -233,16 +231,6 @@ export default function MemberList() {
       fixed
       title="注册会员管理"
       description="查看注册会员来源与下单结果，支持档案导入"
-      extra={
-        <Button
-          color="primary"
-          variant="outlined"
-          icon={<DownloadOutlined />}
-          onClick={() => setExportOpen(true)}
-        >
-          导出拉新明细
-        </Button>
-      }
     >
       <div className="member-list">
         <Card variant="borderless" className="filter-bar member-list__filter">
@@ -321,8 +309,6 @@ export default function MemberList() {
           />
         </Card>
       </div>
-
-      <ExportRecruitModal open={exportOpen} onClose={() => setExportOpen(false)} />
     </PageContainer>
   )
 }

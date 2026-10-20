@@ -10,7 +10,7 @@
  * 接口返回容错：data 可能为数组，也可能为 { key: value } 映射，统一归一化为 SettingItem[]
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Form, Input, InputNumber, Modal, Select, Switch, Tag } from 'antd'
+import { App, Button, Card, Form, Input, InputNumber, Modal, Switch, Tag } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
@@ -22,21 +22,6 @@ import './settings.less'
 
 /** 超级管理员角色编码（后端角色编码，如 roles: ["finance","operator"]；如有出入在此调整） */
 const SUPER_ROLE_CODES = ['super_admin', 'super', 'admin', '超级管理员']
-
-/** 值类型 → 展示文案 / 标签色 */
-const typeMeta: Record<string, { text: string; color: string }> = {
-  number: { text: '数值', color: 'blue' },
-  string: { text: '文本', color: 'green' },
-  bool: { text: '开关', color: 'orange' },
-  boolean: { text: '开关', color: 'orange' },
-}
-
-/** 新增参数可选类型 */
-const typeOptions = [
-  { label: '文本 string', value: 'string' },
-  { label: '数值 number', value: 'number' },
-  { label: '开关 bool', value: 'bool' },
-]
 
 /** 行标识：优先 settings_id，兜底 key */
 function rowIdOf(item: SettingItem): string {
@@ -80,11 +65,10 @@ function displayValue(record: SettingItem): string {
   return record.value || '—'
 }
 
-/** 新增参数表单值 */
+/** 新增参数表单值（type 固定为 string，无需表单项） */
 interface CreateFormValues {
   key: string
-  type: string
-  value: string | number | boolean | null
+  value: string
   description?: string
 }
 
@@ -107,7 +91,6 @@ export default function OperationSettings() {
   const [createOpen, setCreateOpen] = useState(false)
   const [creating, setCreating] = useState(false)
   const [createForm] = Form.useForm<CreateFormValues>()
-  const createType = Form.useWatch('type', createForm) ?? 'string'
 
   /** 拉取全局参数列表（key 筛选下推后端） */
   const fetchList = useCallback(async (key?: string) => {
@@ -195,8 +178,8 @@ export default function OperationSettings() {
     try {
       await settingsApi.updateSetting({
         key: values.key.trim(),
-        type: values.type,
-        value: values.value == null ? '' : String(values.value),
+        type: 'string',
+        value: values.value,
         description: values.description?.trim() || undefined,
       })
       message.success(`参数 ${values.key.trim()} 已创建`)
@@ -253,25 +236,12 @@ export default function OperationSettings() {
         title: '类型',
         dataIndex: 'type',
         key: 'type',
-        width: 160,
-        render: (value: string, record) => {
-          const editing = editingRowId === rowIdOf(record) && draft
-          const meta = typeMeta[value]
-          return editing && isSuperAdmin ? (
-            <Select value={draft.type} options={typeOptions} onChange={(val) => {
-              // 切换类型时同步兜底参数值，保证值控件与类型一致
-              setDraft({
-                ...draft,
-                type: val,
-                value: coerceValue(val, draft.value),
-              })
-            }} />
-          ) : (
-            <Tag variant="outlined" color={meta?.color ?? 'default'}>
-              {meta?.text ?? value ?? '—'}
-            </Tag>
-          )
-        },
+        width: 150,
+        render: () => (
+          <Tag variant="outlined" color="default">
+            字符串 (String)
+          </Tag>
+        ),
       },
       {
         title: '参数值',
@@ -420,7 +390,7 @@ export default function OperationSettings() {
         <Form<CreateFormValues>
           form={createForm}
           layout="vertical"
-          initialValues={{ type: 'string', value: '' }}
+          initialValues={{ value: '' }}
           preserve={false}
         >
           <Form.Item
@@ -431,30 +401,13 @@ export default function OperationSettings() {
           >
             <Input placeholder="请输入参数键" allowClear />
           </Form.Item>
-          <Form.Item name="type" label="参数类型" rules={[{ required: true }]}>
-            <Select
-              options={typeOptions}
-              onChange={(val) => {
-                // 切换类型时重置参数值为对应类型的合法默认值，与行内编辑交互保持一致
-                createForm.setFieldsValue({
-                  value: isBool(val) ? false : val === 'number' ? null : '',
-                })
-              }}
-            />
-          </Form.Item>
           <Form.Item
             name="value"
             label="参数值"
-            valuePropName={isBool(createType) ? 'checked' : 'value'}
-            rules={isBool(createType) ? [] : [{ required: true, message: '请输入参数值' }]}
+            rules={[{ required: true, message: '请输入参数值' }]}
+            extra="参数类型固定为字符串 (String)"
           >
-            {isBool(createType) ? (
-              <Switch checkedChildren="开启" unCheckedChildren="关闭" />
-            ) : createType === 'number' ? (
-              <InputNumber style={{ width: '100%' }} placeholder="请输入数值" />
-            ) : (
-              <Input placeholder="请输入参数值" allowClear />
-            )}
+            <Input placeholder="请输入参数值" allowClear />
           </Form.Item>
           <Form.Item name="description" label="参数说明">
             <Input.TextArea rows={2} placeholder="选填" />

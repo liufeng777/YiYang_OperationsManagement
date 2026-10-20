@@ -3,6 +3,7 @@
  * 推荐列表：rewardApi.getReferralList（GET /admin/referral-events）
  * - 筛选 status / event_type / biz_type / reward_status 全部下推后端（不传表示全部）
  * - 接口返回标准分页结构 { list, total }，服务端分页
+ * 导出拉新明细：rewardApi.exportReferralEvents（GET /admin/referral-events/export，CSV 下载）
  * 奖励：预留 Tab 入口，待后端接口就绪后接入
  * 布局说明：Tabs 仅作分段导航（items 不带 children），内容区作为 .referral-page 的直接子级渲染，
  *           保证 PageContainer fixed 的高度链（list-card--fill + FillTable 测量）不被 Tabs 打断。
@@ -11,10 +12,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button, Card, Empty, Select, Tabs } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
+import { DownloadOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
 import { rewardApi } from '@/api'
 import type { ReferralItem } from '@/api/modules/reward'
 import { formatDateTime } from '@/utils'
+import ExportRecruitModal from './ExportRecruitModal'
 import './index.less'
 
 /** 事件类型：100-注册 / 200-报名 / 300-订单支付 */
@@ -76,6 +79,8 @@ export default function ReferralList() {
   const [filters, setFilters] = useState<ReferralFilters>(emptyFilters)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  /** 导出拉新明细 Modal */
+  const [exportOpen, setExportOpen] = useState(false)
 
   /** 拉取推荐事件列表：分页与筛选条件全部下推后端 */
   const fetchList = useCallback(async (targetPage: number, next: ReferralFilters, size: number) => {
@@ -266,6 +271,14 @@ export default function ReferralList() {
                   <span className="list-card__header__title">推荐列表</span>
                   <span className="list-card__header__tips">共 {total} 条推荐事件</span>
                 </div>
+                <Button
+                  color="primary"
+                  variant="outlined"
+                  icon={<DownloadOutlined />}
+                  onClick={() => setExportOpen(true)}
+                >
+                  导出拉新明细
+                </Button>
               </div>
               <FillTable<ReferralItem>
                 rowKey={(record) => record.id ?? `${record.user_id}-${record.created_at}`}
@@ -292,6 +305,8 @@ export default function ReferralList() {
             <Empty description="奖励功能即将上线，敬请期待" />
           </Card>
         )}
+
+        <ExportRecruitModal open={exportOpen} onClose={() => setExportOpen(false)} />
       </div>
     </PageContainer>
   )

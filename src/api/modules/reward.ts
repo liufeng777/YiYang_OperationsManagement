@@ -9,6 +9,7 @@
  * 后端接口就绪后在此补充对应 API 方法（页面注释已预留替换点）。
  */
 import { http } from '@/utils/request'
+import type { AxiosResponse } from 'axios'
 import type { ApiPageParams, ApiPageResult } from '@/types/api'
 
 /* ------------------------------------------------------------------ */
@@ -59,6 +60,32 @@ export interface ReferralItem {
 /** 推荐事件列表 GET /api/admin/referral-events */
 export function getReferralList(params?: ReferralListParams) {
   return http.get<ApiPageResult<ReferralItem>>('/admin/referral-events', { ...params })
+}
+
+/* ------------------------------------------------------------------ */
+/* 推荐注册（拉新）事件导出（GET /admin/referral-events/export）          */
+/* ------------------------------------------------------------------ */
+
+/** 导出拉新明细入参（swagger：均为 query 选填） */
+export interface ReferralExportParams {
+  /** 注册起始时间（Unix 秒，含边界） */
+  start_time?: number
+  /** 注册结束时间（Unix 秒，含边界） */
+  stop_time?: number
+  /** 邀请人类型：staff-员工 / user-用户 / admin-客服，空不限（按推广码首字母 S/U/A 判定） */
+  inviter_type?: 'staff' | 'user' | 'admin'
+  /** 邀请人关键字，姓名或手机号模糊匹配，空不限 */
+  inviter_keyword?: string
+  /** 事件状态：1-pending / 2-valid / 9-invalid，0 或不传返回全部 */
+  status?: number
+}
+
+/**
+ * 导出推荐注册（拉新）事件 CSV GET /api/admin/referral-events/export
+ * 说明：仅导出 event_type=100 注册类型事件；responseType=blob 时拦截器返回完整 AxiosResponse
+ */
+export function exportReferralEvents(params?: ReferralExportParams): Promise<AxiosResponse<Blob>> {
+  return http.get<AxiosResponse<Blob>>('/admin/referral-events/export', { ...params }, { responseType: 'blob' })
 }
 
 /* ------------------------------------------------------------------ */

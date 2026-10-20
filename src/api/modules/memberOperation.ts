@@ -8,8 +8,8 @@
  *   - 注册用户列表：GET /admin/users（keyword 昵称/手机号模糊、wx_openid、register_source 注册来源、has_order 购买状态）
  *   - 注册用户详情：GET /admin/users/:id（含绑定会员 bound_members 与订单记录 order_records）
  *   - 拉新注册事件：GET /admin/referral-events（event_type=100 注册，start_time/stop_time）
+ *   - 导出拉新明细：GET /admin/referral-events/export（CSV，见 reward.ts，入口在推荐与奖励页）
  * ❌ swagger.json 未提供（下方以 ApiPendingError 占位，页面捕获后统一提示「接口未对接」）：
- *   - 导出拉新明细（按注册时间导出邀请来源明细）
  *   - 注册会员沟通跟进记录的新增 / 列表（沟通要点、推荐服务、下次联系时间）
  */
 import type { ApiPageParams, ApiPageResult } from '@/types/api'
@@ -67,30 +67,11 @@ export function registerSourceText(row: RegisteredUserRow): string {
 }
 
 /* ------------------------------------------------------------------ */
-/* 导出拉新明细（❌ swagger 未提供导出接口）                              */
+/* 导出拉新明细                                                          */
 /* ------------------------------------------------------------------ */
 
-/** 导出拉新明细筛选入参（按设计稿：注册日期 / 邀请来源 / 邀请人） */
-export interface RecruitExportParams {
-  /** 注册起始时间（UTC 秒） */
-  start_time?: number
-  /** 注册截止时间（UTC 秒） */
-  stop_time?: number
-  /** 邀请来源（字典待后端定义，如 1-员工邀请 2-会员邀请 3-无邀请归因） */
-  source_type?: number
-  /** 邀请人 ID（支持姓名 / 编号检索，候选接口缺失） */
-  inviter_id?: number
-}
-
-/**
- * 导出拉新明细
- * TODO(接口缺失)：swagger.json 无该导出端点；预期形如 GET /admin/members/recruit-export。
- * 当前仅能通过 GET /admin/referral-events（event_type=100 注册 + 起止时间）查到注册类推荐事件列表，
- * 但缺少导出字段（脱敏手机号 / 邀请人编号 / 推广机构）与文件导出能力。
- */
-export function exportRecruitDetail(_params: RecruitExportParams): Promise<never> {
-  return Promise.reject(new ApiPendingError('导出拉新明细'))
-}
+/* 已对接真实接口：rewardApi.exportReferralEvents（GET /admin/referral-events/export，CSV），
+ * 入口在「会员管理 - 推荐与奖励」页（pages/member/referral/ExportRecruitModal.tsx）。 */
 
 /* ------------------------------------------------------------------ */
 /* 沟通跟进（❌ swagger 未提供注册会员跟进接口；线索跟进接口不适用于注册会员） */

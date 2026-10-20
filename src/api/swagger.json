@@ -4565,189 +4565,6 @@
               }
           }
       },
-      "/api/v1/admin/positions": {
-          "get": {
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "机构与人员-岗位"
-              ],
-              "summary": "岗位列表",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "页码，默认1，选填",
-                      "name": "page",
-                      "in": "query"
-                  },
-                  {
-                      "type": "integer",
-                      "description": "每页条数，默认10，选填",
-                      "name": "page_size",
-                      "in": "query"
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "岗位列表",
-                      "schema": {
-                          "type": "object",
-                          "additionalProperties": true
-                      }
-                  }
-              }
-          },
-          "post": {
-              "consumes": [
-                  "application/json"
-              ],
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "机构与人员-岗位"
-              ],
-              "summary": "新增岗位",
-              "parameters": [
-                  {
-                      "description": "新增岗位参数",
-                      "name": "body",
-                      "in": "body",
-                      "required": true,
-                      "schema": {
-                          "$ref": "#/definitions/admin.ReqCreatePosition"
-                      }
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          }
-      },
-      "/api/v1/admin/positions/{id}": {
-          "put": {
-              "consumes": [
-                  "application/json"
-              ],
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "机构与人员-岗位"
-              ],
-              "summary": "编辑岗位",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "岗位ID",
-                      "name": "id",
-                      "in": "path",
-                      "required": true
-                  },
-                  {
-                      "description": "编辑岗位参数",
-                      "name": "body",
-                      "in": "body",
-                      "required": true,
-                      "schema": {
-                          "$ref": "#/definitions/admin.ReqCreatePosition"
-                      }
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          },
-          "delete": {
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "机构与人员-岗位"
-              ],
-              "summary": "删除岗位",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "岗位ID",
-                      "name": "id",
-                      "in": "path",
-                      "required": true
-                  },
-                  {
-                      "type": "string",
-                      "description": "操作原因/备注，选填",
-                      "name": "remark",
-                      "in": "query"
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          }
-      },
-      "/api/v1/admin/positions/{id}/status": {
-          "post": {
-              "consumes": [
-                  "application/json"
-              ],
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "机构与人员-岗位"
-              ],
-              "summary": "启用/禁用岗位",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "岗位ID",
-                      "name": "id",
-                      "in": "path",
-                      "required": true
-                  },
-                  {
-                      "description": "状态参数",
-                      "name": "body",
-                      "in": "body",
-                      "required": true,
-                      "schema": {
-                          "$ref": "#/definitions/admin.ReqSetPositionStatus"
-                      }
-                  },
-                  {
-                      "type": "string",
-                      "description": "操作原因/备注，选填",
-                      "name": "remark",
-                      "in": "query"
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          }
-      },
       "/api/v1/admin/reconciliations": {
           "get": {
               "produces": [
@@ -5053,6 +4870,66 @@
                       "description": "OK",
                       "schema": {
                           "$ref": "#/definitions/pkg.Response"
+                      }
+                  }
+              }
+          }
+      },
+      "/api/v1/admin/referral-events/export": {
+          "get": {
+              "security": [
+                  {
+                      "BearerAuth": []
+                  }
+              ],
+              "description": "导出推荐注册事件（event_type=100 注册类型）到CSV文件。支持按注册时间区间（start_time/stop_time 起止时段）、注册来源（inviter_type 邀请人类型，按推广码首字母 S-员工/U-用户/A-客服 判定）、邀请人关键字（inviter_keyword，姓名或手机号模糊匹配）、事件状态（status）过滤。",
+              "consumes": [
+                  "application/json"
+              ],
+              "produces": [
+                  "text/csv"
+              ],
+              "tags": [
+                  "推荐奖励-推荐事件"
+              ],
+              "summary": "导出推荐注册（拉新）事件CSV",
+              "parameters": [
+                  {
+                      "type": "integer",
+                      "description": "注册起始时间（Unix秒），含边界",
+                      "name": "start_time",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "注册结束时间（Unix秒），含边界",
+                      "name": "stop_time",
+                      "in": "query"
+                  },
+                  {
+                      "type": "string",
+                      "description": "邀请人类型：staff-员工 / user-用户 / admin-客服，空不限",
+                      "name": "inviter_type",
+                      "in": "query"
+                  },
+                  {
+                      "type": "string",
+                      "description": "邀请人关键字，姓名或手机号模糊匹配，空不限",
+                      "name": "inviter_keyword",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "事件状态过滤：1-pending / 2-valid / 9-invalid，0返回全部",
+                      "name": "status",
+                      "in": "query"
+                  }
+              ],
+              "responses": {
+                  "200": {
+                      "description": "CSV 文件下载",
+                      "schema": {
+                          "type": "string"
                       }
                   }
               }
@@ -6520,20 +6397,20 @@
                       "in": "query"
                   },
                   {
-                      "type": "integer",
-                      "description": "机构ID，选填",
-                      "name": "institution_id",
+                      "type": "string",
+                      "description": "机构名(模糊)，选填",
+                      "name": "institution_name",
+                      "in": "query"
+                  },
+                  {
+                      "type": "string",
+                      "description": "岗位名(模糊)，选填",
+                      "name": "position_name",
                       "in": "query"
                   },
                   {
                       "type": "integer",
-                      "description": "人员类型，选填",
-                      "name": "staff_type",
-                      "in": "query"
-                  },
-                  {
-                      "type": "integer",
-                      "description": "状态，选填",
+                      "description": "状态(在职/离职)，选填",
                       "name": "status",
                       "in": "query"
                   }
@@ -6544,37 +6421,6 @@
                       "schema": {
                           "type": "object",
                           "additionalProperties": true
-                      }
-                  }
-              }
-          },
-          "post": {
-              "consumes": [
-                  "application/json"
-              ],
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "机构与人员-人员"
-              ],
-              "summary": "新增人员",
-              "parameters": [
-                  {
-                      "description": "新增人员参数",
-                      "name": "body",
-                      "in": "body",
-                      "required": true,
-                      "schema": {
-                          "$ref": "#/definitions/admin.ReqCreateStaff"
-                      }
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
                       }
                   }
               }
@@ -6604,125 +6450,6 @@
                       "schema": {
                           "type": "object",
                           "additionalProperties": true
-                      }
-                  }
-              }
-          },
-          "put": {
-              "consumes": [
-                  "application/json"
-              ],
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "机构与人员-人员"
-              ],
-              "summary": "编辑人员",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "人员ID",
-                      "name": "id",
-                      "in": "path",
-                      "required": true
-                  },
-                  {
-                      "description": "编辑人员参数",
-                      "name": "body",
-                      "in": "body",
-                      "required": true,
-                      "schema": {
-                          "$ref": "#/definitions/admin.ReqCreateStaff"
-                      }
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          },
-          "delete": {
-              "consumes": [
-                  "application/json"
-              ],
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "机构与人员-人员"
-              ],
-              "summary": "删除人员（软删除）",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "人员ID",
-                      "name": "id",
-                      "in": "path",
-                      "required": true
-                  },
-                  {
-                      "type": "string",
-                      "description": "操作备注",
-                      "name": "remark",
-                      "in": "query"
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          }
-      },
-      "/api/v1/admin/staffs/{id}/status": {
-          "post": {
-              "consumes": [
-                  "application/json"
-              ],
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "机构与人员-人员"
-              ],
-              "summary": "设置在职/离职",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "人员ID",
-                      "name": "id",
-                      "in": "path",
-                      "required": true
-                  },
-                  {
-                      "description": "状态参数",
-                      "name": "body",
-                      "in": "body",
-                      "required": true,
-                      "schema": {
-                          "$ref": "#/definitions/admin.ReqSetStaffStatus"
-                      }
-                  },
-                  {
-                      "type": "string",
-                      "description": "操作备注",
-                      "name": "remark",
-                      "in": "query"
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
                       }
                   }
               }
@@ -8225,31 +7952,6 @@
               }
           }
       },
-      "admin.ReqCreatePosition": {
-          "type": "object",
-          "required": [
-              "position_code",
-              "position_name"
-          ],
-          "properties": {
-              "description": {
-                  "description": "描述，选填",
-                  "type": "string"
-              },
-              "position_code": {
-                  "description": "岗位编码（唯一），必填",
-                  "type": "string"
-              },
-              "position_name": {
-                  "description": "岗位名称，必填",
-                  "type": "string"
-              },
-              "status": {
-                  "description": "1-启用 9-禁用，选填",
-                  "type": "integer"
-              }
-          }
-      },
       "admin.ReqCreateReconciliation": {
           "type": "object",
           "required": [
@@ -8304,66 +8006,6 @@
               "status": {
                   "description": "1-启用 9-禁用，默认1，选填",
                   "type": "integer"
-              }
-          }
-      },
-      "admin.ReqCreateStaff": {
-          "type": "object",
-          "required": [
-              "institution_id",
-              "name",
-              "phone"
-          ],
-          "properties": {
-              "avatar_url": {
-                  "description": "头像，选填",
-                  "type": "string"
-              },
-              "credentials": {
-                  "description": "资质数组，选填",
-                  "type": "array",
-                  "items": {
-                      "$ref": "#/definitions/admin.StaffCredentialReq"
-                  }
-              },
-              "id_card": {
-                  "description": "身份证，选填",
-                  "type": "string"
-              },
-              "institution_id": {
-                  "description": "所属机构，必填",
-                  "type": "integer"
-              },
-              "name": {
-                  "description": "姓名，必填",
-                  "type": "string"
-              },
-              "phone": {
-                  "description": "手机号，必填",
-                  "type": "string"
-              },
-              "position_code": {
-                  "description": "岗位编码(Admin/Doctor/HealthMgr/Caregiver)，选填",
-                  "type": "string"
-              },
-              "services": {
-                  "description": "服务ID数组，选填",
-                  "type": "array",
-                  "items": {
-                      "type": "integer"
-                  }
-              },
-              "staff_type": {
-                  "description": "1-医护管理 2-医护服务，选填",
-                  "type": "integer"
-              },
-              "status": {
-                  "description": "1-在职 9-离职，选填",
-                  "type": "integer"
-              },
-              "title": {
-                  "description": "职务，选填",
-                  "type": "string"
               }
           }
       },
@@ -8825,18 +8467,6 @@
               }
           }
       },
-      "admin.ReqSetPositionStatus": {
-          "type": "object",
-          "required": [
-              "status"
-          ],
-          "properties": {
-              "status": {
-                  "description": "1-启用 9-禁用，必填",
-                  "type": "integer"
-              }
-          }
-      },
       "admin.ReqSetRolePermissions": {
           "type": "object",
           "required": [
@@ -8891,22 +8521,6 @@
           "properties": {
               "status": {
                   "description": "1-上架 9-下架，必填",
-                  "type": "integer"
-              }
-          }
-      },
-      "admin.ReqSetStaffStatus": {
-          "type": "object",
-          "required": [
-              "status"
-          ],
-          "properties": {
-              "resign_time": {
-                  "description": "离职时间，选填",
-                  "type": "integer"
-              },
-              "status": {
-                  "description": "1-在职 9-离职，必填",
                   "type": "integer"
               }
           }
@@ -9010,35 +8624,6 @@
               "value": {
                   "description": "参数值，必填",
                   "type": "string"
-              }
-          }
-      },
-      "admin.StaffCredentialReq": {
-          "type": "object",
-          "properties": {
-              "attachment_url": {
-                  "description": "证件附件，选填",
-                  "type": "string"
-              },
-              "clear_level": {
-                  "description": "等级/类型，选填",
-                  "type": "string"
-              },
-              "credential_name": {
-                  "description": "资质名称，选填",
-                  "type": "string"
-              },
-              "issuer": {
-                  "description": "发证机构，选填",
-                  "type": "string"
-              },
-              "valid_from": {
-                  "description": "有效期起(UTC)，选填",
-                  "type": "integer"
-              },
-              "valid_until": {
-                  "description": "有效期止(UTC)，选填",
-                  "type": "integer"
               }
           }
       },
