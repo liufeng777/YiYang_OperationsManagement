@@ -57,6 +57,7 @@ interface ServiceFormValues {
   /** draft → status 9；on → status 1 */
   publishStatus: 'draft' | 'on'
   openAfterSave: boolean
+  consumables_desc: string
 }
 
 /** 服务过程步骤：序列化为 JSON 字符串存入 ServiceItem.service_process，患者端按顺序展示 */
@@ -240,6 +241,7 @@ export default function ServiceEditorPage() {
       duration: values.duration,
       // swagger 字段名为 is_consumable_supported（boolean）
       is_consumable_supported: values.consumable === '1',
+      consumables_desc: values.consumables_desc,
       price: String(values.price),
       unit: values.unit,
       status: targetStatus === 'on' ? 1 : 9,
@@ -456,16 +458,16 @@ export default function ServiceEditorPage() {
                 >
                   <Input placeholder='请输入参考起售价' />
                 </Form.Item>
+                <Form.Item name="duration" label="服务时长（分钟）">
+                  <InputNumber min={0} precision={0} style={{ width: '100%' }} placeholder="例如：60" />
+                </Form.Item>
+              </div>
+              <div className="form-grid form-grid--three">
                 <Form.Item
                   name="target_crowd"
                   label={<span>适用人群</span>}
                 >
                   <Input placeholder="如：老年人、术后康复人群" />
-                </Form.Item>
-              </div>
-              <div className="form-grid form-grid--three">
-                <Form.Item name="duration" label="服务时长（分钟）">
-                  <InputNumber min={0} precision={0} style={{ width: '100%' }} placeholder="例如：60" />
                 </Form.Item>
                 <Form.Item
                   name="consumable"
@@ -473,26 +475,15 @@ export default function ServiceEditorPage() {
                 >
                   <Select options={consumableOptions} placeholder="请选择是否涉及耗材" />
                 </Form.Item>
+                <Form.Item name="consumables_desc" label="耗材描述">
+                  <Input placeholder='如：清洁用品、护理垫' />
+                </Form.Item>
+              </div>
+              <div className="form-grid form-grid--three">
                 <Form.Item name="vital_sign" label="生命体征监测项">
                   <Select mode="multiple" placeholder="请选择一项或多项" />
                 </Form.Item>
-                {/* <Form.Item name="audience" label="适用人群">
-                  <Input />
-                </Form.Item>
-                <Form.Item name="package" label="上架套餐">
-                  <Input placeholder="单次、5次、10次" />
-                </Form.Item> */}
               </div>
-              {/* 下方「服务规格与套餐」卡片与上述耗材字段同名绑定，修改任一处自动同步 */}
-              {/* <Form.Item
-                className="form-grid__full"
-                name="summary"
-                label={<span>列表摘要</span>}
-                rules={[{ required: true, message: '请输入列表摘要' }]}
-              >
-                <Input placeholder="专业护理人员上门提供安全、舒适的助浴服务" />
-              </Form.Item> */}
-              {/* <div className="editor-tip">提示：服务半径、日容量、接单时间与预约上下架，由机构添加服务后配置。</div> */}
             </Card>
 
             <Card variant="borderless" className="editor-card">
@@ -560,64 +551,8 @@ export default function ServiceEditorPage() {
                 >
                   添加套餐
                 </Button>
-                {/* <span>先配置耗材规格，再决定是否销售多次套餐</span> */}
               </div>
               <div className="editor-spec">
-                {/* <div className="editor-spec__strip">
-                  <span className="editor-spec__label">是否涉及耗材</span>
-                  <Form.Item
-                    name="consumable"
-                    noStyle
-                    rules={[{ required: true, message: '请选择是否涉及耗材' }]}
-                  >
-                    <Radio.Group
-                      options={[
-                        { label: '是', value: '1' },
-                        { label: '否', value: '2' },
-                      ]}
-                    />
-                  </Form.Item>
-                  {consumableValue === '1' && (
-                    <>
-                      <div className="editor-spec__field">
-                        <span>耗材规格：</span>
-                        <Form.Item name="consumableSpec" noStyle>
-                          <Select
-                            variant="borderless"
-                            style={{ width: 108 }}
-                            options={[
-                              { label: '含耗材', value: '含耗材' },
-                              { label: '不含耗材', value: '不含耗材' },
-                            ]}
-                          />
-                        </Form.Item>
-                      </div>
-                      <div className="editor-spec__field">
-                        <span>标准耗材：</span>
-                        <Form.Item name="consumableList" noStyle>
-                          <Input
-                            variant="borderless"
-                            style={{ width: 180 }}
-                            placeholder="清洁用品、护理垫"
-                          />
-                        </Form.Item>
-                      </div>
-                    </>
-                  )}
-                </div> */}
-
-                <div className="editor-spec__package-head">
-                  {/* <span className="editor-spec__label">上架套餐</span>
-                  <Form.Item name="packageEnabled" valuePropName="checked" noStyle>
-                    <Switch />
-                  </Form.Item>
-                  <span className="editor-spec__package-status">
-                    {packageEnabled ? '已上架' : '已关闭'}
-                  </span> */}
-                  {/* <span className="editor-spec__package-hint">关闭后仅保留“单次服务”</span> */}
-                  
-                </div>
-
                 <Table<PackageItem>
                   className="package-table"
                   rowKey="id"
@@ -667,33 +602,9 @@ export default function ServiceEditorPage() {
                 <RichDetailEditor label="图文详情" value={description} onChange={setDescription} />
               </div>
             </Card>
-
-            {/* <Card variant="borderless" className="editor-card">
-              <div className="editor-card__header">
-                <h3>发布设置</h3>
-              </div>
-              <div className="editor-publish">
-                <Form.Item name="publishStatus" noStyle>
-                  <Radio.Group
-                    options={[
-                      { label: '草稿', value: 'draft' },
-                      { label: '上架', value: 'on' },
-                    ]}
-                  />
-                </Form.Item>
-                <span>上架后机构可从服务池选择添加；历史订单保留创建时快照。</span>
-              </div>
-              <div className="editor-publish editor-publish--switch">
-                <Form.Item name="openAfterSave" valuePropName="checked" noStyle>
-                  <Switch />
-                </Form.Item>
-                <span>保存后立即向机构开放</span>
-              </div>
-            </Card> */}
             <div className="service-editor__footer">
               <span>上架后机构可从服务池选择添加；历史订单保留创建时快照。</span>
               <div>
-                {/* <Button onClick={() => handleSave('draft')}>保存草稿</Button> */}
                 <Button type="primary" icon={<CheckOutlined />} loading={submitting} onClick={() => handleSave('on')}>
                   保存并上架
                 </Button>
@@ -749,16 +660,6 @@ export default function ServiceEditorPage() {
             </div>
           </Card>
         </div>
-
-        {/* <div className="service-editor__footer">
-          <span>必填项完成后可保存；编辑服务时，同一页面会带入已有内容。</span>
-          <div>
-            <Button onClick={() => handleSave('draft')}>保存草稿</Button>
-            <Button type="primary" icon={<CheckOutlined />} loading={submitting} onClick={() => handleSave('on')}>
-              保存并上架
-            </Button>
-          </div>
-        </div> */}
       </Form>
 
       {/* 添加 / 编辑套餐（新建/编辑统一使用 Drawer） */}

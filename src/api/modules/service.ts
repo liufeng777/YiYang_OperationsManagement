@@ -103,6 +103,7 @@ export interface ServiceSaveBody {
   duration?: number
   /** 是否可选配耗材 */
   is_consumable_supported?: boolean
+  consumables_desc: string
   /** 服务套餐数组，如 [{count:1,price:'100',price_with_consum:'120'}] */
   packages?: ServicePackageBody[]
   /** JSON 服务流程（数组串） */

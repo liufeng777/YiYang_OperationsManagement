@@ -461,7 +461,7 @@ export default function ServicePoolList() {
         title: '服务方式',
         dataIndex: 'service_type',
         key: 'service_type',
-        render: (value: number) => <Tag variant='outlined' color={serviceTypeText[value].color}>{serviceTypeText[value].label}</Tag>
+        render: (value: number) => <Tag variant='outlined' color={serviceTypeText[value]?.color}>{serviceTypeText[value]?.label}</Tag>
       },
       {
         title: '集团定价',

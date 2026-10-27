@@ -8,10 +8,10 @@
  * 字段以后端实测返回为准：name / phone / registered_source / unregistered_at / remark
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Col, Input, Modal, Row, Select, Space } from 'antd'
+import { App, Button, Card, Input, Modal, Select, Space } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
-import { ArrowLeftOutlined, BarChartOutlined, DownloadOutlined, EditOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, DownloadOutlined, EditOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import { activityApi, institutionApi } from '@/api'
@@ -69,7 +69,7 @@ export default function ActivitySignups() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
   /** 顶部统计：报名人数 / 待签到 / 已签到 / 已取消（接口 total） */
-  const [stats, setStats] = useState<any>(null)
+  // const [stats, setStats] = useState<any>(null)
 
   const [keyword, setKeyword] = useState('')
   const [institution, setInstitution] = useState<number | null>(null)
@@ -127,7 +127,7 @@ export default function ActivitySignups() {
         })
         setRows(res.list ?? [])
         setTotal(res.total ?? 0)
-        setStats(res.stats ?? null)
+        // setStats(res.stats ?? null)
       } catch {
         /* 错误提示由 request 拦截器统一处理 */
         setRows([])

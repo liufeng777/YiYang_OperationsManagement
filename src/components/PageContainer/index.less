@@ -7,6 +7,12 @@
   flex-direction: column;
   overflow: auto;
 
+  /* 标题与内容共享最小宽度，窄窗口仅页面容器横向滚动，侧栏和顶栏保持可见 */
+  &__header,
+  &__body {
+    min-width: @content-min-width;
+  }
+
   &__header {
     display: flex;
     align-items: center;
@@ -56,7 +62,8 @@
    * 根容器自动撑满并转为纵向 flex，其内部的数据卡片即可填充剩余高度。
    */
   &--fixed {
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
 
     .page-container__body {
       display: flex;

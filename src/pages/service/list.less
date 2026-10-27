@@ -242,28 +242,6 @@
   }
 }
 
-@media (max-width: 1200px) {
-  .service-pool {
-    &__metrics,
-    &__main {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    .pool-category {
-      grid-column: 1 / -1;
-    }
-  }
-}
-
-@media (max-width: 720px) {
-  .service-pool {
-    &__metrics,
-    &__main {
-      grid-template-columns: 1fr;
-    }
-  }
-}
-
 /* PageContainer fixed 模式：主从区撑满剩余高度，分类侧栏 / 服务表各自内部滚动 */
 .page-container--fixed .service-pool {
   .service-pool__main {
