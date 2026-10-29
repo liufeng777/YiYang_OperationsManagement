@@ -28,9 +28,6 @@ export const ORDER_STATUS_TEXT: Record<number, string> = {
   8: '退款待审批'
 }
 
-/** 分 → 元 */
-const fenToYuan = (fen?: number) => (fen ?? 0) / 100
-
 interface OrderFilters {
   order_no: string
   institution_id: number | null
@@ -247,7 +244,7 @@ export default function OrderList() {
         title: '实付金额',
         key: 'paid_amount',
         width: 120,
-        render: (_, record) => formatAmount(fenToYuan(record.paid_amount)),
+        render: (_, record) => formatAmount((record.paid_amount)),
       },
       {
         title: '订单状态',

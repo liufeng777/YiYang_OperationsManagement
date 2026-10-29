@@ -32,8 +32,6 @@ const refundChannelOptions = ['原路退回', '微信', '支付宝', '银行卡'
   value,
 }))
 
-/** 分 → 元 */
-const fenToYuan = (fen?: number) => (fen ?? 0) / 100
 
 export default function RefundApproveModal({ refund, open, onClose, onSuccess }: RefundApproveModalProps) {
   const { message } = App.useApp()
@@ -47,7 +45,7 @@ export default function RefundApproveModal({ refund, open, onClose, onSuccess }:
     if (!open || !refund) return
     form.setFieldsValue({
       approve: true,
-      refund_amount: fenToYuan(refund.amount),
+      refund_amount: refund.amount,
       refund_channel: undefined,
       opinion: undefined,
     })
@@ -117,7 +115,7 @@ export default function RefundApproveModal({ refund, open, onClose, onSuccess }:
               name="refund_amount"
               label="实际退款金额（元）"
               rules={[{ required: true, message: '请输入实际退款金额' }]}
-              extra={`申请退款金额 ${fenToYuan(refund?.amount).toFixed(2)} 元`}
+              extra={`申请退款金额 ${refund?.amount.toFixed(2)} 元`}
             >
               <InputNumber
                 min={0}

@@ -58,6 +58,7 @@ interface ServiceFormValues {
   publishStatus: 'draft' | 'on'
   openAfterSave: boolean
   consumables_desc: string
+  target_crowd: string
 }
 
 /** 服务过程步骤：序列化为 JSON 字符串存入 ServiceItem.service_process，患者端按顺序展示 */
@@ -239,6 +240,7 @@ export default function ServiceEditorPage() {
       name_en: detail?.name_en ?? '',
       description, // 富文本 JSON 字符串
       duration: values.duration,
+      target_crowd: values.target_crowd,
       // swagger 字段名为 is_consumable_supported（boolean）
       is_consumable_supported: values.consumable === '1',
       consumables_desc: values.consumables_desc,

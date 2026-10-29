@@ -33,8 +33,6 @@ const APPROVE_RESULT_TEXT: Record<number, string> = {
   2: '拒绝',
 }
 
-/** 分 → 元 */
-const fenToYuan = (fen?: number) => (fen ?? 0) / 100
 
 type RefundApproval = RefundItem['approvals'][number]
 
@@ -290,7 +288,7 @@ export default function RefundDetail() {
             <div className="summary-item">
               <span>退款金额</span>
               <strong className="amount-highlight amount-highlight--large">
-                {formatAmount(fenToYuan(refund?.amount))}
+                {formatAmount((refund?.amount))}
               </strong>
             </div>
             <div className="summary-item">
@@ -352,7 +350,7 @@ export default function RefundDetail() {
                         </em>
                         <strong>{log.channel || '—'}</strong>
                         <strong className="amount-highlight">
-                          {formatAmount(fenToYuan(log.amount))}
+                          {formatAmount((log.amount))}
                         </strong>
                       </div>
                       <div className="channel-log__grid">

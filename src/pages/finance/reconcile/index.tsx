@@ -32,9 +32,6 @@ const RECONCILE_TYPE_TEXT: Record<number, string> = {
   3: '月对账',
 }
 
-/** 分 → 元 */
-const fenToYuan = (fen?: number) => (fen ?? 0) / 100
-
 const PAGE_SIZE = 10
 
 interface ReconcileFilters {
@@ -171,14 +168,14 @@ export default function ReconcileList() {
       key: 'platform_amount',
       width: 120,
       align: 'right',
-      render: (_, record) => formatAmount(fenToYuan(record.platform_amount)),
+      render: (_, record) => formatAmount((record.platform_amount)),
     },
     {
       title: '渠道金额',
       key: 'channel_amount',
       width: 120,
       align: 'right',
-      render: (_, record) => formatAmount(fenToYuan(record.channel_amount)),
+      render: (_, record) => formatAmount((record.channel_amount)),
     },
     {
       title: '差异金额',
@@ -187,7 +184,7 @@ export default function ReconcileList() {
       align: 'right',
       render: (_, record) => (
         <span className={record.diff_amount ? 'diff-amount' : ''}>
-          {formatAmount(fenToYuan(record.diff_amount))}
+          {formatAmount((record.diff_amount))}
         </span>
       ),
     },

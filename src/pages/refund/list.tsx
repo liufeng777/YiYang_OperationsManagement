@@ -35,8 +35,6 @@ export const REFUND_TYPE_TEXT: Record<number, string> = {
   3: '其他',
 }
 
-/** 分 → 元 */
-const fenToYuan = (fen?: number) => (fen ?? 0) / 100
 
 interface RefundFilters {
   keyword: string
@@ -264,7 +262,7 @@ export default function RefundList() {
         title: '退款金额',
         key: 'amount',
         width: 120,
-        render: (_, record) => formatAmount(fenToYuan(record.amount)),
+        render: (_, record) => formatAmount((record.amount)),
       },
       {
         title: '退款状态',

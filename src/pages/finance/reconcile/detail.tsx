@@ -38,9 +38,6 @@ const MATCH_STATUS_TEXT: Record<number, string> = {
   4: '仅平台有',
 }
 
-/** 分 → 元 */
-const fenToYuan = (fen?: number) => (fen ?? 0) / 100
-
 const PAGE_SIZE = 10
 
 export default function ReconcileDetail() {
@@ -153,19 +150,19 @@ export default function ReconcileDetail() {
       {
         key: 'platform_amount',
         label: '平台金额',
-        children: <strong>{formatAmount(fenToYuan(detail?.platform_amount))}</strong>,
+        children: <strong>{formatAmount(detail?.platform_amount)}</strong>,
       },
       {
         key: 'channel_amount',
         label: '渠道金额',
-        children: <strong>{formatAmount(fenToYuan(detail?.channel_amount))}</strong>,
+        children: <strong>{formatAmount(detail?.channel_amount)}</strong>,
       },
       {
         key: 'diff_amount',
         label: '差异金额',
         children: (
           <strong className={detail?.diff_amount ? 'diff-amount' : ''}>
-            {formatAmount(fenToYuan(detail?.diff_amount))}
+            {formatAmount(detail?.diff_amount)}
           </strong>
         ),
       },
@@ -201,14 +198,14 @@ export default function ReconcileDetail() {
       key: 'platform_amount',
       width: 110,
       align: 'right',
-      render: (_, record) => formatAmount(fenToYuan(record.platform_amount)),
+      render: (_, record) => formatAmount(record.platform_amount),
     },
     {
       title: '渠道金额',
       key: 'channel_amount',
       width: 110,
       align: 'right',
-      render: (_, record) => formatAmount(fenToYuan(record.channel_amount)),
+      render: (_, record) => formatAmount(record.channel_amount),
     },
     {
       title: '差额',
@@ -217,7 +214,7 @@ export default function ReconcileDetail() {
       align: 'right',
       render: (_, record) => {
         const gap = (record.platform_amount ?? 0) - (record.channel_amount ?? 0)
-        return <span className={gap ? 'diff-amount' : ''}>{formatAmount(fenToYuan(gap))}</span>
+        return <span className={gap ? 'diff-amount' : ''}>{formatAmount((gap))}</span>
       },
     },
     {
@@ -276,16 +273,16 @@ export default function ReconcileDetail() {
             </div>
             <div className="summary-item">
               <span>平台金额</span>
-              <strong>{formatAmount(fenToYuan(detail?.platform_amount))}</strong>
+              <strong>{formatAmount(detail?.platform_amount)}</strong>
             </div>
             <div className="summary-item">
               <span>渠道金额</span>
-              <strong>{formatAmount(fenToYuan(detail?.channel_amount))}</strong>
+              <strong>{formatAmount(detail?.channel_amount)}</strong>
             </div>
             <div className="summary-item">
               <span>差异金额</span>
               <strong className={detail?.diff_amount ? 'diff-amount' : ''}>
-                {formatAmount(fenToYuan(detail?.diff_amount))}
+                {formatAmount(detail?.diff_amount)}
               </strong>
             </div>
           </Card>

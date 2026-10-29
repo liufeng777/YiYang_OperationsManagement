@@ -25,9 +25,6 @@ const ORDER_STATUS_TEXT: Record<number, string> = {
   6: '已退款',
 }
 
-/** 分 → 元 */
-const fenToYuan = (fen?: number) => (fen ?? 0) / 100
-
 export default function OrderDetailPage() {
   const navigate = useNavigate()
   const params = useParams<{ id: string }>()
@@ -119,16 +116,16 @@ export default function OrderDetailPage() {
         label: '服务次数',
         children: order ? `${order.served_count ?? 0} / ${order.service_count ?? 0} 次` : '—',
       },
-      { key: 'total_amount', label: '原价', children: formatAmount(fenToYuan(order?.total_amount)) },
+      { key: 'total_amount', label: '原价', children: formatAmount((order?.total_amount)) },
       {
         key: 'discount_amount',
         label: '优惠金额',
-        children: formatAmount(fenToYuan(order?.discount_amount)),
+        children: formatAmount((order?.discount_amount)),
       },
       {
         key: 'paid_amount',
         label: '实付金额',
-        children: <strong>{formatAmount(fenToYuan(order?.paid_amount))}</strong>,
+        children: <strong>{formatAmount((order?.paid_amount))}</strong>,
       },
       {
         key: 'remark',
@@ -170,7 +167,7 @@ export default function OrderDetailPage() {
             </div>
             <div className="summary-item">
               <span>实付金额</span>
-              <strong>{formatAmount(fenToYuan(order?.paid_amount))}</strong>
+              <strong>{formatAmount((order?.paid_amount))}</strong>
             </div>
             <div className="summary-item">
               <span>服务次数</span>

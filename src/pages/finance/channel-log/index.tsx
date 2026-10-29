@@ -22,9 +22,6 @@ const LOG_STATUS_TEXT: Record<number, string> = {
   3: '交易失败',
 }
 
-/** 分 → 元 */
-const fenToYuan = (fen?: number) => (fen ?? 0) / 100
-
 const PAGE_SIZE = 10
 
 interface ChannelLogFilters {
@@ -150,14 +147,14 @@ export default function ChannelLogList() {
       key: 'amount',
       width: 120,
       align: 'right',
-      render: (_, record) => formatAmount(fenToYuan(record.amount)),
+      render: (_, record) => formatAmount(record.amount),
     },
     {
       title: '手续费',
       key: 'transaction_fee',
       width: 100,
       align: 'right',
-      render: (_, record) => formatAmount(fenToYuan(record.transaction_fee)),
+      render: (_, record) => formatAmount(record.transaction_fee),
     },
     {
       title: '状态',
