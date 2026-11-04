@@ -8,16 +8,17 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Key } from 'react'
-import { App, Button, Card, Input, Select } from 'antd'
+import { App, Button, Card, Input, Modal, Select } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import { cmsApi } from '@/api'
-import type { CmsCategoryDTO, CmsContentDTO, CmsPublishStatus } from '@/api/modules/cms'
+import type { CmsCategoryDTO, CmsContentDTO } from '@/api/modules/cms'
 import { formatDateTime } from '@/utils'
-import './article.less'
+import ArticlePhonePreview from './ArticlePhonePreview'
+import './index.less'
 
 /** 发布状态：1-草稿 2-已发布 3-已下线 */
 const statusText: Record<number, string> = {
@@ -33,20 +34,19 @@ const statusClass: Record<number, string> = {
   3: 'offline',
 }
 
-const statusTabs: Array<{ key: 'all' | CmsPublishStatus; label: string }> = [
-  { key: 'all', label: '全部内容' },
-  { key: 2, label: '已发布' },
-  { key: 1, label: '草稿' },
-  { key: 3, label: '已下架' },
+const statusOptions: Array<{ value: number; label: string }> = [
+  { value: 2, label: '已发布' },
+  { value: 1, label: '草稿' },
+  { value: 3, label: '已下架' },
 ]
 
 interface ArticleFilters {
   keyword: string
   categoryId: number | null
-  status: 'all' | CmsPublishStatus
+  status: number | null
 }
 
-const emptyFilters: ArticleFilters = { keyword: '', categoryId: null, status: 'all' }
+const emptyFilters: ArticleFilters = { keyword: '', categoryId: null, status: null }
 
 const PAGE_SIZE = 10
 
@@ -59,9 +59,10 @@ export default function ArticleList() {
   const [categories, setCategories] = useState<CmsCategoryDTO[]>([])
   const [keyword, setKeyword] = useState('')
   const [categoryId, setCategoryId] = useState<number | null>(null)
-  const [tab, setTab] = useState<'all' | CmsPublishStatus>('all')
+  const [status, setStatus] = useState<number | null>(null)
   const [applied, setApplied] = useState<ArticleFilters>(emptyFilters)
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([])
+  const [previewRecord, setPreviewRecord] = useState<CmsContentDTO | null>(null)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
 
@@ -81,7 +82,7 @@ export default function ArticleList() {
           page_size: size,
           keyword: filters.keyword || undefined,
           category_id: filters.categoryId ?? undefined,
-          status: filters.status === 'all' ? undefined : filters.status,
+          status: filters.status ?? undefined,
         })
         setData(res.list ?? [])
         setTotal(res.total ?? 0)
@@ -118,7 +119,7 @@ export default function ArticleList() {
   }, [])
 
   const applyFilters = () => {
-    const next: ArticleFilters = { keyword: keyword.trim(), categoryId, status: tab }
+    const next: ArticleFilters = { keyword: keyword.trim(), categoryId, status }
     setApplied(next)
     setPage(1)
     void fetchList(1, next, pageSize)
@@ -127,19 +128,10 @@ export default function ArticleList() {
   const handleReset = () => {
     setKeyword('')
     setCategoryId(null)
-    setTab('all')
+    setStatus(null)
     setApplied(emptyFilters)
     setPage(1)
     void fetchList(1, emptyFilters, pageSize)
-  }
-
-  /** 状态 Tab：与筛选条共用一个状态维度，切换即查询 */
-  const changeTab = (key: 'all' | CmsPublishStatus) => {
-    setTab(key)
-    const next: ArticleFilters = { ...applied, status: key }
-    setApplied(next)
-    setPage(1)
-    void fetchList(1, next, pageSize)
   }
 
   /** 发布 / 下架 / 重新发布 */
@@ -200,6 +192,7 @@ export default function ArticleList() {
       {
         title: '内容标题',
         key: 'title',
+        ellipsis: true,
         render: (_, record) => (
           <div className="article-title">
             <i>{record.title.slice(0, 1)}</i>
@@ -211,29 +204,37 @@ export default function ArticleList() {
         title: '分类',
         dataIndex: 'category_id',
         key: 'category_id',
-        width: 110,
         render: (value: number) => categoryMap.get(value) ?? '—',
       },
       {
-        title: '来源 / 作者',
+        title: '作者 / 来源',
         key: 'source',
-        width: 150,
-        render: (_, record) =>
-          [record.source, record.author_name].filter(Boolean).join(' / ') || '—',
+        render: (_, record) => (
+          <div className='table-cell'>
+            <strong>{record.author}</strong>
+            <span>{record.source}</span>
+          </div>
+        )
+      },
+      {
+        title: '浏览量',
+        key: 'view_count',
+        dataIndex: 'view_count',
+        width: 100,
       },
       {
         title: '发布时间',
-        dataIndex: 'publish_at',
-        key: 'publish_at',
-        width: 160,
+        dataIndex: 'published_at',
+        key: 'published_at',
+        width: 150,
         render: (value: number | null) => (value ? formatDateTime(value * 1000) : '—'),
       },
       {
         title: '发布状态',
-        dataIndex: 'publish_status',
-        key: 'publish_status',
+        dataIndex: 'status',
+        key: 'status',
         width: 100,
-        render: (value: CmsPublishStatus) => (
+        render: (value: number) => (
           <span className={`article-status article-status--${statusClass[value] ?? 'draft'}`}>
             {statusText[value] ?? value}
           </span>
@@ -242,7 +243,7 @@ export default function ArticleList() {
       {
         title: '操作',
         key: 'action',
-        width: 210,
+        width: 200,
         render: (_, record) => (
           <div className="article-actions">
             <Button
@@ -252,20 +253,20 @@ export default function ArticleList() {
             >
               编辑
             </Button>
-            <Button type="link" size="small" onClick={() => message.info('预览开发中')}>
+            <Button type="link" size="small" onClick={() => setPreviewRecord(record)}>
               预览
             </Button>
-            {record.publish_status === 2 && (
+            {record.status === 2 && (
               <Button type="link" size="small" onClick={() => changePublishStatus(record, 'offline')}>
                 下架
               </Button>
             )}
-            {record.publish_status === 1 && (
+            {record.status === 1 && (
               <Button type="link" size="small" onClick={() => changePublishStatus(record, 'publish')}>
                 发布
               </Button>
             )}
-            {record.publish_status === 3 && (
+            {record.status === 3 && (
               <Button type="link" size="small" onClick={() => changePublishStatus(record, 'publish')}>
                 重新发布
               </Button>
@@ -297,39 +298,32 @@ export default function ArticleList() {
       }
     >
       <div className="article-list">
-        <Card variant="borderless" className="article-list__filter">
-          <div className="filter-row">
-            <Input
-              allowClear
-              placeholder="请输入标题"
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-              onPressEnter={applyFilters}
-            />
-            <Select
-              value={categoryId}
-              onChange={(value) => setCategoryId(value ?? null)}
-              allowClear
-              placeholder="全部分类"
-              options={categories.map((item) => ({ label: item.name, value: item.id }))}
-            />
-            <Button onClick={handleReset}>重置</Button>
-            <Button type="primary" onClick={applyFilters}>
-              查询
-            </Button>
-          </div>
-          <div className="filter-tabs">
-            {statusTabs.map((item) => (
-              <button
-                type="button"
-                key={item.key}
-                className={tab === item.key ? 'is-active' : ''}
-                onClick={() => changeTab(item.key)}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+        <Card variant="borderless" className="filter-bar">
+          <Input
+            allowClear
+            placeholder="请输入标题"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
+            onPressEnter={applyFilters}
+          />
+          <Select
+            value={categoryId}
+            onChange={(value) => setCategoryId(value ?? null)}
+            allowClear
+            placeholder="全部分类"
+            options={categories.map((item) => ({ label: item.name, value: item.id }))}
+          />
+          <Select
+            value={status}
+            onChange={(value) => setStatus(value ?? null)}
+            allowClear
+            placeholder="全部状态"
+            options={statusOptions}
+          />
+          <Button onClick={handleReset}>重置</Button>
+          <Button type="primary" onClick={applyFilters}>
+            查询
+          </Button>
         </Card>
 
         <Card variant="borderless" className="list-card list-card--fill">
@@ -339,10 +333,10 @@ export default function ArticleList() {
               <span className="list-card__header__tips">共 {total} 篇</span>
             </div>
             <div className="article-table__batch">
-              <Button type="link" size="small" onClick={() => handleBatch('publish')}>
+              <Button type="link" disabled={!selectedRowKeys.length} size="small" onClick={() => handleBatch('publish')}>
                 批量发布
               </Button>
-              <Button type="link" size="small" onClick={() => handleBatch('offline')}>
+              <Button type="link" disabled={!selectedRowKeys.length} size="small" onClick={() => handleBatch('offline')}>
                 批量下架
               </Button>
             </div>
@@ -371,6 +365,26 @@ export default function ArticleList() {
           </div>
         </Card>
       </div>
+
+      <Modal
+        open={!!previewRecord}
+        width={440}
+        centered
+        footer={null}
+        title="患者端手机预览"
+        className="article-preview-modal"
+        onCancel={() => setPreviewRecord(null)}
+        destroyOnHidden
+      >
+        {previewRecord && (
+          <ArticlePhonePreview
+            article={{
+              ...previewRecord,
+              categoryName: categoryMap.get(previewRecord.category_id),
+            }}
+          />
+        )}
+      </Modal>
     </PageContainer>
   )
 }

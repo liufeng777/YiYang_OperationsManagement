@@ -1,0 +1,173 @@
+.article-edit {
+  height: 100%;
+  overflow: hidden;
+  .article-container {
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+    gap: 20px;
+  }
+  &__form,
+  &__side {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-md;
+  }
+
+  &__form {
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  &__side {
+    overflow: hidden;
+    width: 340px;
+    .preview-card {
+      flex: 1;
+      overflow: hidden;
+      .ant-card-body {
+        height: 100%;
+      }
+      &__header {
+        align-items: center !important;
+        justify-content: space-between;
+  
+        > div {
+          display: flex;
+          flex-direction: column;
+          gap: @spacing-2xs;
+        }
+  
+        .ant-btn {
+          flex-shrink: 0;
+          padding-inline: 0;
+        }
+      }
+      .article-phone {
+        height: calc(100% - 60px);
+        &__screen {
+          height: 100%;
+          overflow: auto;
+        }
+      }
+    }
+  }
+
+  &__loading {
+    overflow-y: auto;
+  }
+
+  .edit-card {
+    flex-shrink: 0;
+    .card-surface();
+
+    &__header {
+      display: flex;
+      align-items: center;
+      gap: @spacing-sm;
+      margin-bottom: @spacing-sm;
+      h3 {
+        margin: 0;
+        .text-title-card();
+      }
+
+      span {
+        .text-auxiliary();
+      }
+    }
+
+    .ant-form-item {
+      margin-bottom: @spacing-md;
+
+      .ant-form-item-label {
+        padding-bottom: @spacing-xs;
+
+        > label {
+          height: auto;
+          .text-label();
+          color: @color-text-primary;
+        }
+      }
+    }
+
+    .form-grid {
+      margin-bottom: @spacing-md;
+
+      .ant-form-item {
+        margin-bottom: 0;
+      }
+    }
+
+    > .ant-card-body > :last-child,
+    .form-grid:last-child,
+    .ant-form-item:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__cover-field {
+    margin-bottom: 0 !important;
+  }
+
+  .cover-upload {
+    display: flex;
+    align-items: center;
+    gap: @spacing-md;
+
+    &__image,
+    &__placeholder {
+      flex-shrink: 0;
+      width: 200px;
+      height: 112px;
+      border-radius: @radius-sm;
+    }
+
+    &__image {
+      object-fit: cover;
+      border: 1px solid @color-border;
+    }
+
+    &__placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: @color-text-secondary;
+      background: @color-bg-page;
+      border: 1px dashed @color-border;
+      .text-auxiliary();
+    }
+
+    &__action {
+      p {
+        max-width: 280px;
+        margin: @spacing-xs 0 0;
+        .text-auxiliary();
+      }
+    }
+  }
+
+  .publish-card {
+    .ant-form-item {
+      margin-bottom: @spacing-sm;
+    }
+
+    .ant-select {
+      width: 100%;
+    }
+  }
+
+  .publish-note {
+    margin: 0 0 @spacing-md;
+    padding: @spacing-sm;
+    background: @color-bg-page;
+    border-radius: @radius-sm;
+    .text-auxiliary();
+  }
+
+  .publish-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: @spacing-sm;
+  }
+}

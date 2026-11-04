@@ -413,7 +413,7 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
               ]}
             />
           </div>
-          <div className="service-drawer__categories">
+          {/* <div className="service-drawer__categories">
             <button
               type="button"
               className={poolCategory === 'all' ? 'is-active' : ''}
@@ -431,7 +431,7 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
                 {item.name}
               </button>
             ))}
-          </div>
+          </div> */}
           <Table<ServiceItem>
             rowKey="id"
             size="small"

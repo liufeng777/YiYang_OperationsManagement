@@ -6,7 +6,7 @@ import dayjs from 'dayjs'
 /** 格式化日期时间 */
 export function formatDateTime(
   value?: string | number | Date,
-  format = 'YYYY-MM-DD HH:mm:ss',
+  format = 'YYYY-MM-DD HH:mm',
 ) {
   if (!value) return '-'
   return dayjs(value).format(format)

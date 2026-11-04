@@ -210,7 +210,7 @@ export const routes: RouteConfig[] = [
       {
         path: 'article',
         meta: { title: '科普内容' },
-        component: lazy(() => import('@/pages/content/article')),
+        component: lazy(() => import('@/pages/content/Article')),
       },
       // {
       //   path: 'staff',
@@ -220,7 +220,7 @@ export const routes: RouteConfig[] = [
       {
         path: 'article/edit/:id',
         meta: { title: '新建科普内容', hideInMenu: true },
-        component: lazy(() => import('@/pages/content/article-edit')),
+        component: lazy(() => import('@/pages/content/Article/Edit')),
       },
     ],
   },

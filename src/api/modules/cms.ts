@@ -11,9 +11,6 @@ import type { ApiPageParams, ApiPageResult, BatchResult, CommonStatus } from '@/
 /* §10.1 内容管理（权限 cms:manage）                                     */
 /* ------------------------------------------------------------------ */
 
-/** 发布状态：1-草稿 2-已发布 3-已下线 */
-export type CmsPublishStatus = 1 | 2 | 3
-
 /** 内容 DTO（swagger admin.ReqCreateCmsContent 出参同构；操作人由服务端会话注入，前端不传） */
 export interface CmsContentDTO {
   id: number
@@ -21,19 +18,20 @@ export interface CmsContentDTO {
   title: string
   /** 摘要 */
   summary: string
-  cover_url: string
+  cover: string
   /** 正文（JSON） */
   body: string
-  tags: string[]
-  author_name: string
+  tags: string
+  author: string
   source: string
   /** 投放端：all / user-app / staff-app / admin */
   platform: string
-  publish_status: CmsPublishStatus
+  status: number
   /** 计划发布时间 UTC 秒，NULL=立即发布 */
-  publish_at: number | null
+  published_at: number | null
   /** 排序（升序，0-置顶） */
   sort: number
+  view_count: number
 }
 
 /** 内容新增 / 编辑入参（swagger admin.ReqCreateCmsContent：仅 title 必填） */
@@ -41,7 +39,7 @@ export type CmsContentSaveBody = Partial<Omit<CmsContentDTO, 'id'>> & { title: s
 
 /** 内容列表 GET /api/admin/cms/contents（swagger：page / page_size / category_id / status / keyword） */
 export function getCmsContents(
-  params?: ApiPageParams & { category_id?: number; status?: CmsPublishStatus; keyword?: string },
+  params?: ApiPageParams & { category_id?: number; status?: number; keyword?: string },
 ) {
   return http.get<ApiPageResult<CmsContentDTO>>('/admin/cms/contents', { ...params })
 }

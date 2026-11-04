@@ -2,32 +2,6 @@
   /* 筛选行复用公共 .filter-row，列表卡片复用 .list-card（src/styles/list-page.less） */
   &__filter {
     .card-surface();
-
-    > .ant-card-body {
-      padding: @spacing-md @spacing-md 0;
-    }
-
-    .filter-tabs {
-      display: flex;
-      gap: @spacing-xl;
-      margin-top: @spacing-sm;
-
-      button {
-        padding: @spacing-sm 0;
-        color: @color-text-secondary;
-        background: transparent;
-        border: 0;
-        border-bottom: 2px solid transparent;
-        cursor: pointer;
-        .text-body();
-
-        &.is-active {
-          color: @color-primary;
-          border-bottom-color: @color-primary;
-          font-weight: @font-weight-body-medium;
-        }
-      }
-    }
   }
 
   .article-title {
