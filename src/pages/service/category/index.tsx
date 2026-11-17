@@ -29,7 +29,11 @@ export default function ServiceCategoryPage() {
     setLoading(true)
     try {
       const res = await serviceApi.getServiceCategories({ page: 1, page_size: 100 })
-      setData(res.list ?? [])
+      setData(
+        [...(res.list ?? [])].sort(
+          (left, right) => (left.sort_order ?? 0) - (right.sort_order ?? 0),
+        ),
+      )
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
       setData([])
@@ -60,7 +64,8 @@ export default function ServiceCategoryPage() {
       code: values.code,
       brief: values.brief,
       brief_en: values.brief_en ?? '',
-      sort_order: values.sort_order ?? 0,
+      // 排序仅通过列表操作维护；新增默认 0，编辑保留原值
+      sort_order: editingCategory?.sort_order ?? 0,
       status: values.status as CommonStatus,
     }
     try {

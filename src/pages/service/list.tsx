@@ -84,6 +84,7 @@ export default function ServicePoolList() {
   const [pageSize, setPageSize] = useState(10)
   /** 服务分类（来自后端 /admin/service-categories） */
   const [catList, setCatList] = useState<ServiceCategory[]>([])
+  const [movingCategoryId, setMovingCategoryId] = useState<number | null>(null)
   /** 各分类下的服务数量：用于「删除分类」前置校验（有服务则置灰） */
   const [categoryServiceCount, setCategoryServiceCount] = useState<Map<number, number>>(new Map())
   const [categoryEditorOpen, setCategoryEditorOpen] = useState(false)
@@ -120,7 +121,11 @@ export default function ServicePoolList() {
   const fetchCategories = useCallback(async () => {
     try {
       const res = await serviceApi.getServiceCategories({ page: 1, page_size: 100 })
-      setCatList(res.list ?? [])
+      setCatList(
+        [...(res.list ?? [])].sort(
+          (left, right) => (left.sort_order ?? 0) - (right.sort_order ?? 0),
+        ),
+      )
     } catch {
       setCatList([])
     }
@@ -211,9 +216,11 @@ export default function ServicePoolList() {
       code: values.code,
       brief: values.brief,
       brief_en: values.brief_en ?? '',
-      sort_order: values.sort_order,
+      // 新增默认排最前；编辑时保留列表操作设置的排序值
+      sort_order: editingCategory?.sort_order ?? 0,
       status: values.status as CommonStatus,
     }
+    console.log('payload', payload)
     try {
       if (editingCategory) {
         await serviceApi.updateServiceCategory(editingCategory.id, payload)
@@ -282,8 +289,59 @@ export default function ServicePoolList() {
     })
   }
 
-  /** 分类操作菜单：编辑 / 启用或停用 / 删除（有服务时删除置灰并 Tooltip 说明） */
-  const buildCategoryMenu = (item: ServiceCategory): MenuProps => {
+  /** 左侧分类排序：按目标顺序重新编号，并调用分类编辑接口保存 */
+  type CategoryMoveAction = 'up' | 'down' | 'top' | 'bottom'
+
+  const handleCategoryMove = useCallback(
+    async (record: ServiceCategory, action: CategoryMoveAction) => {
+      const currentIndex = catList.findIndex((item) => item.id === record.id)
+      if (currentIndex < 0) return
+
+      const targetIndex =
+        action === 'up'
+          ? currentIndex - 1
+          : action === 'down'
+            ? currentIndex + 1
+            : action === 'top'
+              ? 0
+              : catList.length - 1
+      if (targetIndex < 0 || targetIndex >= catList.length || targetIndex === currentIndex) return
+
+      const nextList = [...catList]
+      const [moved] = nextList.splice(currentIndex, 1)
+      nextList.splice(targetIndex, 0, moved)
+      const changedRows = nextList
+        .map((item, index) => ({ item, sortOrder: index }))
+        .filter(({ item, sortOrder }) => (item.sort_order ?? 0) !== sortOrder)
+
+      setMovingCategoryId(record.id)
+      try {
+        await Promise.all(
+          changedRows.map(({ item, sortOrder }) =>
+            serviceApi.updateServiceCategory(item.id, {
+              name: item.name,
+              name_en: item.name_en ?? '',
+              code: item.code,
+              brief: item.brief,
+              brief_en: item.brief_en ?? '',
+              sort_order: sortOrder,
+              status: item.status as CommonStatus,
+            }),
+          ),
+        )
+        message.success('分类排序已更新')
+      } catch {
+        /* 错误提示由 request 拦截器统一处理；失败后仍刷新，避免展示过期顺序 */
+      } finally {
+        await fetchCategories()
+        setMovingCategoryId(null)
+      }
+    },
+    [catList, fetchCategories, message],
+  )
+
+  /** 分类操作菜单：编辑 / 启停 / 移动位置 / 删除 */
+  const buildCategoryMenu = (item: ServiceCategory, index: number): MenuProps => {
     const serviceCount = categoryServiceCount.get(item.id) ?? item.service_count ?? 0
     const deleteDisabled = serviceCount > 0
     return {
@@ -307,6 +365,37 @@ export default function ServicePoolList() {
               label: '停用',
               onClick: () => confirmCategoryStatus(item, 9),
             },
+        {
+          key: 'move',
+          label: '移动位置',
+          disabled: catList.length < 2,
+          children: [
+            {
+              key: 'up',
+              label: '上移',
+              disabled: index === 0,
+              onClick: () => void handleCategoryMove(item, 'up'),
+            },
+            {
+              key: 'down',
+              label: '下移',
+              disabled: index === catList.length - 1,
+              onClick: () => void handleCategoryMove(item, 'down'),
+            },
+            {
+              key: 'top',
+              label: '置顶',
+              disabled: index === 0,
+              onClick: () => void handleCategoryMove(item, 'top'),
+            },
+            {
+              key: 'bottom',
+              label: '置底',
+              disabled: index === catList.length - 1,
+              onClick: () => void handleCategoryMove(item, 'bottom'),
+            },
+          ],
+        },
         { type: 'divider' },
         {
           key: 'delete',
@@ -599,7 +688,7 @@ export default function ServicePoolList() {
               >
                 <span>全部服务</span>
               </button>
-              {catList.map((item) => (
+              {catList.map((item, index) => (
                 <div
                   key={item.id}
                   className={`pool-category__row${category === item.id ? ' is-active' : ''}${item.status === 9 ? ' is-disabled' : ''}`}
@@ -610,14 +699,17 @@ export default function ServicePoolList() {
                     <span className='name-code'>{item.code} {item.status === 9 && <Tag style={{fontSize: 12, marginLeft: 4, marginRight: 0}}>已停用</Tag>}</span>
                   </span>
                   <Dropdown
-                    menu={buildCategoryMenu(item)}
+                    menu={buildCategoryMenu(item, index)}
                     trigger={['click']}
+                    disabled={movingCategoryId !== null}
                     // placement="bottomRight"
                   >
                     <Button
                       className="pool-category__more"
                       type="text"
+                      loading={movingCategoryId === item.id}
                       icon={<EllipsisOutlined />}
+                      onClick={(event) => event.stopPropagation()}
                     />
                   </Dropdown>
                 </div>
@@ -672,7 +764,10 @@ export default function ServicePoolList() {
         open={categoryEditorOpen}
         category={editingCategory}
         onClose={() => setCategoryEditorOpen(false)}
-        onSaved={handleCategorySaved}
+        onSaved={(values) => {
+          console.log('111111111', values)
+          handleCategorySaved(values)
+        }}
       />
     </PageContainer>
   )
