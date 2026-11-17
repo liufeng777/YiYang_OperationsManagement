@@ -323,6 +323,7 @@ export default function ActivityCreate() {
           type: '社区活动',
           feeType: 'free',
         }}
+        style={{height: '100%'}}
       >
         <div className="activity-create">
           <div className="activity-create__form">

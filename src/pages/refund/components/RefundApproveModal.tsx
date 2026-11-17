@@ -43,6 +43,7 @@ export default function RefundApproveModal({ refund, open, onClose, onSuccess }:
   /** 打开弹窗时按退款单重置表单：默认通过、金额默认申请全额 */
   useEffect(() => {
     if (!open || !refund) return
+    form.resetFields()
     form.setFieldsValue({
       approve: true,
       refund_amount: refund.amount,
@@ -92,9 +93,15 @@ export default function RefundApproveModal({ refund, open, onClose, onSuccess }:
       onCancel={handleClose}
       confirmLoading={submitting}
       destroyOnHidden
+      forceRender
       width={480}
     >
-      <Form<ApproveFormValues> form={form} layout="vertical" preserve={false}>
+      <Form<ApproveFormValues>
+        form={form}
+        layout="vertical"
+        preserve={false}
+        initialValues={{ approve: true, refund_amount: refund?.amount }}
+      >
         <Form.Item
           name="approve"
           label="审批结果"
@@ -115,7 +122,7 @@ export default function RefundApproveModal({ refund, open, onClose, onSuccess }:
               name="refund_amount"
               label="实际退款金额（元）"
               rules={[{ required: true, message: '请输入实际退款金额' }]}
-              extra={`申请退款金额 ${refund?.amount.toFixed(2)} 元`}
+              extra={`申请退款金额 ${refund?.amount} 元`}
             >
               <InputNumber
                 min={0}

@@ -192,13 +192,8 @@ export default function ArticleList() {
       {
         title: '内容标题',
         key: 'title',
+        dataIndex: 'title',
         ellipsis: true,
-        render: (_, record) => (
-          <div className="article-title">
-            <i>{record.title.slice(0, 1)}</i>
-            <strong>{record.title}</strong>
-          </div>
-        ),
       },
       {
         title: '分类',

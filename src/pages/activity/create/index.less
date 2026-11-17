@@ -1,4 +1,5 @@
 .activity-create {
+  height: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: @spacing-md;
@@ -8,6 +9,8 @@
     display: flex;
     flex-direction: column;
     gap: @spacing-md;
+    height: 100%;
+    overflow: auto;
   }
 
   .create-card {

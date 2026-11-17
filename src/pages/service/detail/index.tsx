@@ -400,6 +400,7 @@ export default function ServiceEditorPage() {
       <Form<ServiceFormValues>
         form={form}
         layout="vertical"
+        style={{height: '100%'}}
       >
         <div className="service-editor">
           <div className="service-editor__form">

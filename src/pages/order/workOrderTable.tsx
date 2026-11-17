@@ -121,6 +121,7 @@ export function WorkOrderTable({ list, loading = false }: WorkOrderTableProps) {
         columns={workOrderColumns}
         dataSource={list}
         pagination={false}
+        scroll={{y: '100%'}}
       />
     </Card>
   )
