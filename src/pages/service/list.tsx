@@ -220,7 +220,6 @@ export default function ServicePoolList() {
       sort_order: editingCategory?.sort_order ?? 0,
       status: values.status as CommonStatus,
     }
-    console.log('payload', payload)
     try {
       if (editingCategory) {
         await serviceApi.updateServiceCategory(editingCategory.id, payload)
@@ -696,7 +695,7 @@ export default function ServicePoolList() {
                 >
                   <span className="pool-category__name">
                     {item.brief ? <Tooltip title={item.brief}><span className='name-value'>{item.name}</span></Tooltip> : <span className='name-value'>{item.name}</span>}
-                    <span className='name-code'>{item.code} {item.status === 9 && <Tag style={{fontSize: 12, marginLeft: 4, marginRight: 0}}>已停用</Tag>}</span>
+                    {item.status === 9 && <Tag className="pool-category__disabled">已停用</Tag>}
                   </span>
                   <Dropdown
                     menu={buildCategoryMenu(item, index)}

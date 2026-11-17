@@ -311,13 +311,10 @@
         min-width: 0;
         overflow-wrap: anywhere;
       }
-      .name-code {
-        font-size: 12px;
-        color: @color-text-secondary;
-      }
 
       .pool-category__disabled {
         flex: none; /* 标识不参与压缩 */
+        align-self: flex-start; /* Tag 作为列向 flex 子项时不撑满整行 */
         font-style: normal;
         font-size: @font-size-auxiliary;
         color: @color-danger;

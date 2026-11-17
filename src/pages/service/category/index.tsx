@@ -108,7 +108,6 @@ export default function ServiceCategoryPage() {
 
   const columns = useMemo<ColumnsType<ServiceCategory>>(
     () => [
-      { title: '分类编码', dataIndex: 'code', key: 'code', width: 140 },
       {
         title: '分类名称',
         key: 'name',

@@ -11,11 +11,14 @@ import type { ServiceCategory } from '@/api/modules/service'
 export interface ServiceCategoryFill {
   name: string
   name_en?: string
-  code?: string
+  code: string
   brief: string
   brief_en?: string
   status: number
 }
+
+/** 表单实际字段（不含 code：新增时以时间戳占位、编辑时沿用原分类 code） */
+type ServiceCategoryFormValues = Omit<ServiceCategoryFill, 'code'>
 
 interface ServiceCategoryEditorProps {
   open: boolean
@@ -32,16 +35,13 @@ export default function ServiceCategoryEditor({
   onSaved,
 }: ServiceCategoryEditorProps) {
   const isEdit = !!category
-  const [form] = Form.useForm<ServiceCategoryFill>()
+  const [form] = Form.useForm<ServiceCategoryFormValues>()
 
   useEffect(() => {
     if (!open) return
     if (category) {
       form.setFieldsValue({
-        name: category.name,
-        brief: category.brief || '',
-        status: category.status,
-        code: category.code || ''
+        ...category
       })
     } else {
       form.resetFields()
@@ -50,14 +50,24 @@ export default function ServiceCategoryEditor({
   }, [open, category, form])
 
   const handleSubmit = async () => {
+    let values: ServiceCategoryFormValues
     try {
-      const values = await form.validateFields()
-      onSaved({ ...values, name: values.name.trim()})
-      form.resetFields()
-      onClose()
+      values = await form.validateFields()
     } catch {
       /* 校验失败由 Form.Item 就地提示 */
+      return
     }
+    onSaved({
+      // 保留未在表单展示的字段（name_en / brief_en 等），避免编辑时全量覆盖清空
+      ...category,
+      ...values,
+      name: values.name.trim(),
+      brief: values.brief?.trim() ?? '',
+      // 表单不展示 code：新增时用当前时间戳占位（后端 code 必填且唯一），编辑时沿用原分类 code
+      code: category?.code || String(Date.now()),
+    })
+    form.resetFields()
+    onClose()
   }
 
   return (

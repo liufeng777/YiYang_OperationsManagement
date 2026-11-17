@@ -58,7 +58,7 @@ export interface ServiceProcessStep {
 /** 服务分类 */
 export interface ServiceCategory {
   id: number
-  code: string
+  code?: string
   name: string
   name_en?: string
   brief: string // 简介
@@ -176,7 +176,7 @@ export function deleteService(id: number, remark?: string) {
 /** 服务分类新增 / 编辑入参（swagger admin.ReqServiceCategory：code / name 必填） */
 export interface ServiceCategorySaveBody {
   /** 类型编码（唯一，如 BASIC_CARE），必填 */
-  code: string
+  code?: string
   /** 类型名称（中文），必填 */
   name: string
   name_en?: string
