@@ -258,7 +258,7 @@ export default function RefundDetail() {
           >
             返回退款列表
           </Button>
-          {(refund?.status === 1 || refund?.status === 8) && (
+          {(refund?.status === 8) && (
             <Button type="primary" onClick={() => setApproveOpen(true)}>
               审批
             </Button>

@@ -7,7 +7,7 @@
  */
 import { useState } from 'react'
 import { App, Button, Card, Form, Input, Upload } from 'antd'
-import { CheckOutlined, PhoneOutlined, PlusOutlined } from '@ant-design/icons'
+import { CheckOutlined, PlusOutlined } from '@ant-design/icons'
 import { institutionApi } from '@/api'
 import { useImageUpload } from '@/hooks'
 import type { InstitutionItem, InstitutionType } from '@/api/modules/institution'
@@ -40,14 +40,6 @@ interface InstitutionInfoValues {
   brief: string
 }
 
-const typeText: Record<InstitutionType, string> = {
-  1: '护理院',
-  2: '驿站',
-}
-
-/** 预览环境照片占位（mock） */
-const previewPhotoPlaceholders = ['接待大厅', '康复空间', '适老房间']
-
 export default function InstitutionInfoForm({ detail, onSaved, onCancel }: InstitutionInfoFormProps) {
   const isCreate = !detail
   const { message } = App.useApp()
@@ -61,10 +53,7 @@ export default function InstitutionInfoForm({ detail, onSaved, onCancel }: Insti
   const [richDesc, setRichDesc] = useState(detail?.description || '')
   const [submitting, setSubmitting] = useState(false)
 
-  // 患者端预览实时联动字段
-  const previewName = Form.useWatch('name', form)
-  const previewType = Form.useWatch('type', form)
-  const previewAddress = Form.useWatch('address', form)
+  // 患者端预览实时联动展示标题
   const previewBrief = Form.useWatch('brief', form)
 
   /** 封面选择：本地预览 + 后台上传，成功后保存服务器地址供提交 */
@@ -163,7 +152,7 @@ export default function InstitutionInfoForm({ detail, onSaved, onCancel }: Insti
           <Card variant="borderless" className="editor-card">
             <div className="editor-card__header">
               <h3>患者端展示详情</h3>
-              <span>展示标题、机构介绍与环境图片，用于患者端机构详情页</span>
+              <span>展示标题、封面与图文详情，用于患者端机构详情页</span>
             </div>
             <div className="institution-form institution-form--stack">
               <Form.Item
@@ -241,11 +230,10 @@ export default function InstitutionInfoForm({ detail, onSaved, onCancel }: Insti
             <span>···</span>
           </div>
           <div className="institution-phone__scroll">
-            <div className={`institution-phone__hero${coverUrl ? ' has-cover' : ''}`}>
-              {coverUrl && <img src={coverUrl} alt="机构封面" />}
-              <h4>{previewName || detail?.name || '幸福里健康驿站'}</h4>
-              <p>{previewType ? typeText[previewType] : typeText[detail?.type ?? 2]} · 专业照护 · 安心颐养</p>
-              <span>{previewAddress || detail?.address || '机构详细地址'}</span>
+            <div
+              className={`institution-phone__cover${coverUrl ? '' : ' institution-phone__cover--empty'}`}
+            >
+              {coverUrl ? <img src={coverUrl} alt="机构封面" /> : '未上传机构封面'}
             </div>
             <div className="institution-phone__body">
               <h4>{previewBrief || detail?.brief || '患者端展示标题'}</h4>
@@ -254,28 +242,7 @@ export default function InstitutionInfoForm({ detail, onSaved, onCancel }: Insti
               ) : (
                 <RichDetailPreview value={richDesc} />
               )}
-              <div className="institution-phone__section">
-                <div>
-                  <strong>机构环境</strong>
-                  <span>查看全部 9 张 ›</span>
-                </div>
-                <div className="institution-phone__photos">
-                  {previewPhotoPlaceholders.map((item) => (
-                    <i key={item}>{item}</i>
-                  ))}
-                </div>
-              </div>
-              <div className="institution-phone__tabs">
-                <span>机构介绍</span>
-                <span>服务项目</span>
-                <span>近期活动</span>
-              </div>
             </div>
-          </div>
-          <div className="institution-phone__cta">
-            <Button type="primary" icon={<PhoneOutlined />} block>
-              电话咨询
-            </Button>
           </div>
         </div>
       </Card>

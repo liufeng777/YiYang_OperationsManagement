@@ -10,7 +10,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useServiceInstitutionStore } from '@/store/modules/serviceInstitution'
-import { App, Alert, Button, Card, Checkbox, Drawer, Input, Modal, Select, Table, Tag } from 'antd'
+import { App, Button, Card, Checkbox, Drawer, Input, Modal, Select, Table, Tag } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import type { ColumnsType } from 'antd/es/table'
 import { CheckOutlined, ArrowRightOutlined, PlusOutlined } from '@ant-design/icons'
@@ -389,16 +389,6 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
           </div>
         }
       >
-          <Alert
-            className="service-drawer__alert"
-            type="info"
-            showIcon
-            message={
-              <span>
-                <strong>{detail.name}</strong> 所选服务将自动继承机构默认预约配置与线上履约范围
-              </span>
-            }
-          />
           <div className="service-drawer__search">
             <Input
               allowClear
