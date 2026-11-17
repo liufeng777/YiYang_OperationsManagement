@@ -1,6 +1,17 @@
 .institution-detail {
+  height: 100%;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  // 基础资料
+  .institution-editor {
+    flex: 1;
+    overflow: hidden;
+    &__form {
+      height: 100%;
+      overflow-y: auto;
+    }
+  }
   .institution-summary {
     .card-surface();
     .ant-card-body {
@@ -44,10 +55,10 @@
   }
 
   .detail-tabs-card {
-    // margin-top: @spacing-md;
+    flex-shrink: 0;
     .card-surface();
     .ant-card-body {
-      padding: 0 @spacing-lg;
+      padding: 0 4px !important;
     }
 
 
@@ -71,21 +82,80 @@
   }
 
   .detail-card {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
     margin-top: @spacing-md;
+    display: flex;
+    flex-direction: column;
     .card-surface();
+
     .ant-card-body {
-      padding: @spacing-md @spacing-lg;
-    }
-    &__header {
+      flex: 1;
+      min-height: 0;
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: @spacing-md;
+      flex-direction: column;
+    }
+
+    /* 服务项目 / 医护人员：卡片标题与分页固定，仅表体在剩余空间内滚动 */
+    .ant-table-wrapper {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      .ant-spin,
+      .ant-spin-nested-loading,
+      .ant-spin-container {
+        height: 100%;
+        min-height: 0;
+      }
+
+      .ant-spin-container,
+      .ant-table,
+      .ant-table-container {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .ant-spin-container {
+        min-height: 0;
+      }
+
+      .ant-table,
+      .ant-table-container,
+      .ant-table-body {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .ant-table-header {
+        flex-shrink: 0;
+      }
+
+      .ant-table-body {
+        max-height: none !important;
+        overflow: auto !important;
+      }
+
+      .ant-table-pagination.ant-pagination {
+        flex-shrink: 0;
+      }
+    }
+
+    &__header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: baseline;
+      gap: @spacing-sm;
       margin-bottom: @spacing-md;
 
       h3 {
         margin: 0;
         .text-title-card();
+      }
+
+      .tip-info {
+        .text-auxiliary();
+        margin-left: @spacing-sm;
       }
 
       p {

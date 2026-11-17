@@ -100,6 +100,7 @@ export default function StaffsTab({ detail, onCountChange }: StaffsTabProps) {
       <div className="detail-card__header">
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <h3>医护人员</h3>
+          <span className='tip-info'>运营平台自动添加机构管理员，其他医护人员由管理员在医养服务工作台添加并同步</span>
         </div>
       </div>
       <Table<StaffDTO>
@@ -108,8 +109,8 @@ export default function StaffsTab({ detail, onCountChange }: StaffsTabProps) {
         loading={loading}
         columns={columns}
         dataSource={rows}
-        /* 列表内部滚动：固定表头，避免整页随名单滚动 */
-        scroll={{ y: 'calc(100vh - 420px)' }}
+        /* 表体高度由详情页 Flex 布局分配，表头固定，仅列表内容滚动 */
+        scroll={{ y: '100%' }}
         pagination={{
           current: page,
           pageSize,

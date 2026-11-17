@@ -177,7 +177,7 @@ export default function InstitutionInfoForm({ detail, onSaved, onCancel }: Insti
                   placeholder="例如：幸福里健康驿站 · 专业照护，安心颐养"
                 />
               </Form.Item>
-              <div className="patient-detail">
+              <div className="patient-detail" style={{marginTop: 16}}>
                 <div className="patient-detail__field patient-detail__cover">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span className="patient-detail__label">机构封面</span>

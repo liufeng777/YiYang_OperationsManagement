@@ -343,6 +343,8 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
           loading={loading}
           columns={serviceColumns}
           dataSource={rows}
+          /* 表体高度由详情页 Flex 布局分配，表头固定，仅列表内容滚动 */
+          scroll={{ y: '100%' }}
           pagination={{
             current: page,
             pageSize,

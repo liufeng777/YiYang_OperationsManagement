@@ -5,13 +5,14 @@
  */
 import { useEffect } from 'react'
 import { Layout, Tooltip } from 'antd'
-import { GitlabFilled } from '@ant-design/icons'
 import { Outlet, useLocation } from 'react-router-dom'
 import SiderMenu from './SiderMenu'
 import HeaderBar from './HeaderBar'
 import { useAppStore } from '@/store/modules/app'
 import { useNavigationStore } from '@/store/modules/navigation'
-import { routes } from '@/router/routes';
+import { routes } from '@/router/routes'
+import logoImg from '@/assets/logo/logo.png'
+import logoTxtImg from '@/assets/logo/logo_txt.png'
 import './layout.less'
 
 const { Sider, Content } = Layout
@@ -48,17 +49,13 @@ export default function BasicLayout() {
           {collapsed ? (
             <Tooltip title="幸福颐养 · 运营管理平台" placement="right">
               <span className="basic-layout__logo-icon">
-                <GitlabFilled style={{ color: '#27866B', fontSize: 24 }} />
+                <img src={logoImg} alt="幸福颐养" />
               </span>
             </Tooltip>
           ) : (
-            <>
-              <GitlabFilled style={{ color: '#27866B', fontSize: 24 }} />
-              <span className='logo-text'>
-                <span className='logo-value'>幸福颐养</span>
-                <span className='logo-label'>运营管理平台</span>
-              </span>
-            </>
+            <span className="basic-layout__logo-icon">
+              <img src={logoTxtImg} alt="幸福颐养 · 运营管理平台" />
+            </span>
           )}
         </div>
         <SiderMenu />

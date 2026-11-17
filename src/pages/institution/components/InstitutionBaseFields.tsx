@@ -5,48 +5,15 @@
  * name / name_en / type / province+city+district（region 级联，提交时拆分）/
  * address / contact_phone / manager_name / manager_phone / service_radius_km
  */
-import { Cascader, Form, Input, InputNumber, Select } from 'antd'
+import { Form, Input, InputNumber, Select } from 'antd'
 import type { InstitutionType } from '@/api/modules/institution'
+import RegionCascader from '@/components/RegionCascader'
 import './institution-form.less'
 
 /** 机构类型选项（1-护理院 2-驿站） */
 export const institutionTypeOptions: { label: string; value: InstitutionType }[] = [
   { label: '护理院', value: 1 },
   { label: '驿站', value: 2 },
-]
-
-/** 省市区级联选项（mock，后端就绪后替换为行政区划字典） */
-export const regionOptions = [
-  {
-    value: '浙江省',
-    label: '浙江省',
-    children: [
-      {
-        value: '杭州市',
-        label: '杭州市',
-        children: ['拱墅区', '西湖区', '上城区', '滨江区', '萧山区'].map((name) => ({
-          value: name,
-          label: name,
-        })),
-      },
-      {
-        value: '宁波市',
-        label: '宁波市',
-        children: ['海曙区', '江北区', '鄞州区'].map((name) => ({ value: name, label: name })),
-      },
-    ],
-  },
-  {
-    value: '北京市',
-    label: '北京市',
-    children: [
-      {
-        value: '北京市',
-        label: '北京市',
-        children: ['朝阳区', '西城区', '丰台区'].map((name) => ({ value: name, label: name })),
-      },
-    ],
-  },
 ]
 
 export default function InstitutionBaseFields() {
@@ -60,15 +27,19 @@ export default function InstitutionBaseFields() {
         >
           <Input maxLength={32} placeholder="例如：幸福里健康驿站" />
         </Form.Item>
-        <Form.Item name="name_en" label="机构英文名">
-          <Input maxLength={64} placeholder="选填，用于患者端展示" />
-        </Form.Item>
         <Form.Item
           name="type"
           label={<span>机构类型</span>}
           rules={[{ required: true, message: '请选择机构类型' }]}
         >
           <Select placeholder="请选择机构类型" options={institutionTypeOptions} />
+        </Form.Item>
+        <Form.Item
+          name="contact_phone"
+          label={<span>联系电话</span>}
+          rules={[{ required: true, message: '请输入联系电话' }]}
+        >
+          <Input maxLength={20} placeholder="患者咨询使用的联系电话" />
         </Form.Item>
       </div>
       <div className="form-grid form-grid--three">
@@ -77,7 +48,7 @@ export default function InstitutionBaseFields() {
           label={<span>所在地区</span>}
           rules={[{ required: true, message: '请选择省 / 市 / 区' }]}
         >
-          <Cascader options={regionOptions} placeholder="省 / 市 / 区" />
+          <RegionCascader />
         </Form.Item>
         <Form.Item
           name="address"
@@ -95,13 +66,6 @@ export default function InstitutionBaseFields() {
         </Form.Item>
       </div>
       <div className="form-grid form-grid--three">
-        <Form.Item
-          name="contact_phone"
-          label={<span>联系电话</span>}
-          rules={[{ required: true, message: '请输入联系电话' }]}
-        >
-          <Input maxLength={20} placeholder="患者咨询使用的联系电话" />
-        </Form.Item>
         <Form.Item
           name="manager_name"
           label={<span>管理员姓名</span>}
