@@ -14,6 +14,7 @@ import {
 } from '@ant-design/icons'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useUserStore } from '@/store/modules/user'
+import loginBg from '@/assets/login_bg.png';
 import './index.less'
 
 interface LoginForm {
@@ -61,7 +62,7 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <aside className="login-page__brand">
+      <aside className="login-page__brand" style={{backgroundImage: `url(${loginBg})`}}>
         <header className="login-page__logo">
           <span className="login-page__logo-icon">
             <PlusOutlined />

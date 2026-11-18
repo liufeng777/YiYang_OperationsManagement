@@ -10,31 +10,34 @@
     overflow: hidden;
     padding: @spacing-3xl (@spacing-3xl + 16px);
     color: @color-bg-card;
-    background:
-      radial-gradient(circle at 74% 18%, fade(@color-primary-light, 18%) 0, fade(@color-primary-light, 0) 30%),
-      linear-gradient(145deg, darken(@color-primary-dark, 8%) 0%, @color-primary-dark 42%, lighten(@color-primary, 4%) 100%);
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    // background:
+    //   radial-gradient(circle at 74% 18%, fade(@color-primary-light, 18%) 0, fade(@color-primary-light, 0) 30%),
+    //   linear-gradient(145deg, darken(@color-primary-dark, 8%) 0%, @color-primary-dark 42%, lighten(@color-primary, 4%) 100%);
 
-    &::before,
-    &::after {
-      position: absolute;
-      border-radius: @radius-full;
-      background: fade(@color-bg-card, 6%);
-      content: '';
-    }
+    // &::before,
+    // &::after {
+    //   position: absolute;
+    //   border-radius: @radius-full;
+    //   background: fade(@color-bg-card, 6%);
+    //   content: '';
+    // }
 
-    &::before {
-      top: -160px;
-      right: -120px;
-      width: 420px;
-      height: 420px;
-    }
+    // &::before {
+    //   top: -160px;
+    //   right: -120px;
+    //   width: 420px;
+    //   height: 420px;
+    // }
 
-    &::after {
-      bottom: -220px;
-      left: -180px;
-      width: 480px;
-      height: 480px;
-    }
+    // &::after {
+    //   bottom: -220px;
+    //   left: -180px;
+    //   width: 480px;
+    //   height: 480px;
+    // }
   }
 
   &__logo {
