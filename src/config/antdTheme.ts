@@ -7,6 +7,10 @@ import type { ThemeConfig } from 'antd'
  */
 const brandPrimary = '#27866B'
 const brandPrimaryDark = '#185D4C'
+const siderBg = '#075544'
+const siderSelected = '#097D63'
+const siderText = '#C0DCD3'
+const siderGroup = '#6BAB9B'
 
 const antdTheme: ThemeConfig = {
   token: {
@@ -48,19 +52,22 @@ const antdTheme: ThemeConfig = {
   components: {
     Layout: {
       headerBg: '#FFFFFF',
-      siderBg: '#FFFFFF',
+      siderBg: siderBg,
       bodyBg: '#FAF9F6',
       headerHeight: 56,
     },
     Menu: {
-      // 浅色侧边栏激活样式（对齐设计稿）：
-      // - 一级项 / 父级标题选中：浅灰底 #F3F5F4 + 品牌色文字
-      // - 二级子项选中：品牌浅底色 #E8F4F0（见 layout.less 中的覆盖）
-      itemSelectedBg: '#F3F5F4',
-      itemSelectedColor: brandPrimary,
-      itemHoverBg: 'rgba(39, 134, 107, 0.08)',
-      itemHoverColor: brandPrimary,
-      subMenuItemSelectedColor: brandPrimary,
+      // 深绿侧边栏：弹层使用较亮绿色，具体菜单项状态见 layout.less
+      itemBg: siderBg,
+      popupBg: siderSelected,
+      itemColor: siderText,
+      groupTitleColor: siderGroup,
+      subMenuItemBg: siderBg,
+      itemSelectedBg: siderSelected,
+      itemSelectedColor: siderText,
+      itemHoverBg: siderSelected,
+      itemHoverColor: siderText,
+      subMenuItemSelectedColor: siderText,
       itemBorderRadius: 6,
       itemMarginInline: 8,
       itemHeight: 42,

@@ -12,6 +12,7 @@ import { BarChartOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import dayjs, { type Dayjs } from 'dayjs'
 import PageContainer from '@/components/PageContainer'
+import SensitiveText from '@/components/SensitiveText'
 import { institutionApi, orderApi } from '@/api'
 import type { OrderDetail, OrderListParams } from '@/api/modules/order'
 import { downloadBlob, formatAmount, formatDateTime } from '@/utils'
@@ -223,8 +224,8 @@ export default function OrderList() {
         width: 150,
         render: (_, record) => (
           <div className="order-user">
-            <strong>{record.contact_name || '—'}</strong>
-            <span>{record.contact_phone || '—'}</span>
+            <strong><SensitiveText type="name" value={record.contact_name} /></strong>
+            <SensitiveText type="phone" value={record.contact_phone} />
           </div>
         ),
       },

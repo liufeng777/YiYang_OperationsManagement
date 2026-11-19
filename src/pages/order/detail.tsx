@@ -8,6 +8,7 @@ import { Button, Card, Descriptions, Spin } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
+import SensitiveText from '@/components/SensitiveText'
 import { institutionApi, orderApi, workorderApi } from '@/api'
 import type { OrderDetail } from '@/api/modules/order'
 import type { WorkOrderDTO } from '@/api/modules/workorder'
@@ -102,8 +103,16 @@ export default function OrderDetailPage() {
   /** 交易订单信息（Descriptions 渲染；备注并入其中） */
   const orderDescriptions = useMemo(
     () => [
-      { key: 'contact_name', label: '联系人', children: order?.contact_name || '—' },
-      { key: 'contact_phone', label: '联系电话', children: order?.contact_phone || '—' },
+      {
+        key: 'contact_name',
+        label: '联系人',
+        children: <SensitiveText type="name" value={order?.contact_name} />,
+      },
+      {
+        key: 'contact_phone',
+        label: '联系电话',
+        children: <SensitiveText type="phone" value={order?.contact_phone} />,
+      },
       {
         key: 'created_at',
         label: '下单时间',

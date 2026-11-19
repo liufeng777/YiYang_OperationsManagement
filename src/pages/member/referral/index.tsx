@@ -14,6 +14,7 @@ import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { DownloadOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
+import SensitiveText from '@/components/SensitiveText'
 import { rewardApi } from '@/api'
 import type { ReferralItem } from '@/api/modules/reward'
 import { formatDateTime } from '@/utils'
@@ -128,7 +129,7 @@ export default function ReferralList() {
         width: 150,
         render: (_, record) => (
           <div className="table-cell">
-            <strong>{record.user_name || '—'}</strong>
+            <strong><SensitiveText type="name" value={record.user_name} /></strong>
             <span>ID：{record.user_id ?? '—'}</span>
           </div>
         ),

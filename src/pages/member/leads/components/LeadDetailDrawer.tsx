@@ -16,6 +16,7 @@ import {
   LEAD_STATUS_TEXT,
   LEAD_TASK_TYPE_TEXT,
 } from '../constants'
+import SensitiveText from '@/components/SensitiveText'
 
 export interface LeadDetailDrawerProps {
   /** 当前查看的线索 id（null 时关闭） */
@@ -102,7 +103,7 @@ export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: L
 
   const staffOptions = staffList.map((item) => ({
     label: `${item.name}（${item.title || '未设岗位'}）`,
-    value: item.id,
+    value: item.staff_id,
   }))
 
   /** 认领（指南 §4.3：body {assignee}，仅 1/4 → 2 跟进中） */
@@ -255,8 +256,16 @@ export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: L
                 size="small"
                 colon={false}
                 items={[
-                  { key: 'name', label: '联系人', children: detail?.name || '—' },
-                  { key: 'phone', label: '联系电话', children: detail?.phone || '—' },
+                  {
+                    key: 'name',
+                    label: '联系人',
+                    children: <SensitiveText type="name" value={detail?.name} />,
+                  },
+                  {
+                    key: 'phone',
+                    label: '联系电话',
+                    children: <SensitiveText type="phone" value={detail?.phone} />,
+                  },
                   {
                     key: 'task_type',
                     label: '任务类型',
@@ -277,8 +286,16 @@ export default function LeadDetailDrawer({ leadId, open, onClose, onChanged }: L
                     children: detail ? (LEAD_STATUS_TEXT[detail.status] ?? detail.status) : '—',
                   },
                   { key: 'created_at', label: '创建时间', children: fmtTime(detail?.created_at) },
-                  { key: 'user', label: '关联用户', children: detail?.user_nickname || '—' },
-                  { key: 'member', label: '关联会员', children: detail?.member_name || '—' },
+                  {
+                    key: 'user',
+                    label: '关联用户',
+                    children: <SensitiveText type="name" value={detail?.user_nickname} />,
+                  },
+                  {
+                    key: 'member',
+                    label: '关联会员',
+                    children: <SensitiveText type="name" value={detail?.member_name} />,
+                  },
                   {
                     key: 'converted_at',
                     label: '转化时间',

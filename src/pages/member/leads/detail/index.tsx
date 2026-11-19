@@ -20,6 +20,7 @@ import {
   LEAD_TASK_TYPE_TEXT,
 } from '../constants'
 import './index.less'
+import SensitiveText from '@/components/SensitiveText'
 
 /** 跟进方式选项（指南 §2.4） */
 const FOLLOWUP_TYPE_OPTIONS = Object.entries(LEAD_FOLLOWUP_TYPE_TEXT).map(([key, label]) => ({
@@ -97,7 +98,7 @@ export default function LeadDetail() {
 
   const staffOptions = staffList.map((item) => ({
     label: `${item.name}（${item.title || '未设岗位'}）`,
-    value: item.id,
+    value: item.staff_id,
   }))
 
   /** 认领（指南 §4.3：body {assignee}，仅 1/4 → 2 跟进中） */
@@ -236,8 +237,16 @@ export default function LeadDetail() {
               size="small"
               colon={false}
               items={[
-                { key: 'name', label: '联系人', children: detail?.name || '—' },
-                { key: 'phone', label: '联系电话', children: detail?.phone || '—' },
+                {
+                  key: 'name',
+                  label: '联系人',
+                  children: <SensitiveText type="name" value={detail?.name} />,
+                },
+                {
+                  key: 'phone',
+                  label: '联系电话',
+                  children: <SensitiveText type="phone" value={detail?.phone} />,
+                },
                 {
                   key: 'task_type',
                   label: '任务类型',
@@ -263,8 +272,16 @@ export default function LeadDetail() {
                   label: '转化时间',
                   children: fmtTime(detail?.converted_at),
                 },
-                { key: 'user', label: '关联用户', children: detail?.user_nickname || '—' },
-                { key: 'member', label: '关联会员', children: detail?.member_name || '—' },
+                {
+                  key: 'user',
+                  label: '关联用户',
+                  children: <SensitiveText type="name" value={detail?.user_nickname} />,
+                },
+                {
+                  key: 'member',
+                  label: '关联会员',
+                  children: <SensitiveText type="name" value={detail?.member_name} />,
+                },
                 {
                   key: 'remark',
                   label: '备注',

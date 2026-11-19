@@ -14,6 +14,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { ArrowLeftOutlined, DownloadOutlined, EditOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
+import SensitiveText, { maskName } from '@/components/SensitiveText'
 import { activityApi, institutionApi } from '@/api'
 import type { ActivityItem, ActivityRegistrationDTO } from '@/api/modules/activity'
 import type { InstitutionItem } from '@/api/modules/institution'
@@ -235,13 +236,13 @@ export default function ActivitySignups() {
   const handleCheckin = (record: ActivityRegistrationDTO) => {
     modal.confirm({
       title: '确认签到',
-      content: `确认为「${record.name}」完成签到？签到后不能再取消报名。`,
+      content: `确认为「${maskName(record.name)}」完成签到？签到后不能再取消报名。`,
       okText: '确认签到',
       cancelText: '取消',
       onOk: async () => {
         try {
           await activityApi.checkinRegistration(record.id)
-          message.success(`「${record.name}」已签到`)
+          message.success(`「${maskName(record.name)}」已签到`)
         } catch {
           /* 错误提示由 request 拦截器统一处理 */
         }
@@ -260,7 +261,7 @@ export default function ActivitySignups() {
     if (!cancelTarget) return
     try {
       await activityApi.cancelRegistration(cancelTarget.id, cancelRemark.trim() || '运营后台取消')
-      message.success(`已取消 ${cancelTarget.name} 的报名`)
+      message.success(`已取消 ${maskName(cancelTarget.name)} 的报名`)
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
     }
@@ -284,8 +285,8 @@ export default function ActivitySignups() {
         key: 'name',
         render: (_, record) => (
           <div className="signup-user">
-            <strong>{record.name || '—'}</strong>
-            <span>{record.phone}</span>
+            <strong><SensitiveText type="name" value={record.name} /></strong>
+            <SensitiveText type="phone" value={record.phone} />
           </div>
         ),
       },
@@ -505,7 +506,8 @@ export default function ActivitySignups() {
             </p>
             <div className="cancel-modal__user">
               <strong>
-                {cancelTarget.name} {cancelTarget.phone}
+                <SensitiveText type="name" value={cancelTarget.name} />{' '}
+                <SensitiveText type="phone" value={cancelTarget.phone} />
               </strong>
               <span>
                 {activity?.title ?? '活动'} · {institutionName(cancelTarget)}

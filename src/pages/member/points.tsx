@@ -10,6 +10,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, PlusOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
 import ApiPendingAlert from '@/components/ApiPendingAlert'
+import SensitiveText from '@/components/SensitiveText'
 import type { PointsChangeType, PointsRecord } from '@/api/modules/reward'
 import './points.less'
 
@@ -107,7 +108,7 @@ export default function PointsList() {
         render: (_, record) => (
           <div className="table-cell">
             <strong>{record.time}</strong>
-            <span>{record.memberName}</span>
+            <SensitiveText type="name" value={record.memberName} />
           </div>
         ),
       },

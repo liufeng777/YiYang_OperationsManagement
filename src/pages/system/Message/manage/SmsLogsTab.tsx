@@ -10,6 +10,7 @@ import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { messageApi } from '@/api'
 import type { SmsLogDTO } from '@/api/modules/message'
+import SensitiveText from '@/components/SensitiveText'
 import { formatDateTime } from '@/utils'
 
 /** 短信状态：1-成功 2-失败 9-未送达 */
@@ -93,7 +94,7 @@ export default function SmsLogsTab() {
         dataIndex: 'phone',
         key: 'phone',
         width: 140,
-        render: (v?: string) => v || '—',
+        render: (value?: string) => <SensitiveText type="phone" value={value} />,
       },
       { title: '短信内容', dataIndex: 'content', key: 'content', ellipsis: true },
       {

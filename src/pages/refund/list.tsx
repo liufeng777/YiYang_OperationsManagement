@@ -12,6 +12,7 @@ import { BarChartOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import dayjs, { type Dayjs } from 'dayjs'
 import PageContainer from '@/components/PageContainer'
+import SensitiveText, { maskName } from '@/components/SensitiveText'
 import { memberApi, refundApi } from '@/api'
 import type { RefundItem } from '@/api/modules/refund'
 import { downloadBlob, formatAmount, formatDateTime } from '@/utils'
@@ -74,7 +75,7 @@ export default function RefundList() {
   const applicantText = useCallback(
     (record: RefundItem) => {
       const member = memberMap.get(record.member_id)
-      return member ? `${member.name}（${record.member_id}）` : `会员ID ${record.member_id}`
+      return member ? `${maskName(member.name)}（${record.member_id}）` : `会员ID ${record.member_id}`
     },
     [memberMap],
   )
@@ -249,8 +250,9 @@ export default function RefundList() {
         title: '申请人',
         key: 'member_name',
         dataIndex: 'member_name',
-        width: 150,
+        width: 140,
         ellipsis: true,
+        render: (value: string) => <SensitiveText type="name" value={value} />,
       },
       {
         title: '退款类型',

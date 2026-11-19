@@ -27,14 +27,14 @@ export interface StaffCredentialBrief {
 
 /** 工作人员 DTO */
 export interface StaffDTO {
-  id: number
+  staff_id: number
   institution_id: number
+  institution_name: string
   staff_type: StaffType
   name: string
   /** 脱敏手机号 */
   phone: string
   /** 脱敏证件号 */
-  id_card: string
   avatar_url: string | null
   position_id: number
   /** 岗位名称（列表接口返回时随记录携带） */

@@ -13,6 +13,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { ArrowLeftOutlined, FileTextOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
+import SensitiveText from '@/components/SensitiveText'
 import { orderApi, refundApi } from '@/api'
 import type { OrderDetail } from '@/api/modules/order'
 import type { RefundItem } from '@/api/modules/refund'
@@ -283,7 +284,7 @@ export default function RefundDetail() {
             </div>
             <div className="summary-item">
               <span>申请人</span>
-              <strong>{refund?.member_name}</strong>
+              <strong><SensitiveText type="name" value={refund?.member_name} /></strong>
             </div>
             <div className="summary-item">
               <span>退款金额</span>

@@ -11,6 +11,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { SyncOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
 import ApiPendingAlert from '@/components/ApiPendingAlert'
+import SensitiveText, { maskName } from '@/components/SensitiveText'
 import type { StaffItem } from '@/api/modules/content'
 import './staff.less'
 
@@ -102,9 +103,9 @@ export default function StaffList() {
         key: 'name',
         render: (_, record) => (
           <div className="staff-info">
-            <i className={record.qualified ? '' : 'is-pending'}>{record.name.slice(-1)}</i>
+            <i className={record.qualified ? '' : 'is-pending'}>{record.name.slice(0, 1)}</i>
             <div>
-              <strong>{record.name}</strong>
+              <strong><SensitiveText type="name" value={record.name} /></strong>
               <span>{record.qualified ? '已同步执业资质' : '资料待工作台完善'}</span>
             </div>
           </div>
@@ -140,7 +141,7 @@ export default function StaffList() {
         width: 140,
         render: (_, record) => (
           <div className="staff-actions">
-            <Button type="link" size="small" onClick={() => message.info(`${record.name} 资料为工作台只读同步`)}>
+            <Button type="link" size="small" onClick={() => message.info(`${maskName(record.name)} 资料为工作台只读同步`)}>
               查看
             </Button>
             <Button type="link" size="small" onClick={() => openSetting(record)}>
@@ -275,9 +276,9 @@ export default function StaffList() {
                 <em>只读</em>
               </div>
               <div className="staff-drawer__profile">
-                <i>{settingTarget.name.slice(-1)}</i>
+                <i>{settingTarget.name.slice(0, 1)}</i>
                 <div>
-                  <strong>{settingTarget.name}</strong>
+                  <strong><SensitiveText type="name" value={settingTarget.name} /></strong>
                   <span>
                     {settingTarget.title} · {settingTarget.institutionName}
                   </span>
@@ -333,10 +334,10 @@ export default function StaffList() {
               <div className="staff-drawer__preview">
                 <span>患者端卡片预览</span>
                 <div className="staff-card">
-                  <i>{settingTarget.name.slice(-1)}</i>
+                  <i>{settingTarget.name.slice(0, 1)}</i>
                   <div>
                     <strong>
-                      {settingTarget.name} {settingTarget.title}
+                      <SensitiveText type="name" value={settingTarget.name} /> {settingTarget.title}
                     </strong>
                     <span>{settingTarget.institutionName}</span>
                     <p>{settingIntro || '擅长' + settingTarget.specialty + '，为长者提供个性化健康指导。'}</p>

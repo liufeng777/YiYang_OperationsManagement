@@ -9,6 +9,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, PlusOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
 import ApiPendingAlert from '@/components/ApiPendingAlert'
+import SensitiveText from '@/components/SensitiveText'
 import VerifyDrawer from './VerifyDrawer'
 import type { VerifyRecord, VerifySource, VerifyStatus } from '@/api/modules/reward'
 import './verify.less'
@@ -111,11 +112,13 @@ export default function VerifyList() {
       {
         title: '服务对象 / 提交人',
         key: 'target',
-        width: 160,
+        width: 190,
         render: (_, record) => (
           <div className="table-cell">
-            <strong>{record.targetName}</strong>
-            <span>提交人：{record.submitter.split(' · ')[0]}</span>
+            <strong><SensitiveText type="name" value={record.targetName} /></strong>
+            <span>
+              提交人：<SensitiveText type="name" value={record.submitter.split(' · ')[0]} />
+            </span>
           </div>
         ),
       },
@@ -129,7 +132,8 @@ export default function VerifyList() {
         title: '身份证号',
         dataIndex: 'idCard',
         key: 'idCard',
-        width: 170,
+        width: 200,
+        render: (value: string) => <SensitiveText type="idCard" value={value} />,
       },
       {
         title: '提交来源',

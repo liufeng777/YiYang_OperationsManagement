@@ -13,6 +13,7 @@ import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
+import SensitiveText, { maskName } from '@/components/SensitiveText'
 import { systemApi } from '@/api'
 import type { AdminItem, RoleItem } from '@/api/modules/system'
 import type { CommonStatus } from '@/types/api'
@@ -158,7 +159,9 @@ export default function AccountList() {
   const confirmToggle = (record: AdminItem) => {
     const toDisable = record.status === STATUS_ENABLED
     modal.confirm({
-      title: toDisable ? `确认停用用户「${record.nickname}」？` : `确认启用用户「${record.nickname}」？`,
+      title: toDisable
+        ? `确认停用用户「${maskName(record.nickname)}」？`
+        : `确认启用用户「${maskName(record.nickname)}」？`,
       content: toDisable ? '停用后该用户将无法登录运营平台。' : '启用后该用户可正常登录运营平台。',
       okText: '确认',
       cancelText: '取消',
@@ -173,7 +176,7 @@ export default function AccountList() {
   /** 删除二次确认 */
   const confirmDelete = (record: AdminItem) => {
     modal.confirm({
-      title: `确认删除用户「${record.nickname}」？`,
+      title: `确认删除用户「${maskName(record.nickname)}」？`,
       content: '删除后不可恢复。',
       okText: '删除',
       okButtonProps: { danger: true },
@@ -231,7 +234,7 @@ export default function AccountList() {
             {record.username}
             {isBuiltInAdmin(record) && <Tag className="account-tag--builtin">内置</Tag>}
           </strong>
-          <span>{record.nickname || '—'}</span>
+          <SensitiveText type="name" value={record.nickname} />
         </div>
       ),
     },
@@ -253,8 +256,8 @@ export default function AccountList() {
     {
       title: '手机号',
       key: 'mobile',
-      width: 120,
-      render: (_, record) => record.mobile || record.phone || '—',
+      width: 160,
+      render: (_, record) => <SensitiveText type="phone" value={record.mobile || record.phone} />,
     },
     {
       title: '用户状态',

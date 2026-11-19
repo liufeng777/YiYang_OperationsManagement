@@ -1,0 +1,28 @@
+@import '../../styles/variables.less';
+
+.sensitive-text {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  vertical-align: middle;
+
+  &__value {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  &__button.ant-btn {
+    flex: none;
+    width: auto;
+    min-width: 0;
+    height: auto;
+    margin-left: @spacing-2xs;
+    padding: 0 @spacing-2xs;
+    color: @color-text-secondary;
+    line-height: inherit;
+
+    &:hover:not(:disabled) {
+      color: @color-primary;
+    }
+  }
+}

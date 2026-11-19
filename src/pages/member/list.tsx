@@ -12,6 +12,7 @@ import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { DownloadOutlined, UploadOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
+import SensitiveText from '@/components/SensitiveText'
 import { memberApi } from '@/api'
 import { registerSourceText } from '@/api/modules/memberOperation'
 import type { RegisteredUserRow } from '@/api/modules/memberOperation'
@@ -174,8 +175,8 @@ export default function MemberList() {
       key: 'member',
       render: (_, record) => (
         <div className="table-cell">
-          <strong>{record.nickname || '—'}</strong>
-          <span>{record.phone || '—'}</span>
+          <strong><SensitiveText type="name" value={record.nickname} /></strong>
+          <SensitiveText type="phone" value={record.phone} />
         </div>
       ),
     },
@@ -185,7 +186,7 @@ export default function MemberList() {
       render: (_, record) => (
         <div className="table-cell">
           <strong>{registerSourceText(record)}</strong>
-          <span>{record.inviter_name || '—'}</span>
+          <SensitiveText type="name" value={record.inviter_name} />
         </div>
       ),
     },

@@ -6,6 +6,7 @@
 import { Card, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { WorkOrderDTO } from '@/api/modules/workorder'
+import SensitiveText from '@/components/SensitiveText'
 import { formatDateTime } from '@/utils'
 import './workOrderTable.less'
 
@@ -35,11 +36,11 @@ export const workOrderColumns: ColumnsType<WorkOrderDTO> = [
   {
     title: '会员',
     key: 'member',
-    width: 150,
+    width: 180,
     render: (_, record) => (
       <div className="order-user">
-        <strong>{record.member_name || '—'}</strong>
-        <span>{record.member_phone || '—'}</span>
+        <strong><SensitiveText type="name" value={record.member_name} /></strong>
+        <SensitiveText type="phone" value={record.member_phone} />
       </div>
     ),
   },
@@ -69,7 +70,10 @@ export const workOrderColumns: ColumnsType<WorkOrderDTO> = [
     title: '服务地址',
     key: 'service_address',
     ellipsis: true,
-    render: (_, record) => record.service_address || '—',
+    // 工单属于履约场景，允许经眼睛按钮查看详细街道门牌。
+    render: (_, record) => (
+      <SensitiveText type="address" value={record.service_address} allowReveal />
+    ),
   },
   {
     title: '工单状态',

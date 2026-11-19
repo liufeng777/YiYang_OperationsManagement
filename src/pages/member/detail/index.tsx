@@ -14,6 +14,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
 import PageLoading from '@/components/PageLoading'
+import SensitiveText from '@/components/SensitiveText'
 import { memberApi } from '@/api'
 import type { OrderRecordBrief } from '@/api/modules/member'
 import { registerSourceText } from '@/api/modules/memberOperation'
@@ -100,8 +101,8 @@ export default function MemberDetailPage() {
       key: 'name',
       render: (_, record) => (
         <div className="table-cell">
-          <strong>{record.name}</strong>
-          {record.phone && <span>{record.phone}</span>}
+          <strong><SensitiveText type="name" value={record.name} /></strong>
+          {record.phone && <SensitiveText type="phone" value={record.phone} />}
         </div>
       ),
     },
@@ -150,7 +151,7 @@ export default function MemberDetailPage() {
       key: 'target',
       render: (_, record) => (
         <div className="table-cell">
-          <strong>{record.member_name || '—'}</strong>
+          <strong><SensitiveText type="name" value={record.member_name} /></strong>
           <span>{record.institution_name || '—'}</span>
         </div>
       ),
@@ -217,9 +218,13 @@ export default function MemberDetailPage() {
     <PageContainer
       title="注册会员详情"
       description={
-        detail
-          ? `${detail.nickname || '—'} · ${detail.phone || '—'} · 用户编号 U-${String(detail.id).padStart(6, '0')}`
-          : undefined
+        detail ? (
+          <>
+            <SensitiveText type="name" value={detail.nickname} /> ·{' '}
+            <SensitiveText type="phone" value={detail.phone} /> · 用户编号 U-
+            {String(detail.id).padStart(6, '0')}
+          </>
+        ) : undefined
       }
       extra={
         <Button color="primary" variant='outlined'
@@ -234,9 +239,12 @@ export default function MemberDetailPage() {
             <div className="member-detail__field">
               <span className="member-detail__field-label">注册来源</span>
               <span className="member-detail__field-value">
-                {detail
-                  ? `${registerSourceText(detail)}${detail.inviter_name ? ` · ${detail.inviter_name}` : ''}`
-                  : '—'}
+                {detail ? registerSourceText(detail) : '—'}
+                {detail?.inviter_name && (
+                  <>
+                    {' '}· <SensitiveText type="name" value={detail.inviter_name} />
+                  </>
+                )}
               </span>
             </div>
             <div className="member-detail__field">

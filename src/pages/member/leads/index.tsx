@@ -12,6 +12,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, DownloadOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
+import SensitiveText from '@/components/SensitiveText'
 import { institutionApi, leadApi } from '@/api'
 import type { InstitutionItem } from '@/api/modules/institution'
 import type { LeadDTO, LeadListParams } from '@/api/modules/lead'
@@ -213,8 +214,8 @@ export default function LeadList() {
       width: 150,
       render: (_, record) => (
         <div className="lead-contact">
-          <strong>{record.name}</strong>
-          <span>{record.phone || '—'}</span>
+          <strong><SensitiveText type="name" value={record.name} /></strong>
+          <SensitiveText type="phone" value={record.phone} />
         </div>
       ),
     },

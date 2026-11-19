@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react'
 import { App, Button, Drawer, Input } from 'antd'
 import type { VerifyRecord, VerifyStatus } from '@/api/modules/reward'
+import SensitiveText from '@/components/SensitiveText'
 
 interface VerifyDrawerProps {
   open: boolean
@@ -77,7 +78,7 @@ export default function VerifyDrawer({ open, record, onClose, onAudited }: Verif
             <dl>
               <div>
                 <dt>姓名</dt>
-                <dd>{record.targetName}</dd>
+                <dd><SensitiveText type="name" value={record.targetName} /></dd>
               </div>
               <div>
                 <dt>与提交人关系</dt>
@@ -85,11 +86,11 @@ export default function VerifyDrawer({ open, record, onClose, onAudited }: Verif
               </div>
               <div>
                 <dt>身份证号码</dt>
-                <dd>{record.idCard}</dd>
+                <dd><SensitiveText type="idCard" value={record.idCard} /></dd>
               </div>
               <div>
                 <dt>提交人</dt>
-                <dd>{record.submitter}</dd>
+                <dd><SensitiveText type="name" value={record.submitter.split(' · ')[0]} /></dd>
               </div>
               <div>
                 <dt>提交时间</dt>

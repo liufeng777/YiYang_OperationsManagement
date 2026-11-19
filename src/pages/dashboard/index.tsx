@@ -15,6 +15,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { BarChartOutlined, RightOutlined } from '@ant-design/icons'
 import dayjs, { type Dayjs } from 'dayjs'
 import PageContainer from '@/components/PageContainer'
+import SensitiveText from '@/components/SensitiveText'
 import { dashboardApi } from '@/api'
 import type {
   DashboardOverviewResult,
@@ -233,8 +234,8 @@ export default function Dashboard() {
         title: '下单会员',
         key: 'customer',
         render: (_, record) => (<div className="table-cell">
-          <strong>{record.user_name}</strong>
-          <span>{record.user_phone}</span>
+          <strong><SensitiveText type="name" value={record.user_name} /></strong>
+          <SensitiveText type="phone" value={record.user_phone} />
         </div>),
       },
       {

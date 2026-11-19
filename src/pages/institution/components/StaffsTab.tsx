@@ -9,6 +9,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { staffApi } from '@/api'
 import type { StaffDTO } from '@/api/modules/staff'
 import type { InstitutionItem } from '@/api/modules/institution'
+import SensitiveText from '@/components/SensitiveText'
 
 interface StaffsTabProps {
   detail: InstitutionItem
@@ -64,7 +65,7 @@ export default function StaffsTab({ detail, onCountChange }: StaffsTabProps) {
         key: 'name',
         render: (_, record) => (
           <div className="table-cell">
-            <strong>{record.name}</strong>
+            <strong><SensitiveText type="name" value={record.name} /></strong>
             <span>{record.referral_code || '—'}</span>
           </div>
         ),
@@ -78,7 +79,7 @@ export default function StaffsTab({ detail, onCountChange }: StaffsTabProps) {
         title: '手机号',
         key: 'phone',
         dataIndex: 'phone',
-        render: (value: string) => value || '—',
+        render: (value: string) => <SensitiveText type="phone" value={value} />,
       },
       {
         title: '状态',
@@ -104,7 +105,7 @@ export default function StaffsTab({ detail, onCountChange }: StaffsTabProps) {
         </div>
       </div>
       <Table<StaffDTO>
-        rowKey="id"
+        rowKey="staff_id"
         size="small"
         loading={loading}
         columns={columns}

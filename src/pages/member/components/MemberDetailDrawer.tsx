@@ -5,12 +5,12 @@
  * 证件号：默认中间 * 掩码，点击眼睛图标切换显示完整证件号
  */
 import { useEffect, useState } from 'react'
-import { Button, Descriptions, Drawer, Spin, Tag } from 'antd'
-import { EyeInvisibleOutlined, EyeOutlined } from '@ant-design/icons'
+import { Descriptions, Drawer, Spin, Tag } from 'antd'
 import dayjs from 'dayjs'
 import { memberApi } from '@/api'
 import type { MemberDTO } from '@/api/modules/member'
 import type { tagItem } from '@/api/modules/tag'
+import SensitiveText from '@/components/SensitiveText'
 import { GENDER_TEXT, MEMBER_STATUS_TAG_COLOR, MEMBER_STATUS_TEXT, resolveMemberTags } from '../constants'
 
 interface MemberDetailDrawerProps {
@@ -31,14 +31,6 @@ const formatBirthday = (value?: string) => {
   return date.isValid() ? date.format('YYYY-MM-DD') : value
 }
 
-/** 证件号中间掩码：保留首尾各 4 位（短号按比例保留），中间以 * 替代 */
-const maskIdCard = (value?: string) => {
-  if (!value) return '—'
-  const keep = value.length > 10 ? 4 : Math.max(Math.floor(value.length / 4), 1)
-  if (value.length <= keep * 2) return '*'.repeat(value.length)
-  return `${value.slice(0, keep)}${'*'.repeat(value.length - keep * 2)}${value.slice(-keep)}`
-}
-
 export default function MemberDetailDrawer({
   memberId,
   open,
@@ -48,13 +40,9 @@ export default function MemberDetailDrawer({
 }: MemberDetailDrawerProps) {
   const [detail, setDetail] = useState<MemberDTO | null>(null)
   const [loading, setLoading] = useState(false)
-  /** 证件号明文开关（默认掩码） */
-  const [idCardVisible, setIdCardVisible] = useState(false)
 
   useEffect(() => {
     if (!open || !memberId) return
-    // 每次打开新会员时重置为掩码状态，避免残留上一个会员的明文
-    setIdCardVisible(false)
     setLoading(true)
     memberApi
       .getMember(memberId)
@@ -76,30 +64,26 @@ export default function MemberDetailDrawer({
           size="small"
           bordered
           items={[
-            { key: 'name', label: '姓名', children: detail?.name || '—' },
+            {
+              key: 'name',
+              label: '姓名',
+              children: <SensitiveText type="name" value={detail?.name} />,
+            },
             {
               key: 'gender',
               label: '性别',
               children: detail ? (GENDER_TEXT[detail.gender] ?? '—') : '—',
             },
             { key: 'birthday', label: '出生日期', children: formatBirthday(detail?.birthday) },
-            { key: 'phone', label: '手机号', children: detail?.phone || '—' },
+            {
+              key: 'phone',
+              label: '手机号',
+              children: <SensitiveText type="phone" value={detail?.phone} />,
+            },
             {
               key: 'id_card',
               label: '证件号',
-              children: detail?.id_card ? (
-                <span className="id-card-field">
-                  {idCardVisible ? detail.id_card : maskIdCard(detail.id_card)}
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={idCardVisible ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-                    onClick={() => setIdCardVisible((visible) => !visible)}
-                  />
-                </span>
-              ) : (
-                '—'
-              ),
+              children: <SensitiveText type="idCard" value={detail?.id_card} />,
             },
             {
               key: 'institution_id',

@@ -12,6 +12,7 @@ import dayjs from 'dayjs'
 import { serviceApi } from '@/api'
 import { addMemberFollowup, isApiPendingError } from '@/api/modules/memberOperation'
 import type { RegisteredUserRow } from '@/api/modules/memberOperation'
+import SensitiveText from '@/components/SensitiveText'
 import './FollowupDrawer.less'
 
 interface FollowupDrawerProps {
@@ -95,8 +96,13 @@ export default function FollowupDrawer(props: FollowupDrawerProps) {
     >
       <p className="followup-drawer__subtitle">记下需求、购买顾虑与推荐内容，方便下次继续沟通。</p>
       <p className="followup-drawer__member">
-        {member ? `${member.nickname || '—'} · 用户编号 U-${String(member.id).padStart(6, '0')}` : '—'}
-        {member?.operator_name ? ` · 当前运营人员：${member.operator_name}` : ''}
+        <SensitiveText type="name" value={member?.nickname} /> · 用户编号 U-
+        {member ? String(member.id).padStart(6, '0') : '—'}
+        {member?.operator_name && (
+          <>
+            {' '}· 当前运营人员：<SensitiveText type="name" value={member.operator_name} />
+          </>
+        )}
       </p>
       <p className="followup-drawer__hint">
         沟通记录保存在注册会员下；普通服务咨询不创建健康管理接入线索。
@@ -104,10 +110,10 @@ export default function FollowupDrawer(props: FollowupDrawerProps) {
 
       <Form form={form} layout="vertical">
         <Form.Item label="沟通对象" required>
-          <Input
-            disabled
-            value={member ? `${member.nickname || '—'}（注册会员） · ${member.phone || '—'}` : ''}
-          />
+          <div className="followup-drawer__contact">
+            <SensitiveText type="name" value={member?.nickname} />（注册会员） ·{' '}
+            <SensitiveText type="phone" value={member?.phone} />
+          </div>
         </Form.Item>
         <Form.Item
           name="content"
