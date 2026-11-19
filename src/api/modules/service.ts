@@ -46,7 +46,7 @@ export interface ServiceItem {
   institution_ids?: number[]
   created_at?: number
   target_crowd?: string // 适用人群
-  vital_sign?: number[] // 生命体征
+  vital_sign?: string[] // 生命体征监测项编码（metric_code）
 }
 
 /** 服务流程步骤（service_process 数组元素） */
@@ -113,8 +113,8 @@ export interface ServiceSaveBody {
   /** 1-上架 9-下架 */
   status?: number
   target_crowd?: string
-  /** 生命体征监测项 ID 数组 */
-  vital_sign?: number[]
+  /** 生命体征监测项编码（metric_code）数组 */
+  vital_sign?: string[]
 }
 
 /** 服务套餐入参（swagger admin.PackageItem，价格为字符串保留两位小数） */
@@ -155,13 +155,18 @@ export function updateServiceStatus(id: number, status: CommonStatus, remark?: s
   return http.post<null>(`/admin/services/${id}/status`, { status }, { params: { remark } })
 }
 
-/** 批量上下架 POST /api/admin/services/batch-status（swagger admin.ReqBatchStatus：{ids,status,category_id?}） */
+/** 批量上下架 POST /api/admin/services/batch-status（原因通过 remark 查询参数提交） */
 export function batchUpdateServiceStatus(
   ids: number[],
   status: CommonStatus,
   category_id?: number,
+  remark?: string,
 ) {
-  return http.post<BatchResult>('/admin/services/batch-status', { ids, status, category_id })
+  return http.post<BatchResult>(
+    '/admin/services/batch-status',
+    { ids, status, category_id },
+    { params: { remark } },
+  )
 }
 
 /** 删除服务 DELETE /api/admin/services/:id（swagger：remark 为 query 选填） */

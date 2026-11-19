@@ -7,7 +7,6 @@ import { Button, Checkbox, Form, Input, App } from 'antd'
 import {
   BankOutlined,
   LockOutlined,
-  PlusOutlined,
   ProfileOutlined,
   SafetyCertificateOutlined,
   UserOutlined,
@@ -15,6 +14,7 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useUserStore } from '@/store/modules/user'
 import loginBg from '@/assets/login_bg.png';
+import logoImg from '@/assets/logo/logo.png'
 import './index.less'
 
 interface LoginForm {
@@ -65,7 +65,7 @@ export default function Login() {
       <aside className="login-page__brand" style={{backgroundImage: `url(${loginBg})`}}>
         <header className="login-page__logo">
           <span className="login-page__logo-icon">
-            <PlusOutlined />
+            <img src={logoImg} />
           </span>
           <span className="login-page__logo-text">
             <strong>幸福颐养</strong>

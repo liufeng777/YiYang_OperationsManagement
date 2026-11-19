@@ -37,6 +37,15 @@ const packageName = (count: number) => (count === 1 ? '单次服务' : `${count}
 const formatPackagePrice = (value: number) =>
   `¥${value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
+/** 通用生命体征：value 对齐后端监测项编码 metric_code */
+const vitalSignOptions = [
+  { label: '血压', value: 'blood_pressure' },
+  { label: '静息心率', value: 'resting_heart_rate' },
+  { label: '血氧饱和度', value: 'blood_oxygen_saturation' },
+  { label: '体重', value: 'weight' },
+  { label: '身高', value: 'height' },
+]
+
 /** 表单值结构：字段名对齐 ServiceItem DTO，便于直接组装保存入参 */
 interface ServiceFormValues {
   name: string
@@ -59,6 +68,7 @@ interface ServiceFormValues {
   openAfterSave: boolean
   consumables_desc: string
   target_crowd: string
+  vital_sign?: string[]
 }
 
 /** 服务过程步骤：序列化为 JSON 字符串存入 ServiceItem.service_process，患者端按顺序展示 */
@@ -241,6 +251,7 @@ export default function ServiceEditorPage() {
       description, // 富文本 JSON 字符串
       duration: values.duration,
       target_crowd: values.target_crowd,
+      vital_sign: values.vital_sign ?? [],
       // swagger 字段名为 is_consumable_supported（boolean）
       is_consumable_supported: values.consumable === '1',
       consumables_desc: values.consumables_desc,
@@ -484,7 +495,11 @@ export default function ServiceEditorPage() {
               </div>
               <div className="form-grid form-grid--three">
                 <Form.Item name="vital_sign" label="生命体征监测项">
-                  <Select mode="multiple" placeholder="请选择一项或多项" />
+                  <Select
+                    mode="multiple"
+                    placeholder="请选择一项或多项"
+                    options={vitalSignOptions}
+                  />
                 </Form.Item>
               </div>
             </Card>

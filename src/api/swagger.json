@@ -3962,68 +3962,6 @@
           }
       },
       "/api/v1/admin/messages": {
-          "get": {
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "消息通知-站内消息"
-              ],
-              "summary": "消息列表",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "页码，默认1，选填",
-                      "name": "page",
-                      "in": "query"
-                  },
-                  {
-                      "type": "integer",
-                      "description": "每页条数，默认10，选填",
-                      "name": "page_size",
-                      "in": "query"
-                  },
-                  {
-                      "type": "integer",
-                      "description": "接收者ID，选填",
-                      "name": "receiver_id",
-                      "in": "query"
-                  },
-                  {
-                      "type": "string",
-                      "description": "消息类型，选填",
-                      "name": "message_type",
-                      "in": "query"
-                  },
-                  {
-                      "type": "string",
-                      "description": "是否已读(1-已读 0-未读)，选填",
-                      "name": "is_read",
-                      "in": "query"
-                  },
-                  {
-                      "type": "integer",
-                      "description": "开始时间(UTC秒)，选填",
-                      "name": "start_time",
-                      "in": "query"
-                  },
-                  {
-                      "type": "integer",
-                      "description": "结束时间(UTC秒)，选填",
-                      "name": "end_time",
-                      "in": "query"
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "消息列表",
-                      "schema": {
-                          "type": "object",
-                          "additionalProperties": true
-                      }
-                  }
-              }
-          },
           "post": {
               "consumes": [
                   "application/json"
@@ -4034,7 +3972,7 @@
               "tags": [
                   "消息通知-站内消息"
               ],
-              "summary": "发送站内消息",
+              "summary": "手动创建站内信（运营通知，message_type=1，按用户/staff范围）",
               "parameters": [
                   {
                       "description": "发送消息参数",
@@ -4056,7 +3994,107 @@
               }
           }
       },
-      "/api/v1/admin/messages/batch-push": {
+      "/api/v1/admin/metric-tree": {
+          "get": {
+              "description": "按大类→小类→监测项返回树形结构，供前端筛选监测项。支持 parent_id(指定大类子树)/category_id(指定小类)/keyword(命中监测项编码·中文名·英文名·缩写·单位)过滤。仅返回启用(status=1)的监测项。",
+              "produces": [
+                  "application/json"
+              ],
+              "tags": [
+                  "健康管理-监测项字典"
+              ],
+              "summary": "监测项树状列表",
+              "parameters": [
+                  {
+                      "type": "integer",
+                      "description": "大类ID，仅返回该大类子树",
+                      "name": "parent_id",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "小类ID，仅返回该小类(挂其大类下)",
+                      "name": "category_id",
+                      "in": "query"
+                  },
+                  {
+                      "type": "string",
+                      "description": "关键字(命中监测项字段)",
+                      "name": "keyword",
+                      "in": "query"
+                  }
+              ],
+              "responses": {
+                  "200": {
+                      "description": "OK",
+                      "schema": {
+                          "$ref": "#/definitions/pkg.Response"
+                      }
+                  }
+              }
+          }
+      },
+      "/api/v1/admin/metrics/{code}": {
+          "get": {
+              "description": "返回监测项基本信息 + 参考范围。",
+              "produces": [
+                  "application/json"
+              ],
+              "tags": [
+                  "健康管理-监测项字典"
+              ],
+              "summary": "监测项详情",
+              "parameters": [
+                  {
+                      "type": "string",
+                      "description": "监测项编码(metric_code)",
+                      "name": "code",
+                      "in": "path",
+                      "required": true
+                  }
+              ],
+              "responses": {
+                  "200": {
+                      "description": "OK",
+                      "schema": {
+                          "$ref": "#/definitions/pkg.Response"
+                      }
+                  }
+              }
+          }
+      },
+      "/api/v1/admin/notify-rules": {
+          "get": {
+              "produces": [
+                  "application/json"
+              ],
+              "tags": [
+                  "通知中心-事件规则"
+              ],
+              "summary": "事件规则列表",
+              "parameters": [
+                  {
+                      "type": "integer",
+                      "description": "页码，默认1，选填",
+                      "name": "page",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "每页条数，默认10，选填",
+                      "name": "page_size",
+                      "in": "query"
+                  }
+              ],
+              "responses": {
+                  "200": {
+                      "description": "OK",
+                      "schema": {
+                          "$ref": "#/definitions/pkg.Response"
+                      }
+                  }
+              }
+          },
           "post": {
               "consumes": [
                   "application/json"
@@ -4065,17 +4103,17 @@
                   "application/json"
               ],
               "tags": [
-                  "消息通知-站内消息"
+                  "通知中心-事件规则"
               ],
-              "summary": "批量微信推送",
+              "summary": "新增事件规则",
               "parameters": [
                   {
-                      "description": "批量推送参数",
+                      "description": "事件规则参数（rule_id=0 新增）",
                       "name": "body",
                       "in": "body",
                       "required": true,
                       "schema": {
-                          "$ref": "#/definitions/admin.ReqBatchMessagePush"
+                          "$ref": "#/definitions/admin.ReqAdminNotifyRule"
                       }
                   }
               ],
@@ -4089,48 +4127,155 @@
               }
           }
       },
-      "/api/v1/admin/messages/{id}": {
-          "get": {
+      "/api/v1/admin/notify-rules/{id}": {
+          "put": {
+              "consumes": [
+                  "application/json"
+              ],
               "produces": [
                   "application/json"
               ],
               "tags": [
-                  "消息通知-站内消息"
+                  "通知中心-事件规则"
               ],
-              "summary": "消息详情",
+              "summary": "编辑事件规则",
               "parameters": [
                   {
                       "type": "integer",
-                      "description": "消息ID",
+                      "description": "规则ID",
                       "name": "id",
                       "in": "path",
                       "required": true
+                  },
+                  {
+                      "description": "事件规则参数",
+                      "name": "body",
+                      "in": "body",
+                      "required": true,
+                      "schema": {
+                          "$ref": "#/definitions/admin.ReqAdminNotifyRule"
+                      }
                   }
               ],
               "responses": {
                   "200": {
                       "description": "OK",
                       "schema": {
-                          "type": "object",
-                          "additionalProperties": true
+                          "$ref": "#/definitions/pkg.Response"
                       }
                   }
               }
           }
       },
-      "/api/v1/admin/messages/{id}/push": {
+      "/api/v1/admin/notify-stats": {
+          "get": {
+              "produces": [
+                  "application/json"
+              ],
+              "tags": [
+                  "通知中心-统计"
+              ],
+              "summary": "通知发送统计（按事件码成功率/失败TOP/短信趋势）",
+              "parameters": [
+                  {
+                      "type": "integer",
+                      "description": "开始时间(UTC秒)，可选，默认近7天",
+                      "name": "start_time",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "结束时间(UTC秒)，可选",
+                      "name": "end_time",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "统计维度 1-按事件 2-失败原因TOP 3-短信趋势，选填(0=全部)",
+                      "name": "stat_type",
+                      "in": "query"
+                  }
+              ],
+              "responses": {
+                  "200": {
+                      "description": "OK",
+                      "schema": {
+                          "$ref": "#/definitions/pkg.Response"
+                      }
+                  }
+              }
+          }
+      },
+      "/api/v1/admin/notify-tasks": {
+          "get": {
+              "produces": [
+                  "application/json"
+              ],
+              "tags": [
+                  "通知中心-投递任务"
+              ],
+              "summary": "投递任务列表（含 dead 队列）",
+              "parameters": [
+                  {
+                      "type": "integer",
+                      "description": "页码，默认1，选填",
+                      "name": "page",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "每页条数，默认10，选填",
+                      "name": "page_size",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "任务状态，选填(0-待投递 2-投递成功 9-投递失败 dead)",
+                      "name": "status",
+                      "in": "query"
+                  },
+                  {
+                      "type": "string",
+                      "description": "事件码过滤，选填",
+                      "name": "event_code",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "开始时间(UTC秒)，选填",
+                      "name": "start_time",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "结束时间(UTC秒)，选填",
+                      "name": "end_time",
+                      "in": "query"
+                  }
+              ],
+              "responses": {
+                  "200": {
+                      "description": "OK",
+                      "schema": {
+                          "$ref": "#/definitions/pkg.Response"
+                      }
+                  }
+              }
+          }
+      },
+      "/api/v1/admin/notify-tasks/{id}/retry": {
           "post": {
               "produces": [
                   "application/json"
               ],
               "tags": [
-                  "消息通知-站内消息"
+                  "通知中心-投递任务"
               ],
-              "summary": "推送微信模板消息",
+              "summary": "手动重发投递任务（dead → 待投递）",
               "parameters": [
                   {
                       "type": "integer",
-                      "description": "消息ID",
+                      "description": "任务ID",
                       "name": "id",
                       "in": "path",
                       "required": true
@@ -4566,6 +4711,75 @@
                       "schema": {
                           "type": "object",
                           "additionalProperties": true
+                      }
+                  }
+              }
+          }
+      },
+      "/api/v1/admin/push-logs": {
+          "get": {
+              "produces": [
+                  "application/json"
+              ],
+              "tags": [
+                  "通知中心-通道日志"
+              ],
+              "summary": "通道发送记录",
+              "parameters": [
+                  {
+                      "type": "integer",
+                      "description": "页码，默认1，选填",
+                      "name": "page",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "每页条数，默认10，选填",
+                      "name": "page_size",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "通道 2-微信 3-短信，选填",
+                      "name": "channel",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "状态，选填",
+                      "name": "status",
+                      "in": "query"
+                  },
+                  {
+                      "type": "string",
+                      "description": "手机号，选填",
+                      "name": "phone",
+                      "in": "query"
+                  },
+                  {
+                      "type": "string",
+                      "description": "模板码，选填",
+                      "name": "tpl_code",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "开始时间(UTC秒)，选填",
+                      "name": "start_time",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "结束时间(UTC秒)，选填",
+                      "name": "end_time",
+                      "in": "query"
+                  }
+              ],
+              "responses": {
+                  "200": {
+                      "description": "OK",
+                      "schema": {
+                          "$ref": "#/definitions/pkg.Response"
                       }
                   }
               }
@@ -6316,64 +6530,6 @@
               }
           }
       },
-      "/api/v1/admin/sms-logs": {
-          "get": {
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "消息通知-短信记录"
-              ],
-              "summary": "短信发送记录",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "页码，默认1，选填",
-                      "name": "page",
-                      "in": "query"
-                  },
-                  {
-                      "type": "integer",
-                      "description": "每页条数，默认10，选填",
-                      "name": "page_size",
-                      "in": "query"
-                  },
-                  {
-                      "type": "string",
-                      "description": "手机号，选填",
-                      "name": "phone",
-                      "in": "query"
-                  },
-                  {
-                      "type": "string",
-                      "description": "状态(delivered/failed)，选填",
-                      "name": "status",
-                      "in": "query"
-                  },
-                  {
-                      "type": "integer",
-                      "description": "开始时间(UTC秒)，选填",
-                      "name": "start_time",
-                      "in": "query"
-                  },
-                  {
-                      "type": "integer",
-                      "description": "结束时间(UTC秒)，选填",
-                      "name": "end_time",
-                      "in": "query"
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "type": "object",
-                          "additionalProperties": true
-                      }
-                  }
-              }
-          }
-      },
       "/api/v1/admin/staffs": {
           "get": {
               "produces": [
@@ -6979,7 +7135,7 @@
                   },
                   {
                       "type": "integer",
-                      "description": "工单状态(1-待排单 2-待接单 3-已接单...7-已取消)，选填",
+                      "description": "工单状态(1-待排单 2-待接单 3-待服务 4-服务中 5-已完成 8-已取消 9-中止)，选填",
                       "name": "wo_status",
                       "in": "query"
                   },
@@ -7145,6 +7301,75 @@
               "price_with_consum": {
                   "description": "含耗材价格(元,字符串保留两位小数)",
                   "type": "string"
+              }
+          }
+      },
+      "admin.ReqAdminNotifyRule": {
+          "type": "object",
+          "properties": {
+              "action": {
+                  "description": "业务动作，如 REMIND/COMPLETED（必填）",
+                  "type": "string"
+              },
+              "dedup_expr": {
+                  "description": "去重表达式(留空=按接收者×事件默认去重)",
+                  "type": "string"
+              },
+              "enabled": {
+                  "description": "1-启用 9-停用",
+                  "type": "integer"
+              },
+              "entity_type": {
+                  "description": "业务对象类型，如 WO（必填）",
+                  "type": "string"
+              },
+              "inbox_tpl_id": {
+                  "description": "站内信模板ID（0=自由文本）",
+                  "type": "integer"
+              },
+              "lead_minutes": {
+                  "description": "提前量(分钟，如上门前提醒)",
+                  "type": "integer"
+              },
+              "level": {
+                  "description": "事件等级 1-紧急 2-重要 3-一般",
+                  "type": "integer"
+              },
+              "night_safe": {
+                  "description": "是否夜间静默保护 1是/0否",
+                  "type": "integer"
+              },
+              "pref_bypass": {
+                  "description": "是否绕过用户偏好 1是/0否",
+                  "type": "integer"
+              },
+              "receiver_role": {
+                  "description": "接收者角色：1-用户 3-服务人员",
+                  "type": "integer"
+              },
+              "remark": {
+                  "description": "备注",
+                  "type": "string"
+              },
+              "rule_id": {
+                  "description": "规则ID，编辑时传、新增时0",
+                  "type": "integer"
+              },
+              "sms_required": {
+                  "description": "是否需短信 1是/0否",
+                  "type": "integer"
+              },
+              "sms_tpl_id": {
+                  "description": "短信模板ID（0=不启用）",
+                  "type": "integer"
+              },
+              "wechat_required": {
+                  "description": "是否需微信 1是/0否",
+                  "type": "integer"
+              },
+              "wechat_tpl_id": {
+                  "description": "微信模板ID（0=不启用）",
+                  "type": "integer"
               }
           }
       },
@@ -7331,21 +7556,6 @@
               "tag_id": {
                   "description": "标签ID，必填",
                   "type": "integer"
-              }
-          }
-      },
-      "admin.ReqBatchMessagePush": {
-          "type": "object",
-          "required": [
-              "message_ids"
-          ],
-          "properties": {
-              "message_ids": {
-                  "description": "消息ID数组，必填",
-                  "type": "array",
-                  "items": {
-                      "type": "integer"
-                  }
               }
           }
       },
@@ -7631,7 +7841,7 @@
                   "description": "分类ID，选填",
                   "type": "integer"
               },
-              "cover_url": {
+              "cover": {
                   "description": "封面图，选填",
                   "type": "string"
               },
@@ -7660,11 +7870,8 @@
                   "type": "string"
               },
               "tags": {
-                  "description": "标签，选填",
-                  "type": "array",
-                  "items": {
-                      "type": "string"
-                  }
+                  "description": "标签，JSON数组字符串 如 [\"AAA\",\"BBB\"]，选填",
+                  "type": "string"
               },
               "title": {
                   "description": "标题，必填",
@@ -7699,6 +7906,18 @@
                   "description": "封面图片 URL，选填",
                   "type": "string"
               },
+              "daily_close_second": {
+                  "description": "每日可预约结束时间(当天0点秒偏移，默认64800=18:00)，选填",
+                  "type": "integer"
+              },
+              "daily_max_work_orders": {
+                  "description": "每日可预约工单数量上限（默认16），选填",
+                  "type": "integer"
+              },
+              "daily_open_second": {
+                  "description": "每日可预约开始时间(当天0点秒偏移，默认28800=08:00)，选填",
+                  "type": "integer"
+              },
               "description": {
                   "description": "机构说明 varchar(255)，选填",
                   "type": "string"
@@ -7729,6 +7948,14 @@
               "manager_phone": {
                   "description": "负责人电话，选填",
                   "type": "string"
+              },
+              "max_cancel_interval_min": {
+                  "description": "已预约工单最迟取消间隔(分，默认180)，选填",
+                  "type": "integer"
+              },
+              "min_lead_time_min": {
+                  "description": "服务工单预约最少提前时间(分，默认180)，选填",
+                  "type": "integer"
               },
               "name": {
                   "description": "机构名称，必填",
@@ -7904,14 +8131,14 @@
                   "type": "string"
               },
               "receiver_ids": {
-                  "description": "指定接收者ID数组(批量/指定)，选填",
+                  "description": "指定接收者ID数组，必填",
                   "type": "array",
                   "items": {
                       "type": "integer"
                   }
               },
               "target": {
-                  "description": "目标范围(all/member/staff/institution/...)，选填",
+                  "description": "目标角色(user/staff)，选填，缺省 user",
                   "type": "string"
               },
               "title": {
@@ -7953,7 +8180,7 @@
                   "type": "string"
               },
               "type": {
-                  "description": "模板类型(order/verify/activity/...)，必填",
+                  "description": "模板类型/编码(order/verify/activity/...)，必填",
                   "type": "string"
               }
           }
@@ -8188,6 +8415,10 @@
                   "description": "服务类型 ID (物理外键，关联 service_categories.id)，必填",
                   "type": "integer"
               },
+              "consumables_desc": {
+                  "description": "耗材需求，选填，如\"清洁用品、护理垫\"",
+                  "type": "string"
+              },
               "cover_url": {
                   "description": "封面图 URL，选填",
                   "type": "string"
@@ -8244,10 +8475,10 @@
                   "type": "string"
               },
               "vital_sign": {
-                  "description": "生命体征 -监测项ID 数组，选填",
+                  "description": "生命体征 -监测项编码(metric_code) 数组，选填",
                   "type": "array",
                   "items": {
-                      "type": "integer"
+                      "type": "string"
                   }
               }
           }
@@ -8255,7 +8486,6 @@
       "admin.ReqServiceCategory": {
           "type": "object",
           "required": [
-              "code",
               "name"
           ],
           "properties": {
@@ -8265,10 +8495,6 @@
               },
               "brief_en": {
                   "description": "类型说明 (英文)，选填",
-                  "type": "string"
-              },
-              "code": {
-                  "description": "类型编码 (唯一，如 BASIC_CARE)，必填",
                   "type": "string"
               },
               "name": {

@@ -39,7 +39,7 @@ export interface ActivityItem {
   /** 封面图：创建 / 编辑入参字段名同为 cover_url */
   cover_url: string
   description?: string // 富文本json
-  location?: string // 区域，用户输入活动举办的区域即可
+  location?: string // 活动简介（沿用后端 location 字段，最多 20 字）
   start_date: number // UTC秒级
   end_date: number // UTC秒级
   institutions: ActivityInstitutionConfig[]
@@ -65,7 +65,7 @@ export interface ActivitySaveBody {
   cover_url?: string
   /** 富文本 JSON */
   description?: string
-  /** 举办地点（区域） */
+  /** 活动简介（沿用后端 location 字段，最多 20 字） */
   location?: string
   /** 开始时间（UTC 秒） */
   start_date?: number

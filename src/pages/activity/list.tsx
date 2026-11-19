@@ -28,7 +28,7 @@ import './list.less'
 
 /** 活动类型：1社区活动 / 2康养旅游 / 3健康课堂 / 4健康活动 / 5其他 */
 
-/** 活动状态枚举文案（status=2 的细分见 resolveActivityStatus） */
+/** 原活动状态：保留发布状态及报名进度展示。 */
 const statusText: Record<number, string> = {
   0: '未知',
   1: '待发布',
@@ -37,40 +37,55 @@ const statusText: Record<number, string> = {
   9: '已取消',
 }
 
-/**
- * 活动展示状态：status=2（报名中）时结合报名时间与名额动态计算
- * - 当前时间已超出 end_date → 报名结束
- * - 当前时间早于 start_date → 报名未开始
- * - 报名期内：total_registered < total_max_participants → 报名中；已满 → 已满员
- * 其余状态（1 待发布 / 3 已结束 / 9 已取消）直接取枚举文案
- * @param nowSeconds 当前时间（UTC 秒），可注入便于校验
- */
 export function resolveActivityStatus(
   record: ActivityItem,
   nowSeconds: number = Math.floor(Date.now() / 1000),
-): {label: string, className: string } {
+): { label: string; className: string } {
   if (record.status !== 2) return {
     label: statusText[record.status],
-    className: record.status === 1 ? 'status--warning' : 'status--danger'
+    className: record.status === 1 ? 'status--warning' : 'status--danger',
   }
   if (record.end_date && nowSeconds > record.end_date) return {
     label: '报名已结束',
-    className: 'status--cancel'
+    className: 'status--cancel',
   }
   if (record.start_date && nowSeconds < record.start_date) return {
     label: '报名未开始',
-    className: 'status--info'
+    className: 'status--info',
   }
   const registered = record.total_registered ?? 0
   const maxParticipants = record.total_max_participants ?? 0
   if (maxParticipants > 0 && registered >= maxParticipants) return {
     label: '已满员',
-    className: 'status--info'
+    className: 'status--info',
   }
-  return {
-    label: '报名中',
-    className: 'status--success'
-  }
+  return { label: '报名中', className: 'status--success' }
+}
+
+export type ActivityTimeStatus = 'notStarted' | 'inProgress' | 'ended'
+
+const activityTimeStatusOptions: Array<{
+  value: ActivityTimeStatus
+  label: string
+  className: string
+}> = [
+  { value: 'notStarted', label: '未开始', className: 'status--info' },
+  { value: 'inProgress', label: '活动中', className: 'status--success' },
+  { value: 'ended', label: '已结束', className: 'status--cancel' },
+]
+
+/** 时间状态仅根据活动起止时间计算，与原活动状态独立展示。 */
+export function resolveActivityTimeStatus(
+  record: Pick<ActivityItem, 'start_date' | 'end_date'>,
+  nowSeconds: number = Math.floor(Date.now() / 1000),
+): { key: ActivityTimeStatus; label: string; className: string } {
+  const key: ActivityTimeStatus = record.start_date && nowSeconds < record.start_date
+    ? 'notStarted'
+    : record.end_date && nowSeconds > record.end_date
+      ? 'ended'
+      : 'inProgress'
+  const status = activityTimeStatusOptions.find((item) => item.value === key)!
+  return { key, label: status.label, className: status.className }
 }
 
 /** UTC 秒 → 日期文案：当年只显示「MM-DD」，跨年显示「YYYY-MM-DD」；缺值显示 - */
@@ -160,7 +175,7 @@ export default function ActivityList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  /** 拉取活动列表（筛选条件以后端查询参数下发） */
+  /** 拉取活动列表（原活动状态筛选下推接口，时间状态仅用于展示和操作权限） */
   const fetchList = useCallback(
     async (targetPage = page) => {
       setLoading(true)
@@ -329,7 +344,6 @@ export default function ActivityList() {
         render: (_, record) => (
           <div className="activity-name">
             <strong>{record.title}</strong>
-            <span>{record.title_en}</span>
           </div>
         ),
       },
@@ -370,21 +384,29 @@ export default function ActivityList() {
         ),
       },
       {
+        title: '时间状态',
+        key: 'timeStatus',
+        width: 100,
+        render: (_, record) => (
+          <span className={`status-btn ${resolveActivityTimeStatus(record).className}`}>
+            {resolveActivityTimeStatus(record).label}
+          </span>
+        ),
+      },
+      {
         title: '活动时间',
         key: 'activityTime',
         width: 200,
-        // 后端返回 UTC 秒，需 ×1000 交给 dayjs；只展示报名起止日期，当年不显示年份
+        // 后端返回 UTC 秒，需 ×1000 交给 dayjs；只展示活动起止日期，当年不显示年份
         render: (_, record) =>
           `${formatActivityDate(record.start_date)} ~ ${formatActivityDate(record.end_date)}`,
       },
       {
         title: '操作',
         key: 'action',
-        width: 280,
+        width: 220,
         render: (_, record) => {
-          /* 四段式操作列：状态主操作 + 配置机构 + 查看详情 + 更多（低频/危险操作收拢）
-             - 待发布(1)：发布；报名中(2)/已结束(3)：报名查询；已取消(9)：重新发布
-             - 取消、删除放入「更多」，均需二次确认 */
+          const canEdit = resolveActivityTimeStatus(record).key === 'notStarted'
           const primary =
             record.status === 1
               ? { label: '发布活动', onClick: () => handlePublish(record) }
@@ -394,7 +416,7 @@ export default function ActivityList() {
 
           const moreItems: MenuProps['items'] = [
             ...(record.status === 2 ? [{ key: 'cancel', label: '取消活动', danger: true }] : []),
-            { key: 'delete', label: '删除活动', danger: true },
+            ...(canEdit ? [{ key: 'delete', label: '删除活动', danger: true }] : []),
           ]
           const onMoreClick: MenuProps['onClick'] = ({ key }) => {
             if (key === 'cancel') handleCancelActivity(record)
@@ -409,20 +431,26 @@ export default function ActivityList() {
               <Button type="link" size="small" onClick={() => openInstitutionDrawer(record)}>
                 配置机构
               </Button>
-              <Button
-                type="link"
-                size="small"
-                onClick={() => navigate(`/activity/detail/${record.id}`)}
-              >
-                查看详情
-              </Button>
-              <Divider vertical />
-              <Dropdown menu={{ items: moreItems, onClick: onMoreClick }} trigger={['click']}>
-                <Button type="link" size="small">
-                  更多
-                  <DownOutlined style={{ fontSize: 10 }} />
+              {canEdit && (
+                <Button
+                  type="link"
+                  size="small"
+                  onClick={() => navigate(`/activity/detail/${record.id}`)}
+                >
+                  编辑活动
                 </Button>
-              </Dropdown>
+              )}
+              {!!moreItems?.length && (
+                <>
+                  <Divider vertical />
+                  <Dropdown menu={{ items: moreItems, onClick: onMoreClick }} trigger={['click']}>
+                    <Button type="link" size="small">
+                      更多
+                      <DownOutlined style={{ fontSize: 10 }} />
+                    </Button>
+                  </Dropdown>
+                </>
+              )}
             </div>
           )
         },
@@ -497,7 +525,7 @@ export default function ActivityList() {
             onChange={setStatus}
             options={Object.entries(statusText).map(([key, label]) => ({
               label,
-              value: Number(key)
+              value: Number(key),
             }))}
             allowClear
             placeholder="活动状态"

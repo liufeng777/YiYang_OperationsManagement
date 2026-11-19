@@ -483,15 +483,15 @@ export default function ServicePoolList() {
     })
   }
 
-  /** 单条/批量 上停用（批量走后端 batch-status） */
-  const handleConfirmStatusChange = async () => {
+  /** 单条/批量 上停用（批量走后端 batch-status），停用原因随 remark 提交 */
+  const handleConfirmStatusChange = async (reason?: string) => {
     if (!statusTarget) return
     const nextStatus: CommonStatus = statusTarget.action === 'offline' ? 9 : 1
     try {
       if (statusTarget.ids.length === 1) {
-        await serviceApi.updateServiceStatus(statusTarget.ids[0], nextStatus)
+        await serviceApi.updateServiceStatus(statusTarget.ids[0], nextStatus, reason)
       } else {
-        await serviceApi.batchUpdateServiceStatus(statusTarget.ids, nextStatus)
+        await serviceApi.batchUpdateServiceStatus(statusTarget.ids, nextStatus, undefined, reason)
       }
       message.success(
         statusTarget.action === 'offline'
@@ -756,7 +756,7 @@ export default function ServicePoolList() {
         type="service"
         statusTarget={statusTarget}
         onCancel={() => setStatusTarget(null)}
-        onOk={() => handleConfirmStatusChange()}
+        onOk={(reason) => handleConfirmStatusChange(reason)}
       />
 
       <ServiceCategoryEditor

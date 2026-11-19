@@ -29,9 +29,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import RichDetailEditor from '@/components/RichDetailEditor'
 import RichDetailPreview, { isRichDetailEmpty } from '@/components/RichDetailPreview'
-import { activityApi } from '@/api'
+import { activityApi, institutionApi } from '@/api'
 import { useImageUpload } from '@/hooks'
 import type { ActivityInstitutionConfig, ActivitySaveBody } from '@/api/modules/activity'
+import type { InstitutionItem } from '@/api/modules/institution'
 import InstitutionConfigDrawer, {
   toInstitutionConfigs,
   toInstitutionRows,
@@ -91,6 +92,8 @@ export default function ActivityCreate() {
   const activityEnd = Form.useWatch('end_date', form) as Dayjs | undefined
   /** 参与机构（本地行，抽屉内编辑后回传） */
   const [institutions, setInstitutions] = useState<ActivityInstitutionRow[]>([])
+  /** 机构池用于在抽屉外直接展示已配置机构名称 */
+  const [institutionPool, setInstitutionPool] = useState<InstitutionItem[]>([])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewStatus, setPreviewStatus] = useState('normal')
@@ -102,6 +105,8 @@ export default function ActivityCreate() {
   const [coverServerUrl, setCoverServerUrl] = useState('')
   /** 编辑态原始封面：无新上传时原值回写，避免写入失效地址 */
   const [originCoverUrl, setOriginCoverUrl] = useState('')
+  /** 英文标题已从页面移除，编辑时保留原值避免全量覆盖清空 */
+  const [originTitleEn, setOriginTitleEn] = useState('')
   /** 编辑态原始状态：仅草稿（1）允许再次「存为草稿」 */
   const [originStatus, setOriginStatus] = useState<number | null>(null)
   /** 编辑态原始时间：用户清空日期时回退原值，避免被 0 覆盖 */
@@ -135,6 +140,35 @@ export default function ActivityCreate() {
     return Upload.LIST_IGNORE
   }
 
+  /** 拉取机构池，补全编辑页已配置机构的名称与区域 */
+  useEffect(() => {
+    let cancelled = false
+    institutionApi
+      .getInstitutions({ page: 1, page_size: 1000 })
+      .then((res) => {
+        if (!cancelled) setInstitutionPool(res.list ?? [])
+      })
+      .catch(() => {
+        if (!cancelled) setInstitutionPool([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!institutionPool.length) return
+    const institutionMap = new Map(institutionPool.map((item) => [item.id, item]))
+    setInstitutions((prev) => prev.map((row) => {
+      const institution = institutionMap.get(Number(row.id))
+      return {
+        ...row,
+        name: row.name || institution?.name || `机构 ${row.id}`,
+        area: row.area || [institution?.city, institution?.district].filter(Boolean).join(' · '),
+      }
+    }))
+  }, [institutionPool])
+
   /** 编辑态：拉取活动详情回填表单、封面、图文详情与承接机构 */
   useEffect(() => {
     if (!isEdit || !params.id) return
@@ -144,11 +178,16 @@ export default function ActivityCreate() {
       .getActivity(Number(params.id))
       .then((detail) => {
         if (cancelled) return
+        const isNotStarted = !!detail.start_date && Date.now() < detail.start_date * 1000
+        if (!isNotStarted) {
+          message.warning('仅未开始的活动支持编辑')
+          navigate('/activity', { replace: true })
+          return
+        }
         form.setFieldsValue({
           name: detail.title,
-          title_en: detail.title_en ?? '',
           type: typeValueToLabel(detail.activity_type),
-          // location 现在为「活动区域」文本，可直接回填
+          // 后端沿用 location 字段保存活动简介
           location: detail.location ?? '',
           target_crowd: detail.target_crowd ?? '',
           start_date: detail.start_date ? dayjs(detail.start_date * 1000) : undefined,
@@ -159,6 +198,7 @@ export default function ActivityCreate() {
         setCoverUrl(detail.cover_url || null)
         setCoverServerUrl(detail.cover_url ?? '')
         setOriginCoverUrl(detail.cover_url ?? '')
+        setOriginTitleEn(detail.title_en ?? '')
         setOriginStatus(detail.status ?? null)
         setOriginMeta({
           start: detail.start_date ?? 0,
@@ -167,7 +207,6 @@ export default function ActivityCreate() {
         setDescription(detail.description ?? '')
         // 记录原始机构，供 PUT 全量覆盖时对空值回退
         setOriginInstitutions(detail.institutions ?? [])
-        // 参与机构回填（机构名 / 区域由抽屉用机构池补全，页面无需额外查询）
         setInstitutions(toInstitutionRows(detail.institutions))
       })
       .catch(() => {
@@ -179,7 +218,7 @@ export default function ActivityCreate() {
     return () => {
       cancelled = true
     }
-  }, [isEdit, params.id, form])
+  }, [isEdit, params.id, form, message, navigate])
 
   /**
    * 提交：组装 ActivitySaveBody（契约见 api/modules/activity.ts）
@@ -194,7 +233,7 @@ export default function ActivityCreate() {
       value ? Math.floor((value as Dayjs).valueOf() / 1000) : fallback
     return {
       title: String(values.name ?? ''),
-      title_en: String(values.title_en ?? '').trim(),
+      title_en: originTitleEn,
       activity_type: labelToTypeValue(values.type),
       description: descriptionValue,
       // 封面：使用上传接口返回的服务器地址（无新上传时沿用编辑态原值，避免写入失效地址）
@@ -339,12 +378,6 @@ export default function ActivityCreate() {
                     >
                       <Input placeholder="请输入活动名称" />
                     </Form.Item>
-                    <Form.Item name="title_en" label="英文标题">
-                      <Input placeholder="选填，用于患者端英文展示" />
-                    </Form.Item>
-                  </div>
-
-                  <div className="form-grid form-grid--two">
                     <Form.Item
                       name="type"
                       label="活动类型"
@@ -357,13 +390,15 @@ export default function ActivityCreate() {
                         }))}
                       />
                     </Form.Item>
-                    <Form.Item
-                      name="location"
-                      label={<span>活动区域</span>}
-                    >
-                      <Input placeholder="请输入活动举办的区域，如 杭州市滨江区" />
-                    </Form.Item>
                   </div>
+
+                  <Form.Item name="location" label="活动简介">
+                    <Input
+                      maxLength={20}
+                      showCount
+                      placeholder="请输入活动简介，最多 20 字"
+                    />
+                  </Form.Item>
                 </div>
                 {/* <div className='create-card__basicInfo__right'>
                   <Form.Item label="活动封面" className="create-cover">
@@ -421,10 +456,19 @@ export default function ActivityCreate() {
               <div className="create-config">
                 <div className="create-config__bar">
                   <strong>已配置 {institutions.length} 家参与机构 · 总承接 {totalCapacity} 人</strong>
+                  {institutions.length > 0 ? (
+                    <div className="create-config__names" aria-label="已配置参与机构">
+                      {institutions.map((item) => (
+                        <span key={item.id}>{item.name || `机构 ${item.id}`}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span>尚未配置机构，发布后用户可选择参与机构报名</span>
+                  )}
                   <span>总名额由各机构承接人数自动汇总</span>
                 </div>
                 <Button type="primary" onClick={() => setDrawerOpen(true)}>
-                  配置参与机构
+                  {institutions.length > 0 ? '调整参与机构' : '配置参与机构'}
                 </Button>
               </div>
             </Card>

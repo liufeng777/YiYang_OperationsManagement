@@ -311,9 +311,11 @@ export default function ServiceInstitutionPage() {
       : ''
 
   /** 状态变更统一入口：调用机构服务关联的上下架接口，成功后重新拉取当前机构当前页的服务列表 */
-  const applyServiceStatus = async (ids: number[], nextStatus: CommonStatus) => {
+  const applyServiceStatus = async (ids: number[], nextStatus: CommonStatus, reason?: string) => {
     try {
-      await Promise.all(ids.map((id) => institutionApi.updateInstitutionServiceStatus(id, nextStatus)))
+      await Promise.all(
+        ids.map((id) => institutionApi.updateInstitutionServiceStatus(id, nextStatus, reason)),
+      )
       message.success(
         nextStatus === 1
           ? `已上架 ${ids.length} 项服务`
@@ -366,10 +368,10 @@ export default function ServiceInstitutionPage() {
     })
   }
 
-  const handleConfirmStatusChange = async () => {
+  const handleConfirmStatusChange = async (reason?: string) => {
     if (!statusTarget) return
     const nextStatus: CommonStatus = statusTarget.action === 'offline' ? 9 : 1
-    await applyServiceStatus(statusTarget.ids, nextStatus)
+    await applyServiceStatus(statusTarget.ids, nextStatus, reason)
     setStatusTarget(null)
     setSelectedRowKeys([])
   }
@@ -512,7 +514,7 @@ export default function ServiceInstitutionPage() {
         type="institution"
         statusTarget={statusTarget}
         onCancel={() => setStatusTarget(null)}
-        onOk={() => handleConfirmStatusChange()}
+        onOk={(reason) => handleConfirmStatusChange(reason)}
       />
     </PageContainer>
   )

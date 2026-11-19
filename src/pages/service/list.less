@@ -222,7 +222,7 @@
   &__reason {
     margin-top: @spacing-md;
 
-    label {
+    > label {
       display: block;
       margin-bottom: @spacing-xs;
       .text-label();
@@ -232,6 +232,16 @@
         color: @color-danger;
         font-style: normal;
       }
+    }
+
+    .ant-radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: @spacing-xs;
+    }
+
+    .ant-input-textarea {
+      margin-top: @spacing-sm;
     }
   }
 
