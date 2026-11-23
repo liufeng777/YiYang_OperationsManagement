@@ -209,6 +209,11 @@ export default function ServiceEditorPage() {
   const previewType = Form.useWatch('service_type', form)
   /** 耗材与套餐联动：是否上架套餐 */
   const packageEnabled = Form.useWatch('packageEnabled', form) ?? true
+  /** 是否涉及耗材（'1' 是 / '2' 否）：决定套餐「含耗材价」是否可填、是否必填 */
+  const consumable = Form.useWatch('consumable', form)
+  const usesConsumable = consumable === '1'
+  /** 是否已在基础信息中选择过「是否涉及耗材」（未选择时套餐价格提示引导先选择） */
+  const consumableChosen = consumable === '1' || consumable === '2'
 
   /** 编辑场景：回填表单、封面、富文本详情、服务过程与套餐 */
   useEffect(() => {
@@ -262,11 +267,12 @@ export default function ServiceEditorPage() {
       service_type: values.service_type,
       service_process: stringifyProcessSteps(processSteps),
       // swagger admin.PackageItem：价格为字符串（保留两位小数）
+      // 不涉及耗材时含耗材价取不含耗材价，保证两个价格口径一致
       packages: (packageEnabled ? packages : packages.filter((item) => item.fixed)).map(
         ({ count, price, price_with_consum }) => ({
           count,
           price: price.toFixed(2),
-          price_with_consum: price_with_consum.toFixed(2),
+          price_with_consum: (usesConsumable ? price_with_consum : price).toFixed(2),
         }),
       ),
       // 封面使用上传接口返回的服务器地址（无新上传时沿用原值）
@@ -298,22 +304,33 @@ export default function ServiceEditorPage() {
   useEffect(() => {
     if (!packageModalOpen) return
     if (editingPackage) {
-      packageForm.setFieldsValue(editingPackage)
+      packageForm.setFieldsValue({
+        ...editingPackage,
+        // 不涉及耗材时含耗材价展示与不含耗材价一致（输入框已置灰不可编辑）
+        price_with_consum: usesConsumable
+          ? editingPackage.price_with_consum
+          : editingPackage.price,
+      })
     } else {
       packageForm.resetFields()
     }
-  }, [packageModalOpen, editingPackage, packageForm])
+  }, [packageModalOpen, editingPackage, packageForm, usesConsumable])
 
   const handlePackageSave = async () => {
     try {
       const values = await packageForm.validateFields()
+      // 不涉及耗材时含耗材价与不含耗材价一致，避免写入无意义的含耗材价
+      const normalized: Package = {
+        ...values,
+        price_with_consum: usesConsumable ? values.price_with_consum : values.price,
+      }
       if (editingPackage) {
         setPackages((prev) =>
-          prev.map((item) => (item.id === editingPackage.id ? { ...item, ...values } : item)),
+          prev.map((item) => (item.id === editingPackage.id ? { ...item, ...normalized } : item)),
         )
         message.success('套餐已更新')
       } else {
-        setPackages((prev) => [...prev, { id: `pkg-${Date.now()}`, ...values }])
+        setPackages((prev) => [...prev, { id: `pkg-${Date.now()}`, ...normalized }])
         message.success('套餐已添加')
       }
       setPackageModalOpen(false)
@@ -353,7 +370,9 @@ export default function ServiceEditorPage() {
       title: '含耗材价',
       dataIndex: 'price_with_consum',
       key: 'price_with_consum',
-      render: (value: number) => formatPackagePrice(value),
+      // 不涉及耗材时与不含耗材价一致
+      render: (value: number, record) =>
+        formatPackagePrice(usesConsumable ? value : record.price),
     },
     {
       title: '不含耗材价',
@@ -703,18 +722,41 @@ export default function ServiceEditorPage() {
             <InputNumber min={1} precision={0} style={{ width: '100%' }} placeholder="套餐包含的服务次数" />
           </Form.Item>
           <Form.Item
-            name="price_with_consum"
-            label="含耗材价（元）"
-            rules={[{ required: true, message: '请输入含耗材价' }]}
-          >
-            <InputNumber min={0} precision={2} style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item
             name="price"
             label="不含耗材价（元）"
             rules={[{ required: true, message: '请输入不含耗材价' }]}
           >
             <InputNumber min={0} precision={2} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            name="price_with_consum"
+            label="含耗材价（元）"
+            rules={
+              usesConsumable
+                ? [{ required: true, message: '涉及耗材时须填写含耗材价' }]
+                : []
+            }
+            extra={
+              usesConsumable
+                ? undefined
+                : consumableChosen
+                  ? '当前服务不涉及耗材，含耗材价与不含耗材价一致，无需填写'
+                  : '请先在「服务基础信息」中选择是否涉及耗材'
+            }
+          >
+            <InputNumber
+              min={0}
+              precision={2}
+              style={{ width: '100%' }}
+              disabled={!usesConsumable}
+              placeholder={
+                usesConsumable
+                  ? '请输入含耗材价'
+                  : consumableChosen
+                    ? '不涉及耗材，无需填写'
+                    : '请先选择是否涉及耗材'
+              }
+            />
           </Form.Item>
         </Form>
       </Drawer>
