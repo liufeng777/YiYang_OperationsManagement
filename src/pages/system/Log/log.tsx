@@ -224,12 +224,12 @@ export default function SystemLog() {
       render: (value: string) => value || '—',
     },
     {
-      title: '错误信息',
+      title: '错误信息/备注信息',
       dataIndex: 'error_message',
       key: 'error_message',
-      width: 120,
+      width: 200,
       ellipsis: true,
-      render: (value: string) => value || '—'
+      render: (value: string, record) => value || record.remark || '—'
     }
   ]
 

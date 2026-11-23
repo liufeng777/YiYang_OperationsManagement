@@ -149,11 +149,11 @@ export default function OrderDetailPage() {
       { key: 'order_no', label: '订单号', children: order.order_no },
       {
         key: 'member',
-        label: '服务对象',
+        label: '会员',
         children: (
           <span>
             <SensitiveText type="name" value={order.member_name} />
-            {order.member_id ? `（会员 ${order.member_id}）` : ''}
+            <span>{` (ID: ${order.member_id})`}</span>
           </span>
         ),
       },
@@ -162,13 +162,7 @@ export default function OrderDetailPage() {
         label: '会员手机号',
         children: <SensitiveText type="phone" value={order.member_phone} />,
       },
-      { key: 'institution', label: '服务机构', children: institutionName },
-      { key: 'service_name', label: '服务项目', children: order.service_name || '—' },
-      {
-        key: 'service_count',
-        label: '服务次数',
-        children: `${order.served_count ?? 0} / ${order.service_count ?? 0} 次`,
-      },
+      { key: 'created_at', label: '下单时间', children: fmtTime(order.created_at) },
       {
         key: 'contact',
         label: '联系人',
@@ -178,6 +172,14 @@ export default function OrderDetailPage() {
         key: 'contact_phone',
         label: '联系电话',
         children: <SensitiveText type="phone" value={order.contact_phone} />,
+      },
+      
+      { key: 'institution', label: '服务机构', children: institutionName },
+      { key: 'service_name', label: '服务项目', children: order.service_name || '—' },
+      {
+        key: 'service_count',
+        label: '服务次数',
+        children: `${order.served_count ?? 0} / ${order.service_count ?? 0} 次`,
       },
       { key: 'total_amount', label: '原价', children: formatAmount(order.total_amount) },
       {
@@ -190,7 +192,7 @@ export default function OrderDetailPage() {
         label: '实付金额',
         children: <strong>{formatAmount(order.paid_amount)}</strong>,
       },
-      { key: 'created_at', label: '下单时间', children: fmtTime(order.created_at) },
+      
     ]
 
     if (order.paid_at) {
