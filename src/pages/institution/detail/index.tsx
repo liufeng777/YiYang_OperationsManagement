@@ -128,6 +128,7 @@ export default function InstitutionDetailPage() {
 
   return (
     <PageContainer
+      fixed
       title={detail.name}
       description="编辑机构基础资料、配置服务项目与患者端展示介绍"
       extra={

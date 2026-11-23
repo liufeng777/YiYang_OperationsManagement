@@ -14,7 +14,7 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useUserStore } from '@/store/modules/user'
 import loginBg from '@/assets/login_bg.png';
-import logoImg from '@/assets/logo/logo.png'
+import logoImg from '@/assets/logo/logo_txt_white.svg'
 import './index.less'
 
 interface LoginForm {
@@ -67,10 +67,10 @@ export default function Login() {
           <span className="login-page__logo-icon">
             <img src={logoImg} />
           </span>
-          <span className="login-page__logo-text">
+          {/* <span className="login-page__logo-text">
             <strong>幸福颐养</strong>
             <span>运营管理平台</span>
-          </span>
+          </span> */}
         </header>
 
         <section className="login-page__intro">

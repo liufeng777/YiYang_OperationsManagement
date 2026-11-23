@@ -13,6 +13,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import RichDetailEditor from '@/components/RichDetailEditor'
 import RichDetailPreview, { isRichDetailEmpty } from '@/components/RichDetailPreview'
+import PhonePreview from '@/components/PhonePreview'
 import { serviceApi } from '@/api'
 import { useImageUpload } from '@/hooks'
 import type { Package, PriceUnit, ServiceCategory, ServiceItem, ServiceProcessStep, ServiceSaveBody } from '@/api/modules/service'
@@ -401,6 +402,7 @@ export default function ServiceEditorPage() {
 
   return (
     <PageContainer
+      fixed
       title={pageTitle}
       extra={
         <Button color="primary" variant="outlined" icon={<ArrowLeftOutlined />} onClick={() => navigate('/service/list')}>
@@ -636,16 +638,16 @@ export default function ServiceEditorPage() {
               <span>实时预览</span>
             </div>
             <div className="service-phone">
-              <div className="service-phone__status">
-                <span>9:41</span>
-                <i>Wi-Fi</i>
-              </div>
-              <div className="service-phone__nav">
-                <span>‹</span>
-                <strong>服务详情</strong>
-                <span />
-              </div>
-              <div className="service-phone__scroll">
+              <PhonePreview
+                title="服务详情"
+                extra={<span />}
+                footer={
+                  <div className="service-phone__footer">
+                    <Button type="link">收藏</Button>
+                    <Button type="primary">立即预约</Button>
+                  </div>
+                }
+              >
                 <div className={`service-phone__hero${coverUrl ? ' has-cover' : ''}`}>
                   {coverUrl && <img src={coverUrl} alt="服务封面" />}
                   <h4>{previewName || '上门助浴服务'}</h4>
@@ -670,11 +672,7 @@ export default function ServiceEditorPage() {
                     )}
                   </div>
                 </div>
-              </div>
-              <div className="service-phone__footer">
-                <Button type="link">收藏</Button>
-                <Button type="primary">立即预约</Button>
-              </div>
+              </PhonePreview>
             </div>
           </Card>
         </div>

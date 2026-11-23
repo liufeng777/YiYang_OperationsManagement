@@ -21,7 +21,7 @@ import { registerSourceText } from '@/api/modules/memberOperation'
 import type { RegisteredUserRow } from '@/api/modules/memberOperation'
 import { formatAmount, formatDateTime } from '@/utils'
 import { GENDER_TEXT } from '../constants';
-import { ORDER_STATUS_TEXT } from '@/pages/order/list'
+import { ORDER_STATUS_TEXT } from '@/pages/order/constants'
 import '@/pages/order/list.less'
 import './index.less'
 

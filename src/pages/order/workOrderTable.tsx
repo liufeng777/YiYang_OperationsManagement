@@ -48,7 +48,7 @@ export const workOrderColumns: ColumnsType<WorkOrderDTO> = [
     title: '服务人员',
     key: 'assignee_name',
     width: 110,
-    render: (_, record) => record.assignee_name || '待派单',
+    render: (_, record) => record.assignee_name || '-',
   },
   {
     title: '期望医护',
@@ -57,23 +57,19 @@ export const workOrderColumns: ColumnsType<WorkOrderDTO> = [
     render: (_, record) => record.expect_staff_name || '—',
   },
   {
-    title: '预约服务时间',
+    title: '预约服务时间/地址',
     key: 'expected_time',
-    width: 210,
-    render: (_, record) =>
-      `${formatDateTime(
-        record.expected_start_at && record.expected_start_at * 1000,
-        'MM-DD HH:mm',
-      )} ~ ${formatDateTime(record.expected_stop_at && record.expected_stop_at * 1000, 'HH:mm')}`,
-  },
-  {
-    title: '服务地址',
-    key: 'service_address',
-    ellipsis: true,
-    // 工单属于履约场景，允许经眼睛按钮查看详细街道门牌。
-    render: (_, record) => (
+    render: (_, record) => (<div className='table-cell'>
+      <strong>
+        {
+          `${formatDateTime(
+              record.expected_start_at && record.expected_start_at * 1000,
+              'MM-DD HH:mm',
+            )} ~ ${formatDateTime(record.expected_stop_at && record.expected_stop_at * 1000, 'HH:mm')}`
+        }
+      </strong>
       <SensitiveText type="address" value={record.service_address} allowReveal />
-    ),
+    </div>)
   },
   {
     title: '工单状态',
@@ -105,13 +101,18 @@ interface WorkOrderTableProps {
   list: WorkOrderDTO[]
   /** 加载中 */
   loading?: boolean
+  /**
+   * 表体滚动高度：默认 '100%'（配合 PageContainer fixed 的 flex 布局内部滚动），
+   * 传 false 时按内容自然展开（整页滚动的详情页使用）
+   */
+  scrollY?: number | string | false
 }
 
 /**
  * 工单列表卡片：订单详情 / 退款详情共用
  * 外层页面需提供 .detail-card 样式（各详情页 less 内已定义）
  */
-export function WorkOrderTable({ list, loading = false }: WorkOrderTableProps) {
+export function WorkOrderTable({ list, loading = false, scrollY = '100%' }: WorkOrderTableProps) {
   return (
     <Card variant="borderless" className="detail-card work-order-table">
       <div className="detail-card__header">
@@ -125,7 +126,7 @@ export function WorkOrderTable({ list, loading = false }: WorkOrderTableProps) {
         columns={workOrderColumns}
         dataSource={list}
         pagination={false}
-        scroll={{y: '100%'}}
+        scroll={scrollY === false ? undefined : { y: scrollY }}
       />
     </Card>
   )

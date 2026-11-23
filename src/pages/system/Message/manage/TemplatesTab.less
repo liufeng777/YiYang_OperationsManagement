@@ -1,6 +1,42 @@
 @import '@/styles/variables.less';
 @import '@/styles/mixins.less';
 
+/* 表格单元格：模板名称 + 编码 */
+.template-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  strong {
+    .text-body-medium();
+  }
+
+  span {
+    .text-auxiliary();
+  }
+}
+
+/* 表格单元格：模板内容 + 标题 */
+.template-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  span,
+  em {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  em {
+    .text-auxiliary();
+    font-style: normal;
+  }
+}
+
 /* Drawer 标题 */
 .template-drawer__title {
   h3 {

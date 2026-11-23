@@ -110,14 +110,16 @@
     background: @color-bg-active;
   }
 
-  /* 数值状态（后端 order_status）：1-待支付 2-待确认 3-生效中 4-已完成 5-已取消 6-已退款 */
+  /* 数值状态（后端 order_status）：1-待支付 2-待确认 3-生效中 4-已完成 5-已取消 6-已退款 7-退款中 8-退款待审批 */
   &--1,
-  &--2 {
+  &--2,
+  &--8 {
     color: darken(@color-warning, 18%);
     background: fade(@color-warning, 18%);
   }
 
-  &--3 {
+  &--3,
+  &--7 {
     color: @color-info;
     background: fade(@color-info, 12%);
   }

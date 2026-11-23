@@ -1,8 +1,8 @@
 /**
  * 订单中心 - 订单列表
  * 数据来源：orderApi.getOrders（分页 + 订单号 / 机构 / 状态 / 下单时间范围筛选）
- * 金额单位：后端返回「分」，展示统一换算为「元」
- * 能力范围：订单列表 / 订单详情 / 订单导出（增删改与确认、取消、退款等流转操作暂不在此维护）
+ * 金额单位：后端返回「元」（DECIMAL(10,2)），直接展示
+ * 操作：查看详情、取消（1-待支付 / 2-待确认）、退款（3-生效中 / 4-已完成）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { App, Button, Card, DatePicker, Input, Select } from 'antd'
@@ -16,18 +16,10 @@ import SensitiveText from '@/components/SensitiveText'
 import { institutionApi, orderApi } from '@/api'
 import type { OrderDetail, OrderListParams } from '@/api/modules/order'
 import { downloadBlob, formatAmount, formatDateTime } from '@/utils'
+import { ORDER_STATUS_TEXT, canCancelOrder, canRefundOrder } from './constants'
+import OrderCancelModal from './components/OrderCancelModal'
+import OrderRefundModal from './components/OrderRefundModal'
 import './list.less'
-
-export const ORDER_STATUS_TEXT: Record<number, string> = {
-  1: '待支付',
-  2: '待确认',
-  3: '生效中',
-  4: '已完成',
-  5: '已取消',
-  6: '已退款',
-  7: '退款中',
-  8: '退款待审批'
-}
 
 interface OrderFilters {
   order_no: string
@@ -63,6 +55,9 @@ export default function OrderList() {
   const [status, setStatus] = useState<number | null>(null)
   const [range, setRange] = useState<[Dayjs, Dayjs] | null>(null)
   const [applied, setApplied] = useState<OrderFilters>(emptyFilters)
+  /** 取消 / 退款弹窗的目标订单 */
+  const [cancelTarget, setCancelTarget] = useState<OrderDetail | null>(null)
+  const [refundTarget, setRefundTarget] = useState<OrderDetail | null>(null)
 
   const instMap = useMemo(
     () => new Map(institutions.map((item) => [item.id, item.name])),
@@ -221,7 +216,6 @@ export default function OrderList() {
       {
         title: '联系人',
         key: 'contact',
-        width: 150,
         render: (_, record) => (
           <div className="order-user">
             <strong><SensitiveText type="name" value={record.contact_name} /></strong>
@@ -232,25 +226,23 @@ export default function OrderList() {
       {
         title: '服务机构',
         key: 'institution',
-        width: 150,
         render: (_, record) => institutionName(record),
       },
       {
         title: '服务次数',
         key: 'service_count',
-        width: 110,
         render: (_, record) => `${record.served_count ?? 0} / ${record.service_count ?? 0} 次`,
       },
       {
         title: '实付金额',
         key: 'paid_amount',
-        width: 120,
+        width: 100,
         render: (_, record) => formatAmount((record.paid_amount)),
       },
       {
         title: '订单状态',
         key: 'order_status',
-        width: 110,
+        width: 100,
         render: (_, record) => (
           <span className={`order-status order-status--${record.order_status}`}>
             {ORDER_STATUS_TEXT[record.order_status] ?? '—'}
@@ -267,12 +259,22 @@ export default function OrderList() {
       {
         title: '操作',
         key: 'action',
-        width: 100,
+        width: 120,
         render: (_, record) => (
           <div className="order-actions">
             <Button type="link" size="small" onClick={() => navigate(`/order/detail/${record.id}`)}>
-              查看详情
+              详情
             </Button>
+            {canCancelOrder(record.order_status) && (
+              <Button type="link" size="small" danger onClick={() => setCancelTarget(record)}>
+                取消
+              </Button>
+            )}
+            {canRefundOrder(record.order_status) && (
+              <Button type="link" size="small" danger onClick={() => setRefundTarget(record)}>
+                退款
+              </Button>
+            )}
           </div>
         ),
       },
@@ -376,6 +378,19 @@ export default function OrderList() {
           />
         </Card>
       </div>
+
+      <OrderCancelModal
+        order={cancelTarget}
+        open={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onSuccess={() => void fetchList(page, applied, pageSize)}
+      />
+      <OrderRefundModal
+        order={refundTarget}
+        open={!!refundTarget}
+        onClose={() => setRefundTarget(null)}
+        onSuccess={() => void fetchList(page, applied, pageSize)}
+      />
     </PageContainer>
   )
 }

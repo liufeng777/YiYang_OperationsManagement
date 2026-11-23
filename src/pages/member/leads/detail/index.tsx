@@ -218,6 +218,7 @@ export default function LeadDetail() {
 
   return (
     <PageContainer
+      fixed
       title="线索详情"
       description={
         detail ? `线索 ${detail.lead_no} · ${LEAD_STATUS_TEXT[detail.status] ?? detail.status}` : undefined

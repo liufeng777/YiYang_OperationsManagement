@@ -89,6 +89,12 @@ export default function ActivitySignups() {
   const institutionName = (record: ActivityRegistrationDTO) =>
     instMap.get(record.institution_id) ?? `机构 ${record.institution_id}`
 
+  /**
+   * 是否允许编辑：活动开始时间已早于当前时间说明活动已开始，不再提供编辑入口
+   * （与活动列表行内「编辑活动」规则一致：仅未开始的活动可编辑）
+   */
+  const canEditActivity = !!activity?.start_date && Date.now() / 1000 < activity.start_date
+
   // 活动信息 + 参与机构（页面描述与筛选下拉）
   useEffect(() => {
     if (!activityId) return
@@ -390,9 +396,11 @@ export default function ActivitySignups() {
             icon={<ArrowLeftOutlined />} onClick={() => navigate('/activity')}>
             返回活动列表
           </Button>
-          <Button color="primary" variant='outlined' icon={<EditOutlined />} onClick={() => navigate(`/activity/detail/${activityId}`)}>
-            编辑活动
-          </Button>
+          {canEditActivity && (
+            <Button color="primary" variant='outlined' icon={<EditOutlined />} onClick={() => navigate(`/activity/detail/${activityId}`)}>
+              编辑活动
+            </Button>
+          )}
         </Space>
       }
     >

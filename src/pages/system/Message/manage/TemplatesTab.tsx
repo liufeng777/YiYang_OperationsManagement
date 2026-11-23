@@ -1,28 +1,29 @@
 /**
  * 消息通知管理 - 消息模板（§9.2 / system:message-template）
- * 数据来源：messageApi.getMessageTemplates / createMessageTemplate / updateMessageTemplate /
- *          updateMessageTemplateStatus / deleteMessageTemplate
- * 字段按后端实测：id / name / code / content / channel(数字) / type(数字) / status / variables
- * 筛选：类型 / 状态下推后端（swagger：type 为字符串）；关键字后端未提供参数，当前页本地过滤
+ * 接口：GET /admin/message-templates、GET/POST /admin/message-templates、
+ *      PUT/DELETE /admin/message-templates/{id}、POST /admin/message-templates/{id}/status
+ * 字段对齐 swagger admin.ReqCreateMessageTemplate：
+ *   必填 name / type / content；可选 code / title / channel / status / variables / remark
+ * 说明：本页不再嵌在 Tabs 中（原 Tabs 隐藏态导致容器高度为 0，表格会先塌成一行再逐行撑开）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Drawer, Form, Input, Select, Space, Tag } from 'antd'
+import { App, Button, Card, Drawer, Form, Input, Radio, Select, Space, Tag } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined } from '@ant-design/icons'
 import { messageApi } from '@/api'
-import type { MessageTemplateDTO } from '@/api/modules/message'
+import type { MessageTemplateDTO, MessageTemplateSaveBody } from '@/api/modules/message'
 import type { CommonStatus } from '@/types/api'
 import './TemplatesTab.less'
 
-/** 发送渠道（后端返回数字）：1-站内 2-微信 3-短信 */
+/** 发送渠道：1-站内 2-微信 3-短信（swagger channel，默认 1） */
 const channelMap: Record<number, { text: string; color: string }> = {
   1: { text: '站内', color: 'blue' },
   2: { text: '微信', color: 'green' },
   3: { text: '短信', color: 'orange' },
 }
 
-/** 模板类型（后端返回数字，当前实测 1 与 2） */
+/** 消息类型（swagger message_type 枚举，具体取值以后端返回为准） */
 const templateTypeMap: Record<number, string> = {
   1: '订单支付成功',
   2: '服务开始提醒',
@@ -34,11 +35,26 @@ const templateTypeMap: Record<number, string> = {
 const STATUS_ENABLED: CommonStatus = 1
 const STATUS_DISABLED: CommonStatus = 9
 
+const channelOptions = Object.entries(channelMap).map(([value, meta]) => ({
+  label: meta.text,
+  value: Number(value),
+}))
+
+const templateTypeOptions = Object.entries(templateTypeMap).map(([value, label]) => ({
+  label,
+  value: Number(value),
+}))
+
 interface TemplateFormValues {
   name: string
-  content: string
-  channel: number
   type: number
+  content: string
+  code?: string
+  title?: string
+  channel?: number
+  status?: CommonStatus
+  variables?: string
+  remark?: string
 }
 
 interface TemplateFilters {
@@ -67,7 +83,7 @@ export default function TemplatesTab() {
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm<TemplateFormValues>()
 
-  /** 组装查询参数：类型 / 状态下推后端（swagger type 为字符串，故 String 化） */
+  /** 组装查询参数：type / status 下推后端（swagger query 均为字符串） */
   const buildParams = useCallback(
     (targetPage: number, filters: TemplateFilters, size: number = PAGE_SIZE) => ({
       page: targetPage,
@@ -128,6 +144,7 @@ export default function TemplatesTab() {
   const openCreate = () => {
     setEditingRecord(null)
     form.resetFields()
+    form.setFieldsValue({ status: STATUS_ENABLED, channel: 1 })
     setDrawerOpen(true)
   }
 
@@ -135,9 +152,14 @@ export default function TemplatesTab() {
     setEditingRecord(record)
     form.setFieldsValue({
       name: record.name,
-      content: record.content,
-      channel: record.channel,
       type: record.type,
+      content: record.content,
+      code: record.code,
+      title: record.title,
+      channel: record.channel ?? 1,
+      status: record.status,
+      variables: record.variables,
+      remark: record.remark,
     })
     setDrawerOpen(true)
   }
@@ -148,6 +170,7 @@ export default function TemplatesTab() {
     form.resetFields()
   }
 
+  /** 保存：type / channel / status 按 swagger 传数字（channel 为必填以外的可选项） */
   const handleSave = async () => {
     let values: TemplateFormValues
     try {
@@ -155,25 +178,25 @@ export default function TemplatesTab() {
     } catch {
       return
     }
+    const body: MessageTemplateSaveBody = {
+      name: values.name.trim(),
+      type: values.type,
+      content: values.content.trim(),
+      channel: values.channel ?? 1,
+      status: values.status ?? STATUS_ENABLED,
+      code: values.code?.trim() || undefined,
+      title: values.title?.trim() || undefined,
+      variables: values.variables?.trim() || undefined,
+      remark: values.remark?.trim() || undefined,
+    }
     setSubmitting(true)
     try {
       if (editingRecord) {
-        await messageApi.updateMessageTemplate(editingRecord.id, {
-          name: values.name.trim(),
-          content: values.content.trim(),
-          channel: String(values.channel),
-          type: String(values.type),
-        })
-        message.success(`模板「${values.name.trim()}」已保存`)
+        await messageApi.updateMessageTemplate(editingRecord.id, body)
+        message.success(`模板「${body.name}」已保存`)
       } else {
-        await messageApi.createMessageTemplate({
-          name: values.name.trim(),
-          content: values.content.trim(),
-          channel: String(values.channel),
-          type: String(values.type),
-          status: STATUS_ENABLED,
-        })
-        message.success(`模板「${values.name.trim()}」已创建并启用`)
+        await messageApi.createMessageTemplate(body)
+        message.success(`模板「${body.name}」已创建`)
       }
       closeDrawer()
       void fetchList(page, applied, pageSize)
@@ -198,6 +221,7 @@ export default function TemplatesTab() {
   const confirmDelete = (record: MessageTemplateDTO) => {
     modal.confirm({
       title: `确认删除模板「${record.name}」？`,
+      content: '删除后使用该模板的业务通知将无法发送，请确认无业务引用。',
       okText: '删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -214,14 +238,33 @@ export default function TemplatesTab() {
       {
         title: '模板名称',
         key: 'name',
+        width: 220,
         render: (_, record) => (
           <div className="template-name">
             <strong>{record.name}</strong>
-            <span>{record.code}</span>
+            <span>{record.code || '—'}</span>
           </div>
         ),
       },
-      { title: '模板内容', dataIndex: 'content', key: 'content', ellipsis: true },
+      {
+        title: '模板内容',
+        dataIndex: 'content',
+        key: 'content',
+        ellipsis: true,
+        render: (value: string, record) => (
+          <div className="template-content">
+            <span>{value || '—'}</span>
+            {record.title ? <em>标题：{record.title}</em> : null}
+          </div>
+        ),
+      },
+      {
+        title: '消息类型',
+        dataIndex: 'type',
+        key: 'type',
+        width: 140,
+        render: (value: number) => templateTypeMap[value] ?? value ?? '—',
+      },
       {
         title: '发送渠道',
         dataIndex: 'channel',
@@ -229,15 +272,8 @@ export default function TemplatesTab() {
         width: 110,
         render: (value: number) => {
           const meta = channelMap[value]
-          return <Tag color={meta?.color ?? 'default'}>{meta?.text ?? value}</Tag>
+          return <Tag color={meta?.color ?? 'default'}>{meta?.text ?? value ?? '—'}</Tag>
         },
-      },
-      {
-        title: '模板类型',
-        dataIndex: 'type',
-        key: 'type',
-        width: 140,
-        render: (value: number) => templateTypeMap[value] ?? value,
       },
       {
         title: '状态',
@@ -256,7 +292,7 @@ export default function TemplatesTab() {
             <Button type="link" size="small" onClick={() => openEdit(record)}>
               编辑
             </Button>
-            <Button type="link" size="small" onClick={() => toggleStatus(record)}>
+            <Button type="link" size="small" onClick={() => void toggleStatus(record)}>
               {record.status === STATUS_ENABLED ? '停用' : '启用'}
             </Button>
             <Button type="link" size="small" danger onClick={() => confirmDelete(record)}>
@@ -274,20 +310,17 @@ export default function TemplatesTab() {
   const filteredRows = useMemo(() => {
     const kw = applied.keyword
     if (!kw) return rows
-    return rows.filter((r) => r.name.includes(kw) || (r.code ?? '').includes(kw))
+    return rows.filter(
+      (r) => (r.name ?? '').includes(kw) || (r.code ?? '').includes(kw) || (r.title ?? '').includes(kw),
+    )
   }, [rows, applied.keyword])
 
   return (
     <>
-      <div className="message-add-btn">
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          新增模板
-        </Button>
-      </div>
       <Card variant="borderless" className="filter-bar">
         <Input
           allowClear
-          placeholder="请输入模板名称或编码"
+          placeholder="请输入模板名称 / 编码 / 标题"
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
           onPressEnter={applyFilters}
@@ -296,11 +329,8 @@ export default function TemplatesTab() {
           value={templateType}
           onChange={(value) => setTemplateType(value ?? null)}
           allowClear
-          placeholder="模板类型"
-          options={Object.entries(templateTypeMap).map(([value, label]) => ({
-            label,
-            value: Number(value),
-          }))}
+          placeholder="消息类型"
+          options={templateTypeOptions}
         />
         <Select
           value={status}
@@ -323,6 +353,9 @@ export default function TemplatesTab() {
             <span className="list-card__header__title">消息模板</span>
             <span className="list-card__header__tips">共 {total} 个模板</span>
           </div>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
+            新增模板
+          </Button>
         </div>
         <FillTable<MessageTemplateDTO>
           rowKey="id"
@@ -344,7 +377,7 @@ export default function TemplatesTab() {
         />
       </Card>
 
-      {/* 编辑/新建 Drawer */}
+      {/* 新增 / 编辑模板 */}
       <Drawer
         open={drawerOpen}
         width={560}
@@ -353,7 +386,7 @@ export default function TemplatesTab() {
             <h3>{editingRecord ? '编辑消息模板' : '新建消息模板'}</h3>
             {editingRecord && (
               <span className="template-drawer__subtitle">
-                {editingRecord.name} · {editingRecord.code}
+                {editingRecord.name} · {editingRecord.code || '—'}
               </span>
             )}
           </div>
@@ -362,41 +395,69 @@ export default function TemplatesTab() {
         footer={
           <div className="template-drawer__footer">
             <Button onClick={closeDrawer}>取消</Button>
-            <Button type="primary" loading={submitting} onClick={handleSave}>
+            <Button type="primary" loading={submitting} onClick={() => void handleSave()}>
               保存
             </Button>
           </div>
         }
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" requiredMark={false} className="template-drawer__form">
-          <Form.Item name="name" label="模板名称" rules={[{ required: true, message: '请输入模板名称' }]}>
-            <Input placeholder="请输入模板名称" />
+          <Form.Item
+            name="name"
+            label="模板名称"
+            rules={[{ required: true, whitespace: true, message: '请输入模板名称' }]}
+          >
+            <Input placeholder="请输入模板名称" maxLength={50} />
           </Form.Item>
           <div className="form-grid form-grid--two">
-            <Form.Item name="channel" label="发送渠道" rules={[{ required: true, message: '请选择渠道' }]}>
-              <Select
-                options={Object.entries(channelMap).map(([value, meta]) => ({
-                  label: meta.text,
-                  value: Number(value),
-                }))}
-              />
+            <Form.Item
+              name="type"
+              label="消息类型"
+              rules={[{ required: true, message: '请选择消息类型' }]}
+            >
+              <Select options={templateTypeOptions} placeholder="请选择消息类型" />
             </Form.Item>
-            <Form.Item name="type" label="模板类型" rules={[{ required: true, message: '请选择类型' }]}>
-              <Select
-                options={Object.entries(templateTypeMap).map(([value, label]) => ({
-                  label,
-                  value: Number(value),
-                }))}
+            <Form.Item name="channel" label="发送渠道" extra="不选默认站内消息">
+              <Select options={channelOptions} placeholder="请选择发送渠道" allowClear />
+            </Form.Item>
+          </div>
+          <div className="form-grid form-grid--two">
+            <Form.Item name="code" label="模板编码" extra="唯一标识，如 ORDER_PAID">
+              <Input placeholder="可选" maxLength={50} />
+            </Form.Item>
+            <Form.Item name="status" label="状态">
+              <Radio.Group
+                options={[
+                  { label: '启用', value: STATUS_ENABLED },
+                  { label: '停用', value: STATUS_DISABLED },
+                ]}
               />
             </Form.Item>
           </div>
-          <Form.Item name="content" label="模板内容" rules={[{ required: true, message: '请输入模板内容' }]}>
-            <Input.TextArea rows={4} placeholder="支持 {{变量}} 占位，如：您的服务订单{{order_no}}已支付成功" />
+          <Form.Item name="title" label="模板标题" extra="可含占位符，如：订单{order_no}支付成功">
+            <Input placeholder="可选" maxLength={100} />
           </Form.Item>
-          {editingRecord?.variables ? (
-            <p className="template-drawer__hint">模板变量：{editingRecord.variables}</p>
-          ) : null}
+          <Form.Item
+            name="content"
+            label="模板内容"
+            rules={[{ required: true, whitespace: true, message: '请输入模板内容' }]}
+          >
+            <Input.TextArea
+              rows={4}
+              placeholder="支持 {变量} 占位，如：您的服务订单 {order_no} 已支付成功"
+            />
+          </Form.Item>
+          <Form.Item
+            name="variables"
+            label="模板变量"
+            extra='变量列表（JSON 数组字符串），如 ["order_no","amount"]'
+          >
+            <Input.TextArea rows={2} placeholder="可选" />
+          </Form.Item>
+          <Form.Item name="remark" label="备注">
+            <Input placeholder="可选" maxLength={100} />
+          </Form.Item>
         </Form>
       </Drawer>
     </>

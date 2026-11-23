@@ -12,7 +12,7 @@ import { useAppStore } from '@/store/modules/app'
 import { useNavigationStore } from '@/store/modules/navigation'
 import { routes } from '@/router/routes'
 import logoImg from '@/assets/logo/logo.png'
-import logoTxtImg from '@/assets/logo/logo_txt.png'
+import logoTxtImg from '@/assets/logo/logo_txt_white.svg'
 import './layout.less'
 
 const { Sider, Content } = Layout

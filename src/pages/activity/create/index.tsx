@@ -21,7 +21,6 @@ import {
 import {
   ArrowLeftOutlined,
   CheckOutlined,
-  LeftOutlined,
   PlusOutlined,
 } from '@ant-design/icons'
 import dayjs, { type Dayjs } from 'dayjs'
@@ -29,6 +28,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import RichDetailEditor from '@/components/RichDetailEditor'
 import RichDetailPreview, { isRichDetailEmpty } from '@/components/RichDetailPreview'
+import PhonePreview from '@/components/PhonePreview'
 import { activityApi, institutionApi } from '@/api'
 import { useImageUpload } from '@/hooks'
 import type { ActivityInstitutionConfig, ActivitySaveBody } from '@/api/modules/activity'
@@ -87,9 +87,42 @@ export default function ActivityCreate() {
   const location = Form.useWatch('location', form) ?? ''
   const targetCrowd = Form.useWatch('target_crowd', form) ?? ''
   const feeType = Form.useWatch('feeType', form) ?? 'free'
-  const notice = Form.useWatch('notice', form) ?? ''
   const activityStart = Form.useWatch('start_date', form) as Dayjs | undefined
   const activityEnd = Form.useWatch('end_date', form) as Dayjs | undefined
+
+  /* ---- 报名时间限制：必须晚于当前时间，且结束不早于开始（不可选日期置灰 + 表单校验） ---- */
+
+  /** 早于今天（整天已过）的日期不可选 */
+  const disabledPastDate = (current: Dayjs) => current.endOf('day').valueOf() <= Date.now()
+
+  /** 报名结束日期：同样不能早于今天，且不能早于报名开始日期（允许与开始同一天） */
+  const disabledEndDate = (current: Dayjs) => {
+    if (disabledPastDate(current)) return true
+    if (!activityStart) return false
+    return current.startOf('day').valueOf() < activityStart.startOf('day').valueOf()
+  }
+
+  /** 报名开始时间需晚于当前时间 */
+  const validateStartDate = (_: unknown, value?: Dayjs) => {
+    if (!value) return Promise.resolve()
+    if (value.endOf('day').valueOf() <= Date.now()) {
+      return Promise.reject(new Error('报名开始时间需晚于当前时间'))
+    }
+    return Promise.resolve()
+  }
+
+  /** 报名结束时间需晚于当前时间，且不能早于报名开始时间（允许同日） */
+  const validateEndDate = (_: unknown, value?: Dayjs) => {
+    if (!value) return Promise.resolve()
+    if (value.endOf('day').valueOf() <= Date.now()) {
+      return Promise.reject(new Error('报名结束时间需晚于当前时间'))
+    }
+    if (activityStart && value.startOf('day').valueOf() < activityStart.startOf('day').valueOf()) {
+      return Promise.reject(new Error('报名结束时间不能早于报名开始时间'))
+    }
+    return Promise.resolve()
+  }
+
   /** 参与机构（本地行，抽屉内编辑后回传） */
   const [institutions, setInstitutions] = useState<ActivityInstitutionRow[]>([])
   /** 机构池用于在抽屉外直接展示已配置机构名称 */
@@ -259,7 +292,7 @@ export default function ActivityCreate() {
     try {
       values = (await form.validateFields()) as Record<string, unknown>
     } catch {
-      message.warning('请先完善必填项：活动名称、活动类型、报名起止日期、收费方式')
+      message.warning('请检查表单提示项：必填信息与报名起止时间')
       return
     }
     if (!isDraft && institutions.length === 0) {
@@ -287,57 +320,55 @@ export default function ActivityCreate() {
   /** 患者端手机预览；status 控制底部报名按钮状态 */
   const renderPhonePreview = (status: string = 'normal') => (
     <div className="phone-preview">
-      <div className="phone-preview__screen">
-        <div className="phone-preview__header">
-          <LeftOutlined />
-          活动详情
-        </div>
-        <div className="phone-preview__scroll">
-          <div className={`phone-preview__hero${coverUrl ? ' has-cover' : ''}`}>
-            {coverUrl && <img src={coverUrl} alt="活动封面" />}
-            <strong>{name || '秋日康养游园会'}</strong>
-            <span>{location || '健康相伴 · 乐享秋日好时光'}</span>
-          </div>
-          <div className="phone-preview__tags">
-            <em>{typeLabel || '社区活动'}</em>
-            <em>{institutions.length} 家机构可选</em>
-          </div>
-          <div className="phone-preview__info">
-            <p className='phone-preview__info__title'>选择机构后展示对应活动时间</p>
-            <p className='phone-preview__info__label'>{institutions.length} 家参与机构可选 · 共承接 {totalCapacity} 人</p>
-            <p className='phone-preview__info__highlight'>适合 {targetCrowd || '60 岁以上长者'} · {feeText}</p>
-          </div>
-          {isRichDetailEmpty(description) ? (
-            <div className="phone-preview__image phone-preview__image--cream">
-              <em>图文详情</em>
-              <strong>编辑图文详情后在此展示</strong>
-              <span>支持图片、标题、列表等富文本排版</span>
+      <PhonePreview
+        title="活动详情"
+        footer={
+          <div className="phone-preview__footer">
+            <div>
+              <span>活动费用</span>
+              <strong>{feeText}</strong>
             </div>
-          ) : (
-            <div className="phone-preview__detail">
-              <RichDetailPreview value={description} />
-            </div>
-          )}
-          {status === 'success' && (
-            <div className="phone-preview__success">
-              <CheckOutlined /> 报名成功，已为您预留名额
-            </div>
-          )}
-        </div>
-        <div className="phone-preview__footer">
-          <div>
-            <span>活动费用</span>
-            <strong>{feeText}</strong>
+            {status === 'full' ? (
+              <button type="button" disabled>
+                名额已满
+              </button>
+            ) : (
+              <button type="button">{status === 'success' ? '已报名' : '立即报名'}</button>
+            )}
           </div>
-          {status === 'full' ? (
-            <button type="button" disabled>
-              名额已满
-            </button>
-          ) : (
-            <button type="button">{status === 'success' ? '已报名' : '立即报名'}</button>
-          )}
+        }
+      >
+        <div className={`phone-preview__hero${coverUrl ? ' has-cover' : ''}`}>
+          {coverUrl && <img src={coverUrl} alt="活动封面" />}
+          <strong>{name || '秋日康养游园会'}</strong>
+          <span>{location || '健康相伴 · 乐享秋日好时光'}</span>
         </div>
-      </div>
+        <div className="phone-preview__tags">
+          <em>{typeLabel || '社区活动'}</em>
+          <em>{institutions.length} 家机构可选</em>
+        </div>
+        <div className="phone-preview__info">
+          <p className='phone-preview__info__title'>选择机构后展示对应活动时间</p>
+          <p className='phone-preview__info__label'>{institutions.length} 家参与机构可选 · 共承接 {totalCapacity} 人</p>
+          <p className='phone-preview__info__highlight'>适合 {targetCrowd || '60 岁以上长者'} · {feeText}</p>
+        </div>
+        {isRichDetailEmpty(description) ? (
+          <div className="phone-preview__image phone-preview__image--cream">
+            <em>图文详情</em>
+            <strong>编辑图文详情后在此展示</strong>
+            <span>支持图片、标题、列表等富文本排版</span>
+          </div>
+        ) : (
+          <div className="phone-preview__detail">
+            <RichDetailPreview value={description} />
+          </div>
+        )}
+        {status === 'success' && (
+          <div className="phone-preview__success">
+            <CheckOutlined /> 报名成功，已为您预留名额
+          </div>
+        )}
+      </PhonePreview>
     </div>
   )
 
@@ -425,16 +456,31 @@ export default function ActivityCreate() {
                 <Form.Item
                   name="start_date"
                   label={<span>报名开始</span>}
-                  rules={[{ required: true, message: '请选择报名开始日期' }]}
+                  rules={[
+                    { required: true, message: '请选择报名开始日期' },
+                    { validator: validateStartDate },
+                  ]}
                 >
-                  <DatePicker placeholder="选择开始日期" style={{ width: '100%' }} />
+                  <DatePicker
+                    placeholder="选择开始日期"
+                    style={{ width: '100%' }}
+                    disabledDate={disabledPastDate}
+                  />
                 </Form.Item>
                 <Form.Item
                   name="end_date"
                   label={<span>报名结束</span>}
-                  rules={[{ required: true, message: '请选择报名结束日期' }]}
+                  dependencies={['start_date']}
+                  rules={[
+                    { required: true, message: '请选择报名结束日期' },
+                    { validator: validateEndDate },
+                  ]}
                 >
-                  <DatePicker placeholder="选择结束日期" style={{ width: '100%' }} />
+                  <DatePicker
+                    placeholder="选择结束日期"
+                    style={{ width: '100%' }}
+                    disabledDate={disabledEndDate}
+                  />
                 </Form.Item>
                 <Form.Item name="target_crowd" label="适用人群">
                   <Input placeholder="如 60 岁以上长者" />
@@ -507,16 +553,6 @@ export default function ActivityCreate() {
             </Card>
 
             <Card variant="borderless" className="create-card create-card--footer">
-              <div className="create-submit">
-                <div className="create-submit__info">
-                  <h3>报名须知与退款规则</h3>
-                  <p>
-                    {notice ? '已填写' : '未填写'} · 发布后同步展示在患者端
-                    {/* <Button type="link" size="small" onClick={() => setNoticeOpen((prev) => !prev)}>
-                      {noticeOpen ? '收起' : '修改'}
-                    </Button> */}
-                  </p>
-                </div>
                 <div className="create-footer">
                   <Button onClick={() => setPreviewOpen(true)}>手机预览</Button>
                   {/* 已发布过的活动（含已取消）不再提供「存为草稿」 */}
@@ -536,7 +572,6 @@ export default function ActivityCreate() {
                     {isEdit && originStatus !== STATUS_DRAFT ? '保存活动' : '发布活动'}
                   </Button>
                 </div>
-              </div>
               {noticeOpen && (
                 <Form.Item name="notice" className="create-notice">
                   <Input.TextArea rows={3} placeholder="将展示在患者端报名确认页" />

@@ -3,6 +3,7 @@
  * 展示协议名称、类型、版本与生效日期，及简化正文预览
  */
 import { Button } from 'antd'
+import PhonePreview from '@/components/PhonePreview'
 import './AgreementPhone.less'
 
 interface AgreementPhoneProps {
@@ -24,12 +25,17 @@ export default function AgreementPhone({
 }: AgreementPhoneProps) {
   return (
     <div className="agreement-phone">
-      <div className="agreement-phone__scroll">
-        <div className="agreement-phone__nav">
-          <span>‹</span>
-          <strong>{type || '隐私政策'}</strong>
-          <span>•••</span>
-        </div>
+      <PhonePreview
+        title={type || '隐私政策'}
+        statusBar={false}
+        footer={
+          <div className="agreement-phone__footer">
+            <Button type="primary" style={{ width: '100%' }}>
+              我已阅读并同意
+            </Button>
+          </div>
+        }
+      >
         <div className="agreement-phone__body">
           <h4>{name}</h4>
           <p className="agreement-phone__meta">
@@ -50,12 +56,7 @@ export default function AgreementPhone({
           </p>
           <div className="agreement-phone__contact">联系我们：010-6888 6688</div>
         </div>
-      </div>
-      <div className="agreement-phone__footer">
-        <Button type="primary" style={{ width: '100%' }}>
-          我已阅读并同意
-        </Button>
-      </div>
+      </PhonePreview>
     </div>
   )
 }

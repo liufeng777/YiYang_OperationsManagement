@@ -144,36 +144,17 @@
   }
 
   /* 底部操作条：左侧须知状态 + 右侧按钮 */
-  .create-submit {
+  .create-footer {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: @spacing-xl;
-
-    &__info {
-      h3 {
-        margin: 0;
-        .text-title-card();
-      }
-
-      p {
-        margin: @spacing-2xs 0 0;
-        .text-auxiliary();
-      }
-    }
+    gap: @spacing-sm;
+    flex-shrink: 0;
+    justify-content: flex-end;
   }
 
   .create-notice {
     margin-top: @spacing-md;
     margin-bottom: 0;
   }
-
-  .create-footer {
-    display: flex;
-    gap: @spacing-sm;
-    flex-shrink: 0;
-  }
-
   .create-preview {
     .card-surface();
     position: sticky;
@@ -196,38 +177,12 @@
   }
 }
 
-/* ===== 患者端手机预览 ===== */
+/* ===== 患者端手机预览内容（外壳见 @/components/PhonePreview） ===== */
 .phone-preview {
   display: flex;
   justify-content: center;
 
-  &__screen {
-    display: flex;
-    flex-direction: column;
-    width: 320px;
-    height: 620px;
-    background: @color-bg-page;
-    border: 1px solid @color-border;
-    border-radius: @radius-lg;
-    overflow: hidden;
-  }
-
-  &__header {
-    display: flex;
-    align-items: center;
-    gap: @spacing-2xs;
-    padding: @spacing-sm @spacing-md;
-    background: @color-bg-card;
-    .text-body-medium();
-  }
-
   /* 头部之下、底部报名栏之上的可滚动内容区 */
-  &__scroll {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-  }
-
   &__hero {
     position: relative;
     display: flex;
@@ -373,10 +328,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: auto;
     padding: @spacing-sm @spacing-md;
     background: @color-bg-card;
-    border-top: 1px solid @color-border;
 
     > div {
       display: flex;

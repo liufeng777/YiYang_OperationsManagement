@@ -5,44 +5,26 @@
  */
 
 .institution-editor {
+  flex: 1;
+  overflow-y: hidden;
   margin-top: @spacing-md;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 376px;
   gap: @spacing-md;
 
   &__form {
+    height: 100%;
+    overflow-y: hidden;
     display: flex;
     flex-direction: column;
     gap: @spacing-md;
     min-width: 0;
     .ant-form {
+      flex: 1;
+      overflow: auto;
       display: flex;
       flex-direction: column;
       gap: @spacing-md;
-    }
-  }
-
-  .editor-card {
-    .card-surface();
-
-    .ant-card-body {
-      padding: @spacing-md @spacing-lg;
-    }
-
-    &__header {
-      display: flex;
-      align-items: baseline;
-      gap: @spacing-sm;
-      margin-bottom: @spacing-md;
-
-      h3 {
-        margin: 0;
-        .text-title-card();
-      }
-
-      span {
-        .text-auxiliary();
-      }
     }
   }
 
@@ -74,57 +56,31 @@
     }
   }
 
-  /* ===== 患者端手机预览：仅展示封面、标题与图文详情 ===== */
-  .institution-phone {
-    display: flex;
-    flex-direction: column;
-    width: 328px;
-    height: 620px;
-    margin: 0 auto;
-    overflow: hidden;
-    background: @color-bg-card;
-    border: 1px solid @color-border;
-    border-radius: (@radius-xl + 8px);
-    box-shadow: @shadow-card;
-    position: relative;
+  .editor-card {
+    .card-surface();
 
-    &__scroll {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
+    .ant-card-body {
+      padding: @spacing-md @spacing-lg;
     }
 
-    &__status {
+    &__header {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: @spacing-xs @spacing-md 0;
-      .text-auxiliary();
+      align-items: baseline;
+      gap: @spacing-sm;
+      margin-bottom: @spacing-md;
 
-      i {
-        width: 48px;
-        height: 8px;
-        background: @color-text-primary;
-        border-radius: @radius-full;
-        opacity: 0.85;
-      }
-    }
-
-    &__nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: @spacing-xs @spacing-md @spacing-sm;
-
-      strong {
-        .text-body-medium();
+      h3 {
+        margin: 0;
+        .text-title-card();
       }
 
       span {
-        font-size: @font-size-title-card;
+        .text-auxiliary();
       }
     }
-
+  }
+  /* ===== 患者端手机预览内容（外壳见 @/components/PhonePreview） ===== */
+  .institution-phone {
     &__cover {
       aspect-ratio: 750 / 420;
       margin: 0 @spacing-md;

@@ -1,30 +1,63 @@
 /**
  * 订单中心 - 订单详情
- * 数据来源：orderApi.getOrder（金额单位为「分」，展示统一换算为「元」）
- * 工单列表：workorderApi.getWorkOrders({ order_id })，复用共享组件 <WorkOrderTable />（见 ./workOrderTable）
+ * 数据来源：orderApi.getOrder；工单列表复用 <WorkOrderTable />（workorderApi.getWorkOrders）
+ * 金额单位：元（DECIMAL(10,2)），直接展示
+ * 布局：顶部状态摘要 + 左右两栏
+ *   左栏：交易订单信息 / 耗材明细 / 退款记录 / 工单列表
+ *   右栏：订单进度（status_history 以 Timeline 渲染，按时间升序，最后一条为当前状态）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, Descriptions, Spin } from 'antd'
+import { Button, Card, Descriptions, Empty, Spin, Table, Tag, Timeline } from 'antd'
+import type { DescriptionsProps } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import SensitiveText from '@/components/SensitiveText'
 import { institutionApi, orderApi, workorderApi } from '@/api'
-import type { OrderDetail } from '@/api/modules/order'
+import type { OrderConsumable, OrderDetail, OrderRefundSummary } from '@/api/modules/order'
 import type { WorkOrderDTO } from '@/api/modules/workorder'
 import { formatAmount, formatDateTime } from '@/utils'
+import { REFUND_STATUS_TEXT } from '@/pages/refund/list'
+import { ORDER_STATUS_TEXT } from './constants'
 import { WorkOrderTable } from './workOrderTable'
 import './detail.less'
 
-/** 订单状态文案（与列表页保持一致）：1-待支付 2-待确认 3-生效中 4-已完成 5-已取消 6-已退款 */
-const ORDER_STATUS_TEXT: Record<number, string> = {
-  1: '待支付',
-  2: '待确认',
-  3: '生效中',
-  4: '已完成',
-  5: '已取消',
-  6: '已退款',
+/** 时间戳（UTC 秒）格式化，空值显示占位 */
+const fmtTime = (seconds?: number | null) =>
+  seconds ? formatDateTime(seconds * 1000, 'YYYY-MM-DD HH:mm') : '—'
+
+/** 退款状态标签色（refund_status：1-待医护审批 2-审批通过 3-退款中 4-已退款 5-已拒绝 6-退款失败） */
+const REFUND_STATUS_COLOR: Record<number, string> = {
+  1: 'gold',
+  2: 'blue',
+  3: 'blue',
+  4: 'success',
+  5: 'default',
+  6: 'error',
 }
+
+/** 耗材明细列 */
+const consumableColumns: ColumnsType<OrderConsumable> = [
+  { title: '耗材名称', dataIndex: 'name', key: 'name', ellipsis: true },
+  {
+    title: '单价',
+    dataIndex: 'unit_price',
+    key: 'unit_price',
+    width: 120,
+    align: 'right',
+    render: (value: number) => formatAmount(value),
+  },
+  { title: '数量', dataIndex: 'count', key: 'count', width: 90, align: 'right' },
+  {
+    title: '小计',
+    dataIndex: 'amount',
+    key: 'amount',
+    width: 130,
+    align: 'right',
+    render: (value: number) => formatAmount(value),
+  },
+]
 
 export default function OrderDetailPage() {
   const navigate = useNavigate()
@@ -78,7 +111,7 @@ export default function OrderDetailPage() {
     void fetchWorkOrders()
   }, [fetchWorkOrders])
 
-  // 机构列表：用于展示服务机构的名称
+  // 机构列表：详情未返回 institution_name 时用于兜底展示
   useEffect(() => {
     let cancelled = false
     institutionApi
@@ -94,62 +127,142 @@ export default function OrderDetailPage() {
     }
   }, [])
 
+  /** 服务机构名称：优先取详情返回的 institution_name */
   const institutionName = useMemo(() => {
     const map = new Map(institutions.map((item) => [item.id, item.name]))
-    return (record: OrderDetail) =>
-      map.get(record.institution_id) ?? `机构 ${record.institution_id}`
-  }, [institutions])
+    return order?.institution_name || map.get(order?.institution_id ?? 0) || `机构 ${order?.institution_id ?? '—'}`
+  }, [institutions, order])
 
-  /** 交易订单信息（Descriptions 渲染；备注并入其中） */
-  const orderDescriptions = useMemo(
-    () => [
+  const consumables = order?.consumables ?? []
+  const refundList = order?.refund_list ?? []
+
+  /** 状态流转：按时间升序展示，最后一条为当前状态 */
+  const history = useMemo(
+    () => [...(order?.status_history ?? [])].sort((a, b) => (a.time ?? 0) - (b.time ?? 0)),
+    [order],
+  )
+
+  /** 交易订单信息 */
+  const orderDescriptions = useMemo<DescriptionsProps['items']>(() => {
+    if (!order) return []
+    const items: NonNullable<DescriptionsProps['items']> = [
+      { key: 'order_no', label: '订单号', children: order.order_no },
       {
-        key: 'contact_name',
+        key: 'member',
+        label: '服务对象',
+        children: (
+          <span>
+            <SensitiveText type="name" value={order.member_name} />
+            {order.member_id ? `（会员 ${order.member_id}）` : ''}
+          </span>
+        ),
+      },
+      {
+        key: 'member_phone',
+        label: '会员手机号',
+        children: <SensitiveText type="phone" value={order.member_phone} />,
+      },
+      { key: 'institution', label: '服务机构', children: institutionName },
+      { key: 'service_name', label: '服务项目', children: order.service_name || '—' },
+      {
+        key: 'service_count',
+        label: '服务次数',
+        children: `${order.served_count ?? 0} / ${order.service_count ?? 0} 次`,
+      },
+      {
+        key: 'contact',
         label: '联系人',
-        children: <SensitiveText type="name" value={order?.contact_name} />,
+        children: <SensitiveText type="name" value={order.contact_name} />,
       },
       {
         key: 'contact_phone',
         label: '联系电话',
-        children: <SensitiveText type="phone" value={order?.contact_phone} />,
+        children: <SensitiveText type="phone" value={order.contact_phone} />,
       },
-      {
-        key: 'created_at',
-        label: '下单时间',
-        children: formatDateTime(order?.created_at && order.created_at * 1000, 'YYYY-MM-DD HH:mm'),
-      },
-      { key: 'user_id', label: '注册会员（用户ID）', children: order?.user_id ?? '—' },
-      { key: 'member_id', label: '服务对象（会员ID）', children: order?.member_id ?? '—' },
-      {
-        key: 'service_count',
-        label: '服务次数',
-        children: order ? `${order.served_count ?? 0} / ${order.service_count ?? 0} 次` : '—',
-      },
-      { key: 'total_amount', label: '原价', children: formatAmount((order?.total_amount)) },
+      { key: 'total_amount', label: '原价', children: formatAmount(order.total_amount) },
       {
         key: 'discount_amount',
         label: '优惠金额',
-        children: formatAmount((order?.discount_amount)),
+        children: formatAmount(order.discount_amount),
       },
       {
         key: 'paid_amount',
         label: '实付金额',
-        children: <strong>{formatAmount((order?.paid_amount))}</strong>,
+        children: <strong>{formatAmount(order.paid_amount)}</strong>,
+      },
+      { key: 'created_at', label: '下单时间', children: fmtTime(order.created_at) },
+    ]
+
+    if (order.paid_at) {
+      items.push({ key: 'paid_at', label: '支付时间', children: fmtTime(order.paid_at) })
+    }
+    if (order.completed_at) {
+      items.push({ key: 'completed_at', label: '完成时间', children: fmtTime(order.completed_at) })
+    }
+    if (order.assigned_staff != null) {
+      items.push({
+        key: 'assigned_staff',
+        label: '意向服务人员',
+        children: `员工 ID ${order.assigned_staff}`,
+      })
+    }
+    if (order.cancelled_at || order.cancel_reason) {
+      items.push({
+        key: 'cancelled',
+        label: '取消信息',
+        children: `${fmtTime(order.cancelled_at)}${order.cancel_reason ? ` · ${order.cancel_reason}` : ''}`,
+      })
+    }
+    items.push({
+      key: 'remark',
+      label: '备注',
+      span: { xs: 1, sm: 2, lg: 3 },
+      children: order.remark || '—',
+    })
+    return items
+  }, [order, institutionName])
+
+  /** 退款记录列（退款单均可在退款管理中查看详情） */
+  const refundColumns = useMemo<ColumnsType<OrderRefundSummary>>(
+    () => [
+      { title: '退款单号', dataIndex: 'refund_no', key: 'refund_no' },
+      {
+        title: '退款金额',
+        dataIndex: 'refund_amount',
+        key: 'refund_amount',
+        width: 130,
+        align: 'right',
+        render: (value: number) => formatAmount(value),
       },
       {
-        key: 'remark',
-        label: '备注',
-        span: { xs: 1, sm: 2, lg: 3 },
-        children: order?.remark || '—',
+        title: '退款状态',
+        dataIndex: 'refund_status',
+        key: 'refund_status',
+        width: 130,
+        render: (value: number) => (
+          <Tag color={REFUND_STATUS_COLOR[value] ?? 'default'}>
+            {REFUND_STATUS_TEXT[value] ?? value ?? '—'}
+          </Tag>
+        ),
+      },
+      {
+        title: '操作',
+        key: 'action',
+        width: 110,
+        render: (_, record) => (
+          <Button type="link" size="small" onClick={() => navigate(`/refund/detail/${record.id}`)}>
+            查看退款
+          </Button>
+        ),
       },
     ],
-    [order],
+    [navigate],
   )
 
   return (
     <PageContainer
       title="订单详情"
-      description={order ? `${order.order_no} · ${institutionName(order)}` : '订单详情'}
+      description={order ? `${order.order_no} · ${institutionName}` : '订单详情'}
       extra={
         <Button
           color="primary"
@@ -172,11 +285,11 @@ export default function OrderDetailPage() {
             </div>
             <div className="summary-item">
               <span>服务机构</span>
-              <strong>{order ? institutionName(order) : '—'}</strong>
+              <strong>{order ? institutionName : '—'}</strong>
             </div>
             <div className="summary-item">
               <span>实付金额</span>
-              <strong>{formatAmount((order?.paid_amount))}</strong>
+              <strong>{formatAmount(order?.paid_amount)}</strong>
             </div>
             <div className="summary-item">
               <span>服务次数</span>
@@ -186,27 +299,99 @@ export default function OrderDetailPage() {
             </div>
             <div className="summary-item">
               <span>下单时间</span>
-              <strong>
-                {formatDateTime(order?.created_at && order.created_at * 1000, 'YYYY-MM-DD HH:mm')}
-              </strong>
+              <strong>{fmtTime(order?.created_at)}</strong>
             </div>
           </Card>
 
-          <Card variant="borderless" className="detail-card">
-            <div className="detail-card__header">
-              <h3>交易订单信息</h3>
-              <span>{order?.order_no ?? '—'}</span>
-            </div>
-            <Descriptions
-              column={{ xs: 1, sm: 2, lg: 3 }}
-              size="small"
-              colon={false}
-              bordered
-              items={orderDescriptions}
-            />
-          </Card>
+          {/* 第一行：交易订单信息 + 订单进度（两张卡等高，进度内部滚动） */}
+          <div className="order-detail__grid">
+            <Card variant="borderless" className="detail-card">
+              <div className="detail-card__header">
+                <h3>交易订单信息</h3>
+                <span>{order?.order_no ?? '—'}</span>
+              </div>
+              <Descriptions
+                column={{ xs: 1, sm: 2, lg: 3 }}
+                size="small"
+                colon={false}
+                bordered
+                items={orderDescriptions}
+              />
+            </Card>
 
-          <WorkOrderTable list={workOrders} loading={workOrderLoading} />
+            <Card variant="borderless" className="detail-card order-detail__status">
+              <div className="detail-card__header">
+                <h3>订单进度</h3>
+                <span>共 {history.length} 条</span>
+              </div>
+              <div className="order-detail__timeline">
+                {history.length ? (
+                  <Timeline
+                    className="order-timeline"
+                    items={history.map((item, index) => ({
+                      color: index === history.length - 1 ? 'green' : 'gray',
+                      children: (
+                        <div className="order-timeline__item">
+                          <div className="order-timeline__head">
+                            <strong>{item.status_name || '—'}</strong>
+                            <span>{fmtTime(item.time)}</span>
+                          </div>
+                          {item.remark ? <p>{item.remark}</p> : null}
+                        </div>
+                      ),
+                    }))}
+                  />
+                ) : (
+                  <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无状态流转记录" />
+                )}
+              </div>
+            </Card>
+          </div>
+
+          {consumables.length > 0 && (
+            <Card variant="borderless" className="detail-card">
+              <div className="detail-card__header">
+                <h3>耗材明细</h3>
+                <span>共 {consumables.length} 项</span>
+              </div>
+              <Table<OrderConsumable>
+                rowKey="id"
+                size="small"
+                columns={consumableColumns}
+                dataSource={consumables}
+                pagination={false}
+                summary={() => (
+                  <Table.Summary.Row>
+                    <Table.Summary.Cell index={0} colSpan={3}>
+                      合计
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={1} align="right">
+                      {formatAmount(consumables.reduce((sum, item) => sum + (item.amount ?? 0), 0))}
+                    </Table.Summary.Cell>
+                  </Table.Summary.Row>
+                )}
+              />
+            </Card>
+          )}
+
+          {refundList.length > 0 && (
+            <Card variant="borderless" className="detail-card">
+              <div className="detail-card__header">
+                <h3>退款记录</h3>
+                <span>共 {refundList.length} 笔</span>
+              </div>
+              <Table<OrderRefundSummary>
+                rowKey="id"
+                size="small"
+                columns={refundColumns}
+                dataSource={refundList}
+                pagination={false}
+              />
+            </Card>
+          )}
+
+          {/* 工单列表：整行铺满 */}
+          <WorkOrderTable list={workOrders} loading={workOrderLoading} scrollY={false} />
         </div>
       </Spin>
     </PageContainer>

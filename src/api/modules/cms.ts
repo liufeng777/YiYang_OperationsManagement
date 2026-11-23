@@ -140,11 +140,11 @@ export type BannerPlatform = 1 | 2 | 3
 /** 跳转类型：1-无跳转 2-站内内容 3-活动详情 4-服务详情 5-外链 */
 export type BannerLinkType = 1 | 2 | 3 | 4 | 5
 
-/** 轮播 DTO（出参含跳转目标平铺片段 link_id/link_title） */
+/** 轮播 DTO（出参图片字段为 image；跳转目标平铺片段 link_id/link_title） */
 export interface BannerDTO {
   id: number
   title: string
-  image_url: string
+  image: string
   platform: BannerPlatform
   /** 投放位置：home_top / activity_ad 等 */
   position: string
@@ -161,8 +161,25 @@ export interface BannerDTO {
   status: CommonStatus
 }
 
-/** 轮播新增 / 编辑入参（swagger admin.ReqCreateBanner：image_url / title 必填） */
-export type BannerSaveBody = Omit<BannerDTO, 'id' | 'link_id' | 'link_title'>
+/**
+ * 轮播新增 / 编辑入参
+ * 注意：出参图片字段为 image，入参按 swagger admin.ReqCreateBanner 为 image_url（title / image_url 必填）
+ */
+export interface BannerSaveBody {
+  title: string
+  /** 图片地址，必填 */
+  image_url: string
+  platform: BannerPlatform
+  position: string
+  link_type: BannerLinkType
+  link_value?: string
+  sort?: number
+  /** 生效起始 UTC 秒，NULL=立即 */
+  start_at?: number | null
+  /** 生效结束 UTC 秒，NULL=长期 */
+  end_at?: number | null
+  status?: CommonStatus
+}
 
 /** 轮播列表 GET /api/admin/banners（swagger：page / page_size / status） */
 export function getBanners(
@@ -191,9 +208,12 @@ export function batchUpdateBannerStatus(ids: number[], status: CommonStatus, rem
   return http.post<BatchResult>('/admin/banners/batch-status', { ids, status }, { params: { remark } })
 }
 
-/** 排序 POST /api/admin/banners/:id/sort（swagger：body {sort}，remark 为 query 选填） */
-export function sortBanner(id: number, sort: number, remark?: string) {
-  return http.post<null>(`/admin/banners/${id}/sort`, { sort }, { params: { remark } })
+/**
+ * 轮播批量排序 POST /api/admin/banners/batch-sort
+ * swagger admin.ReqBatchBannerSort：body {banner_ids}，按数组顺序依次赋 sort=1,2,3…；remark 为 query 选填
+ */
+export function batchSortBanners(bannerIds: number[], remark?: string) {
+  return http.post<null>('/admin/banners/batch-sort', { banner_ids: bannerIds }, { params: { remark } })
 }
 
 /** 删除轮播 DELETE /api/admin/banners/:id（swagger：remark 为 query 选填） */

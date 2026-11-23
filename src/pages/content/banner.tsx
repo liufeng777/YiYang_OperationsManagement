@@ -134,7 +134,7 @@ export default function ContentBanner() {
 
   const openEdit = (record: BannerDTO) => {
     setEditing(record)
-    setImageUrl(record.image_url)
+    setImageUrl(record.image)
     form.setFieldsValue({
       title: record.title,
       platform: record.platform,
@@ -159,7 +159,7 @@ export default function ContentBanner() {
     await upload(file, {
       onLocalPreview: (localUrl) => setImageUrl(localUrl),
       onUploaded: (serverUrl) => setImageUrl(serverUrl),
-      onError: () => setImageUrl(editing?.image_url ?? ''),
+      onError: () => setImageUrl(editing?.image ?? ''),
     })
     return false
   }
@@ -239,7 +239,7 @@ export default function ContentBanner() {
         width: 220,
         render: (_, record) => (
           <Space>
-            <Image src={record.image_url} width={96} height={48} style={{ objectFit: 'cover' }} />
+            <Image src={record.image} width={96} height={48} style={{ objectFit: 'cover' }} />
             <strong>{record.title}</strong>
           </Space>
         ),

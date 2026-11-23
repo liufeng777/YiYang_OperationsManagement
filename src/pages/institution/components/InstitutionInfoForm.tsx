@@ -13,6 +13,7 @@ import { useImageUpload } from '@/hooks'
 import type { InstitutionItem, InstitutionType } from '@/api/modules/institution'
 import RichDetailEditor from '@/components/RichDetailEditor'
 import RichDetailPreview, { isRichDetailEmpty } from '@/components/RichDetailPreview'
+import PhonePreview from '@/components/PhonePreview'
 import InstitutionBaseFields from './InstitutionBaseFields'
 import './InstitutionInfoForm.less'
 
@@ -220,16 +221,7 @@ export default function InstitutionInfoForm({ detail, onSaved, onCancel }: Insti
           <span>实时预览</span>
         </div>
         <div className="institution-phone">
-          <div className="institution-phone__status">
-            <span>9:41</span>
-            <i />
-          </div>
-          <div className="institution-phone__nav">
-            <span>‹</span>
-            <strong>机构详情</strong>
-            <span>···</span>
-          </div>
-          <div className="institution-phone__scroll">
+          <PhonePreview title="机构详情">
             <div
               className={`institution-phone__cover${coverUrl ? '' : ' institution-phone__cover--empty'}`}
             >
@@ -243,7 +235,7 @@ export default function InstitutionInfoForm({ detail, onSaved, onCancel }: Insti
                 <RichDetailPreview value={richDesc} />
               )}
             </div>
-          </div>
+          </PhonePreview>
         </div>
       </Card>
     </div>

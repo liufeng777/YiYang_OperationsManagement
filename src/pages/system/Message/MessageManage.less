@@ -1,67 +1,16 @@
+/* 消息通知管理：仅「消息模板」一个内容区（筛选卡 + 填充高度的列表卡） */
+.message-manage {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-md;
+  min-height: 0;
 
-.message-manage__tabs {
-  .ant-tabs-nav {
-    margin-bottom: @spacing-md;
-    background-color: #fff;
-    padding-left: @spacing-md;
-  }
-
-  .ant-tabs-content-holder {
-    margin-top: @spacing-md;
-  }
-
-  .ant-tabs-tabpane {
-    .filter-bar {
-      margin-top: 0;
-    }
-
-    .list-card {
-      margin-top: @spacing-md;
-    }
-  }
-
-  .ant-tabs-content {
-    position: relative;
-    .message-add-btn {
-      position: absolute;
-      right: 16px;
-      top: -56px;
-    }
-  }
-}
-
-/* PageContainer fixed 模式：Tabs 撑满内容区，当前 Tab 的列表卡片填充并内部滚动 */
-.page-container--fixed .message-manage__tabs {
-  .ant-tabs-nav {
-    flex-shrink: 0;
-    margin-bottom: @spacing-sm;
-  }
-
-  .ant-tabs-content-holder {
-    flex: 1;
-    min-height: 0;
+  /* 筛选卡与列表卡之间由 gap 控制间距，去掉公共样式里的 margin-top */
+  > .filter-bar {
     margin-top: 0;
-    display: flex;
-    flex-direction: column;
   }
 
-  .ant-tabs-content {
-    flex: 1;
-    min-height: 0;
-    height: 100%;
-  }
-
-  .ant-tabs-tabpane-active {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-
-    > * {
-      flex-shrink: 0;
-    }
-
-    > .list-card--fill {
-      flex: 1 1 auto;
-    }
+  > .list-card--fill {
+    margin-top: 0;
   }
 }

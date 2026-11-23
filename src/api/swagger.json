@@ -1021,6 +1021,45 @@
               }
           }
       },
+      "/api/v1/admin/banners/batch-sort": {
+          "post": {
+              "consumes": [
+                  "application/json"
+              ],
+              "produces": [
+                  "application/json"
+              ],
+              "tags": [
+                  "内容与轮播-轮播"
+              ],
+              "summary": "轮播批量排序（有序 banner_ids 依次赋 sort=1,2,3...）",
+              "parameters": [
+                  {
+                      "description": "有序轮播ID数组",
+                      "name": "body",
+                      "in": "body",
+                      "required": true,
+                      "schema": {
+                          "$ref": "#/definitions/admin.ReqBatchBannerSort"
+                      }
+                  },
+                  {
+                      "type": "string",
+                      "description": "操作原因/备注，选填",
+                      "name": "remark",
+                      "in": "query"
+                  }
+              ],
+              "responses": {
+                  "200": {
+                      "description": "OK",
+                      "schema": {
+                          "$ref": "#/definitions/pkg.Response"
+                      }
+                  }
+              }
+          }
+      },
       "/api/v1/admin/banners/batch-status": {
           "post": {
               "consumes": [
@@ -1139,52 +1178,6 @@
                   {
                       "type": "string",
                       "description": "操作备注，选填",
-                      "name": "remark",
-                      "in": "query"
-                  }
-              ],
-              "responses": {
-                  "200": {
-                      "description": "OK",
-                      "schema": {
-                          "$ref": "#/definitions/pkg.Response"
-                      }
-                  }
-              }
-          }
-      },
-      "/api/v1/admin/banners/{id}/sort": {
-          "post": {
-              "consumes": [
-                  "application/json"
-              ],
-              "produces": [
-                  "application/json"
-              ],
-              "tags": [
-                  "内容与轮播-轮播"
-              ],
-              "summary": "轮播排序",
-              "parameters": [
-                  {
-                      "type": "integer",
-                      "description": "轮播ID",
-                      "name": "id",
-                      "in": "path",
-                      "required": true
-                  },
-                  {
-                      "description": "排序参数",
-                      "name": "body",
-                      "in": "body",
-                      "required": true,
-                      "schema": {
-                          "$ref": "#/definitions/admin.ReqSetBannerSort"
-                      }
-                  },
-                  {
-                      "type": "string",
-                      "description": "操作原因/备注，选填",
                       "name": "remark",
                       "in": "query"
                   }
@@ -3612,6 +3605,73 @@
               }
           }
       },
+      "/api/v1/admin/members/{id}/health/events": {
+          "get": {
+              "security": [
+                  {
+                      "BearerAuth": []
+                  }
+              ],
+              "description": "会员健康管理详情页按时间倒序展示该会员全部业务事件（接入/方案/订单/工单/退款/预警/档案/评估/随访等）。admin 端可查任意会员。",
+              "consumes": [
+                  "application/json"
+              ],
+              "produces": [
+                  "application/json"
+              ],
+              "tags": [
+                  "admin-会员管理"
+              ],
+              "summary": "会员事件时间线",
+              "parameters": [
+                  {
+                      "type": "integer",
+                      "description": "会员ID",
+                      "name": "id",
+                      "in": "path",
+                      "required": true
+                  },
+                  {
+                      "type": "string",
+                      "description": "事件域过滤（plan/order/work_order/refund/warning/archive/followup/...），空=全部",
+                      "name": "domain",
+                      "in": "query"
+                  },
+                  {
+                      "type": "string",
+                      "description": "事件类型过滤，空=该域全部",
+                      "name": "event_type",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "操作者ID过滤，空=全部",
+                      "name": "operator_id",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "页码，默认1",
+                      "name": "page",
+                      "in": "query"
+                  },
+                  {
+                      "type": "integer",
+                      "description": "每页条数，默认10，最大100",
+                      "name": "page_size",
+                      "in": "query"
+                  }
+              ],
+              "responses": {
+                  "200": {
+                      "description": "OK",
+                      "schema": {
+                          "$ref": "#/definitions/pkg.Response"
+                      }
+                  }
+              }
+          }
+      },
       "/api/v1/admin/members/{id}/status": {
           "post": {
               "consumes": [
@@ -3745,9 +3805,9 @@
                   "application/json"
               ],
               "tags": [
-                  "消息通知-消息模板"
+                  "消息通知"
               ],
-              "summary": "模板列表",
+              "summary": "消息模板列表",
               "parameters": [
                   {
                       "type": "integer",
@@ -3792,9 +3852,9 @@
                   "application/json"
               ],
               "tags": [
-                  "消息通知-消息模板"
+                  "消息通知"
               ],
-              "summary": "新增模板",
+              "summary": "新增消息模板",
               "parameters": [
                   {
                       "description": "新增模板参数",
@@ -3822,9 +3882,9 @@
                   "application/json"
               ],
               "tags": [
-                  "消息通知-消息模板"
+                  "消息通知"
               ],
-              "summary": "模板详情",
+              "summary": "消息模板详情",
               "parameters": [
                   {
                       "type": "integer",
@@ -3852,9 +3912,9 @@
                   "application/json"
               ],
               "tags": [
-                  "消息通知-消息模板"
+                  "消息通知"
               ],
-              "summary": "编辑模板",
+              "summary": "编辑消息模板",
               "parameters": [
                   {
                       "type": "integer",
@@ -3887,9 +3947,9 @@
                   "application/json"
               ],
               "tags": [
-                  "消息通知-消息模板"
+                  "消息通知"
               ],
-              "summary": "删除模板",
+              "summary": "删除消息模板",
               "parameters": [
                   {
                       "type": "integer",
@@ -3924,9 +3984,9 @@
                   "application/json"
               ],
               "tags": [
-                  "消息通知-消息模板"
+                  "消息通知"
               ],
-              "summary": "启用/停用模板",
+              "summary": "启用/停用消息模板",
               "parameters": [
                   {
                       "type": "integer",
@@ -3970,7 +4030,7 @@
                   "application/json"
               ],
               "tags": [
-                  "消息通知-站内消息"
+                  "消息通知"
               ],
               "summary": "手动创建站内信（运营通知，message_type=1，按用户/staff范围）",
               "parameters": [
@@ -4069,7 +4129,7 @@
                   "application/json"
               ],
               "tags": [
-                  "通知中心-事件规则"
+                  "通知中心"
               ],
               "summary": "事件规则列表",
               "parameters": [
@@ -4103,7 +4163,7 @@
                   "application/json"
               ],
               "tags": [
-                  "通知中心-事件规则"
+                  "通知中心"
               ],
               "summary": "新增事件规则",
               "parameters": [
@@ -4136,7 +4196,7 @@
                   "application/json"
               ],
               "tags": [
-                  "通知中心-事件规则"
+                  "通知中心"
               ],
               "summary": "编辑事件规则",
               "parameters": [
@@ -4173,7 +4233,7 @@
                   "application/json"
               ],
               "tags": [
-                  "通知中心-统计"
+                  "通知中心"
               ],
               "summary": "通知发送统计（按事件码成功率/失败TOP/短信趋势）",
               "parameters": [
@@ -4212,7 +4272,7 @@
                   "application/json"
               ],
               "tags": [
-                  "通知中心-投递任务"
+                  "通知中心"
               ],
               "summary": "投递任务列表（含 dead 队列）",
               "parameters": [
@@ -4230,7 +4290,7 @@
                   },
                   {
                       "type": "integer",
-                      "description": "任务状态，选填(0-待投递 2-投递成功 9-投递失败 dead)",
+                      "description": "任务状态，选填(1-待处理 2-处理中 3-已发送 4-失败(可重试) 5-死信(5 次仍失败) 6-已抑制(频控/夜间/停用等))",
                       "name": "status",
                       "in": "query"
                   },
@@ -4269,7 +4329,7 @@
                   "application/json"
               ],
               "tags": [
-                  "通知中心-投递任务"
+                  "通知中心"
               ],
               "summary": "手动重发投递任务（dead → 待投递）",
               "parameters": [
@@ -4535,6 +4595,46 @@
               }
           }
       },
+      "/api/v1/admin/orders/{id}/cancel": {
+          "post": {
+              "consumes": [
+                  "application/json"
+              ],
+              "produces": [
+                  "application/json"
+              ],
+              "tags": [
+                  "订单支付与对账-订单管理"
+              ],
+              "summary": "订单取消",
+              "parameters": [
+                  {
+                      "type": "integer",
+                      "description": "订单ID",
+                      "name": "id",
+                      "in": "path",
+                      "required": true
+                  },
+                  {
+                      "description": "取消参数(取消原因)",
+                      "name": "body",
+                      "in": "body",
+                      "required": true,
+                      "schema": {
+                          "$ref": "#/definitions/admin.ReqCancelOrder"
+                      }
+                  }
+              ],
+              "responses": {
+                  "200": {
+                      "description": "OK",
+                      "schema": {
+                          "$ref": "#/definitions/pkg.Response"
+                      }
+                  }
+              }
+          }
+      },
       "/api/v1/admin/orders/{id}/refund": {
           "post": {
               "consumes": [
@@ -4722,7 +4822,7 @@
                   "application/json"
               ],
               "tags": [
-                  "通知中心-通道日志"
+                  "通知中心"
               ],
               "summary": "通道发送记录",
               "parameters": [
@@ -7425,6 +7525,21 @@
               }
           }
       },
+      "admin.ReqBatchBannerSort": {
+          "type": "object",
+          "required": [
+              "banner_ids"
+          ],
+          "properties": {
+              "banner_ids": {
+                  "description": "有序轮播ID数组，按数组顺序依次赋 sort=1,2,3...，必填",
+                  "type": "array",
+                  "items": {
+                      "type": "integer"
+                  }
+              }
+          }
+      },
       "admin.ReqBatchBannerStatus": {
           "type": "object",
           "required": [
@@ -7603,6 +7718,18 @@
               },
               "reason": {
                   "description": "转派原因（留痕），选填",
+                  "type": "string"
+              }
+          }
+      },
+      "admin.ReqCancelOrder": {
+          "type": "object",
+          "required": [
+              "reason"
+          ],
+          "properties": {
+              "reason": {
+                  "description": "取消原因，必填",
                   "type": "string"
               }
           }
@@ -8156,11 +8283,15 @@
           ],
           "properties": {
               "channel": {
-                  "description": "模板渠道(site/wechat/sms/...)，选填",
+                  "description": "发送渠道(见 models.Channel*)，选填，默认1站内信",
+                  "type": "integer"
+              },
+              "code": {
+                  "description": "模板编码(唯一)，选填",
                   "type": "string"
               },
               "content": {
-                  "description": "内容(含占位符 {xxx})，必填",
+                  "description": "内容模板(含占位符 {xxx})，必填",
                   "type": "string"
               },
               "name": {
@@ -8176,11 +8307,15 @@
                   "type": "integer"
               },
               "title": {
-                  "description": "标题(含占位符)，选填",
+                  "description": "标题模板(含占位符)，选填",
                   "type": "string"
               },
               "type": {
-                  "description": "模板类型/编码(order/verify/activity/...)，必填",
+                  "description": "消息类型(message_type 枚举，见 models.MsgType*)，必填",
+                  "type": "integer"
+              },
+              "variables": {
+                  "description": "可用变量列表(JSON字符串)，选填",
                   "type": "string"
               }
           }
@@ -8576,18 +8711,6 @@
           "properties": {
               "status": {
                   "description": "1-启用 9-禁用，必填",
-                  "type": "integer"
-              }
-          }
-      },
-      "admin.ReqSetBannerSort": {
-          "type": "object",
-          "required": [
-              "sort"
-          ],
-          "properties": {
-              "sort": {
-                  "description": "排序值(升序)，必填",
                   "type": "integer"
               }
           }

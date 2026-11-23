@@ -180,51 +180,8 @@
     }
   }
 
+  /* 患者端预览内容（外壳见 @/components/PhonePreview） */
   .service-phone {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: @color-bg-card;
-    border: 1px solid @color-text-primary;
-    border-radius: (@radius-xl + 12px);
-    width: 328px;
-    height: 620px;
-
-    /* 封面之下、底部操作栏之上的可滚动内容区 */
-    &__scroll {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-    }
-
-    &__status {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: @spacing-sm @spacing-md 0;
-      .text-auxiliary();
-
-      i {
-        font-style: normal;
-      }
-    }
-
-    &__nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: @spacing-xs @spacing-md @spacing-sm;
-
-      strong {
-        .text-body-medium();
-      }
-
-      span {
-        width: 24px;
-        font-size: @font-size-title-card;
-      }
-    }
-
     &__hero {
       position: relative;
       display: flex;

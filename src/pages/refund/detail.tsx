@@ -238,6 +238,7 @@ export default function RefundDetail() {
 
   return (
     <PageContainer
+      fixed
       title="退款详情"
       description={refund ? `${refund.refund_no}` : '退款详情'}
       extra={

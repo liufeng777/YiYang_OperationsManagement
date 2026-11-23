@@ -1,37 +1,5 @@
-/* 患者端协议预览手机壳 */
+/* 患者端协议预览内容（外壳见 @/components/PhonePreview） */
 .agreement-phone {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 520px;
-  width: 300px;
-  border: 1px solid @color-border;
-  border-radius: @radius-lg;
-  overflow: hidden;
-  background: @color-bg-card;
-
-  &__scroll {
-    flex: 1;
-    overflow: auto;
-    min-height: 0;
-  }
-
-  &__nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: @spacing-xs @spacing-md;
-    border-bottom: 1px solid @color-border;
-
-    strong {
-      .text-body-medium();
-    }
-
-    span {
-      .text-auxiliary();
-    }
-  }
-
   &__body {
     padding: @spacing-md;
 
@@ -73,6 +41,6 @@
   }
 
   &__footer {
-    padding: @spacing-md;
+    padding: 0;
   }
 }

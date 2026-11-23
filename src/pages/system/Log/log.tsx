@@ -2,14 +2,14 @@
  * 系统设置 - 操作日志
  * 数据来源：systemApi.getOperationLogs
  * 字段按后端实测：operator / module / action / target / params / path / ip / operated_at / create_at / error_message
+ * 各列按后端返回值原样展示（模块 / 动作等不做中文映射，仅用标签色区分）
  * 筛选：关键字 / 模块 / 动作 / 时间范围全部下推后端（前端不做本地过滤）
  * 请求参数：JSON 字符串，列内以「查看」按钮触发 Popover 展示格式化后的 JSON
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, DatePicker, Input, Popover, Select, Space, Tag } from 'antd'
+import { Button, Card, DatePicker, Divider, Input, Popover, Select, Space, Tag } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
-import { SearchOutlined, UndoOutlined } from '@ant-design/icons'
 import type { Dayjs } from 'dayjs'
 import PageContainer from '@/components/PageContainer'
 import { systemApi } from '@/api'
@@ -30,55 +30,49 @@ function formatParams(raw?: string): string {
   }
 }
 
-/** 操作动作 → 展示文案 / 标签色 */
-const actionMeta: Record<string, { text: string; color: string }> = {
-  create: { text: '新增', color: 'blue' },
-  update: { text: '修改', color: 'cyan' },
-  delete: { text: '删除', color: 'red' },
-  login: { text: '登录', color: 'green' },
-  logout: { text: '登出', color: 'default' },
-  export: { text: '导出', color: 'geekblue' },
-  import: { text: '导入', color: 'geekblue' },
-  review: { text: '审核', color: 'orange' },
-  dispatch: { text: '派单', color: 'purple' },
-  run: { text: '执行', color: 'magenta' },
-  publish: { text: '发布', color: 'green' },
-  offline: { text: '下线', color: 'default' },
-  assign: { text: '分配', color: 'gold' },
-  reset: { text: '重置', color: 'volcano' },
+/** 操作动作 → 标签色（动作值按后端原值展示，不做中文映射） */
+const actionColor: Record<string, string> = {
+  create: 'blue',
+  update: 'cyan',
+  delete: 'red',
+  login: 'green',
+  logout: 'default',
+  export: 'geekblue',
+  import: 'geekblue',
+  review: 'orange',
+  dispatch: 'purple',
+  run: 'magenta',
+  publish: 'green',
+  offline: 'default',
+  assign: 'gold',
+  reset: 'volcano',
 }
 
-/** 业务模块 → 展示文案 / 标签色（覆盖后端 /admin/permissions/modules 返回的模块） */
-const moduleMeta: Record<string, { text: string; color: string }> = {
-  activity: { text: '活动管理', color: 'geekblue' },
-  admin: { text: '管理员', color: 'orange' },
-  consultation: { text: '咨询管理', color: 'cyan' },
-  content: { text: '内容管理', color: 'lime' },
-  dashboard: { text: '数据看板', color: 'blue' },
-  institution: { text: '机构管理', color: 'green' },
-  lead: { text: '线索管理', color: 'purple' },
-  log: { text: '操作日志', color: 'default' },
-  member: { text: '会员管理', color: 'magenta' },
-  message: { text: '消息通知', color: 'gold' },
-  order: { text: '订单/工单', color: 'cyan' },
-  payment: { text: '支付配置', color: 'volcano' },
-  reconciliation: { text: '财务对账', color: 'gold' },
-  role: { text: '角色管理', color: 'purple' },
-  service: { text: '服务项目', color: 'lime' },
-  setting: { text: '系统设置', color: 'default' },
-  staff: { text: '员工管理', color: 'blue' },
-  user: { text: '用户管理', color: 'orange' },
+/** 业务模块 → 标签色（模块值按后端原值展示，不做中文映射） */
+const moduleColor: Record<string, string> = {
+  activity: 'geekblue',
+  admin: 'orange',
+  consultation: 'cyan',
+  content: 'lime',
+  dashboard: 'blue',
+  institution: 'green',
+  lead: 'purple',
+  log: 'default',
+  member: 'magenta',
+  message: 'gold',
+  order: 'cyan',
+  payment: 'volcano',
+  reconciliation: 'gold',
+  role: 'purple',
+  service: 'lime',
+  setting: 'default',
+  staff: 'blue',
+  user: 'orange',
 }
 
-const actionOptions = Object.keys(actionMeta).map((key) => ({
-  label: actionMeta[key].text,
-  value: key,
-}))
+const actionOptions = Object.keys(actionColor).map((key) => ({ label: key, value: key }))
 
-const moduleOptions = Object.keys(moduleMeta).map((key) => ({
-  label: moduleMeta[key].text,
-  value: key,
-}))
+const moduleOptions = Object.keys(moduleColor).map((key) => ({ label: key, value: key }))
 
 interface LogFilters {
   keyword: string
@@ -171,48 +165,40 @@ export default function SystemLog() {
 
   const columns: ColumnsType<OperationLogItem> = [
     {
-      title: '操作人',
+      title: '操作人 / 时间',
       dataIndex: 'operator',
       key: 'operator',
-      width: 130,
-      render: (value: string) => value || '—',
-    },
-    {
-      title: '业务模块',
-      dataIndex: 'module',
-      key: 'module',
       width: 150,
-      render: (value: string) => {
-        const meta = moduleMeta[value]
-        return (
-          <Tag variant="outlined" color={meta?.color ?? 'default'}>
-            {meta?.text ?? value ?? '—'}
-          </Tag>
-        )
-      },
+      render: (value: string, record) => (
+        <div className='table-cell'>
+          <strong>{value}</strong>
+          <span>{record.operated_at || formatDateTime((record.create_at ?? 0) * 1000)}</span>
+        </div>
+      ),
     },
     {
-      title: '动作',
+      title: '操作行为',
       dataIndex: 'action',
       key: 'action',
-      width: 100,
-      render: (value: string) => {
-        const meta = actionMeta[value]
-        return <Tag color={meta?.color ?? 'default'}>{meta?.text ?? value ?? '—'}</Tag>
-      },
+      render: (value: string) => <div>
+        {value ? <Tag variant="outlined" color={'purple'}>{value}</Tag> : '—'}
+      </div>
     },
     {
-      title: '操作对象',
-      dataIndex: 'target',
-      key: 'target',
-      width: 160,
-      render: (value: string) => value || '—',
+      title: '操作资源 | 资源ID',
+      dataIndex: 'module',
+      key: 'module',
+      render: (value: string, record) => <div>
+        {value ? <Tag variant="outlined" color={'geekblue'}>{value}</Tag> : '—'}
+        <Divider type="vertical" />
+        {record.id ? (<Tag variant="outlined" color={'default'}>{record.id}</Tag>) : ('—')}
+      </div>
     },
     {
       title: '请求参数',
       dataIndex: 'params',
       key: 'params',
-      width: 110,
+      width: 100,
       render: (value: string) => {
         const formatted = formatParams(value)
         if (!formatted) return '—'
@@ -234,16 +220,17 @@ export default function SystemLog() {
       title: 'IP 地址',
       dataIndex: 'ip',
       key: 'ip',
-      width: 130,
+      width: 140,
       render: (value: string) => value || '—',
     },
     {
-      title: '操作时间',
-      key: 'operated_at',
-      width: 170,
-      render: (_, record) =>
-        record.operated_at || formatDateTime((record.create_at ?? 0) * 1000),
-    },
+      title: '错误信息',
+      dataIndex: 'error_message',
+      key: 'error_message',
+      width: 120,
+      ellipsis: true,
+      render: (value: string) => value || '—'
+    }
   ]
 
   return (
@@ -273,12 +260,13 @@ export default function SystemLog() {
           />
           <RangePicker value={range} onChange={(value) => setRange(value)} />
           <Space>
-            <Button type="primary" icon={<SearchOutlined />} onClick={applyFilters}>
-              查询
-            </Button>
-            <Button icon={<UndoOutlined />} onClick={handleReset}>
+            <Button onClick={handleReset}>
               重置
             </Button>
+            <Button type="primary" onClick={applyFilters}>
+              查询
+            </Button>
+            
           </Space>
         </Card>
 

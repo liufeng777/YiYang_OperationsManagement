@@ -94,26 +94,30 @@ export function batchPushMessages(messageIds: number[]) {
 /* §9.2 消息模板管理（权限 system:message-template）                     */
 /* ------------------------------------------------------------------ */
 
-/** 消息模板 DTO（字段按后端实测） */
+/** 消息模板 DTO（字段按后端实测 + swagger admin.ReqCreateMessageTemplate） */
 export interface MessageTemplateDTO {
   id: number
   /** 模板名称 */
   name: string
   /** 模板编码，如 ORDER_PAID / WORK_START */
   code: string
+  /** 模板标题（可含占位符） */
+  title?: string
   content: string
-  /** 发送渠道（后端返回数字：1-站内 2-微信 3-短信） */
+  /** 发送渠道（1-站内 2-微信 3-短信） */
   channel: number
-  /** 模板类型（后端返回数字：1-订单支付成功 2-服务开始提醒） */
+  /** 消息类型（message_type 枚举对应的数字） */
   type: number
   status: CommonStatus
-  /** 模板变量说明（后端当前为空字符串） */
+  /** 变量列表（JSON 字符串） */
   variables?: string
+  /** 备注 */
+  remark?: string
 }
 
 /** 模板列表筛选入参（swagger：page / page_size / type / status） */
 export interface MessageTemplateParams extends ApiPageParams {
-  /** 模板类型（order/verify/activity/...） */
+  /** 消息类型（query 为字符串） */
   type?: string
   status?: CommonStatus
 }
@@ -122,16 +126,21 @@ export interface MessageTemplateParams extends ApiPageParams {
 export interface MessageTemplateSaveBody {
   /** 模板名称，必填 */
   name: string
-  /** 模板类型（order/verify/activity/...），必填 */
-  type: string
+  /** 消息类型（数值枚举），必填 */
+  type: number
   /** 内容（含占位符 {xxx}），必填 */
   content: string
-  /** 标题（含占位符） */
+  /** 模板编码（唯一），选填 */
+  code?: string
+  /** 标题（含占位符），选填 */
   title?: string
-  /** 模板渠道（site/wechat/sms/...） */
-  channel?: string
-  /** 状态 1-启用 9-停用 */
+  /** 发送渠道（1-站内 2-微信 3-短信），选填，默认 1 */
+  channel?: number
+  /** 状态 1-启用 9-停用，选填 */
   status?: CommonStatus
+  /** 变量列表（JSON 字符串），选填 */
+  variables?: string
+  /** 备注，选填 */
   remark?: string
 }
 

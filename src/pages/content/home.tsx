@@ -1,18 +1,17 @@
 /**
  * 内容配置 - 患者端首页配置
- * 首页轮播图：cmsApi.getBanners / createBanner / updateBanner / updateBannerStatus / deleteBanner
+ * 首页轮播图：cmsApi.getBanners / createBanner / updateBanner / updateBannerStatus / batchSortBanners / deleteBanner
  *   - 固定投放端 platform=1（用户小程序）、投放位置 position=home_top
  *   - 新增 / 编辑抽屉（图片走上传接口 useImageUpload），状态切换、删除二次确认
  *   - 最多展示 5 张（设计稿约束，超出时阻止新增）
- * 右侧患者端实时预览：轮播区按「启用中 + 排序升序」渲染（antd Carousel）
- * 首页快捷入口 / 推荐内容：接口未对接，按设计稿静态占位
+ *   - 上移 / 下移：把排序后的全量 ID 提交给 POST /admin/banners/batch-sort（banner_ids）
+ * 右侧患者端实时预览：轮播区按「启用中 + 排序升序」渲染（自实现轮播，3s 自动切换）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   App,
   Button,
   Card,
-  Carousel,
   DatePicker,
   Drawer,
   Empty,
@@ -22,12 +21,14 @@ import {
   InputNumber,
   Select,
   Space,
+  Tag,
   Upload,
 } from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
-import { HolderOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
+import { ArrowDownOutlined, ArrowUpOutlined, PlusOutlined, UploadOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
+import PhonePreview from '@/components/PhonePreview'
 import { cmsApi } from '@/api'
 import type { BannerDTO, BannerLinkType } from '@/api/modules/cms'
 import type { CommonStatus } from '@/types/api'
@@ -49,15 +50,27 @@ const linkTypeText: Record<number, string> = {
   5: '外链',
 }
 
-/** 首页快捷入口（设计稿固定四项，接口未对接） */
-const ENTRY_PLACEHOLDERS = ['机构服务', '线上服务', '活动报名', '康养旅游']
-
 interface BannerFormValues {
   title: string
   link_type: BannerLinkType
   link_value?: string
   sort: number
   range?: [Dayjs | null, Dayjs | null] | null
+}
+
+/** 生效时间展示：未设置起始为「立即」，未设置结束为「长期」 */
+function formatRange(record: BannerDTO): string {
+  const start = record.start_at ? dayjs(record.start_at * 1000).format('MM-DD HH:mm') : '立即'
+  const end = record.end_at ? dayjs(record.end_at * 1000).format('MM-DD HH:mm') : '长期'
+  return `${start} ~ ${end}`
+}
+
+/** 跳转目标展示：有平铺的 link_title 时优先展示 */
+function formatLink(record: BannerDTO): string {
+  if (record.link_type === 1) return '无跳转'
+  const type = linkTypeText[record.link_type] ?? record.link_type
+  const target = record.link_title || record.link_value
+  return target ? `${type}（${target}）` : `${type}`
 }
 
 export default function ContentHome() {
@@ -68,19 +81,21 @@ export default function ContentHome() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<BannerDTO | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  /** 排序中的行（`${id}-up` / `${id}-down`），期间禁用其它排序操作 */
+  const [movingKey, setMovingKey] = useState<string | null>(null)
   /** 图片地址：本地预览或服务器地址（提交时写 image_url） */
   const [imageUrl, setImageUrl] = useState('')
   const [form] = Form.useForm<BannerFormValues>()
   const linkType = Form.useWatch('link_type', form)
+  /** 预览轮播当前页（自实现轮播，不依赖容器宽度测量，避免第三方轮播在 0 宽初始化时停在第一张） */
+  const [activeIndex, setActiveIndex] = useState(0)
 
   /** 拉取首页轮播（固定用户小程序 / home_top，一次性拉全量按排序升序） */
   const fetchList = useCallback(async () => {
     setLoading(true)
     try {
       const res = await cmsApi.getBanners({ page: 1, page_size: 100 })
-      const list = (res.list ?? [])
-        .filter((item) => item.position === 'home_top' && item.platform === 1)
-        .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
+      const list = (res.list ?? []).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
       setRows(list)
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
@@ -105,6 +120,25 @@ export default function ContentHome() {
     )
   }, [rows])
 
+  /** 预览轮播自动切换：每 3s 切一张；只有一张时不启动定时器，数据变化时把越界下标复位 */
+  useEffect(() => {
+    if (previewBanners.length < 2) {
+      setActiveIndex(0)
+      return
+    }
+    setActiveIndex((prev) => (prev >= previewBanners.length ? 0 : prev))
+    const timer = window.setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % previewBanners.length)
+    }, 3000)
+    return () => window.clearInterval(timer)
+  }, [previewBanners.length])
+
+  /** 新增时的默认排序：排在最后一位 */
+  const nextSort = useCallback(
+    () => rows.reduce((max, item) => Math.max(max, item.sort ?? 0), -1) + 1,
+    [rows],
+  )
+
   const openCreate = () => {
     if (rows.length >= BANNER_LIMIT) {
       message.warning(`首页轮播图最多展示 ${BANNER_LIMIT} 张，请先删除或停用后再添加`)
@@ -113,13 +147,13 @@ export default function ContentHome() {
     setEditing(null)
     setImageUrl('')
     form.resetFields()
-    form.setFieldsValue({ link_type: 1, sort: 0 })
+    form.setFieldsValue({ link_type: 1, sort: nextSort() })
     setDrawerOpen(true)
   }
 
   const openEdit = (record: BannerDTO) => {
     setEditing(record)
-    setImageUrl(record.image_url)
+    setImageUrl(record.image)
     form.setFieldsValue({
       title: record.title,
       link_type: record.link_type,
@@ -148,7 +182,7 @@ export default function ContentHome() {
     await upload(file, {
       onLocalPreview: (localUrl) => setImageUrl(localUrl),
       onUploaded: (serverUrl) => setImageUrl(serverUrl),
-      onError: () => setImageUrl(editing?.image_url ?? ''),
+      onError: () => setImageUrl(editing?.image ?? ''),
     })
     return false
   }
@@ -194,6 +228,31 @@ export default function ContentHome() {
     }
   }
 
+  /**
+   * 上移 / 下移
+   * 交换目标顺序后，把「排序后的全量轮播 ID」一次性提交给批量排序接口
+   * （POST /admin/banners/batch-sort，后端按数组顺序依次赋 sort=1,2,3…，不再逐条调用）
+   */
+  const moveBanner = async (record: BannerDTO, direction: 'up' | 'down') => {
+    const currentIndex = rows.findIndex((item) => item.id === record.id)
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= rows.length) return
+
+    const next = [...rows]
+    ;[next[currentIndex], next[targetIndex]] = [next[targetIndex], next[currentIndex]]
+
+    setMovingKey(`${record.id}-${direction}`)
+    try {
+      await cmsApi.batchSortBanners(next.map((item) => item.id))
+      message.success('轮播图顺序已更新')
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      await fetchList()
+      setMovingKey(null)
+    }
+  }
+
   const toggleStatus = async (record: BannerDTO) => {
     const next: CommonStatus = record.status === STATUS_ENABLED ? STATUS_DISABLED : STATUS_ENABLED
     try {
@@ -222,8 +281,9 @@ export default function ContentHome() {
 
   return (
     <PageContainer
+      fixed
       title="患者端首页配置"
-      description="配置轮播图、快捷入口与推荐内容，右侧实时查看患者端展示效果"
+      description="配置患者端首页轮播图，右侧实时查看患者端展示效果"
     >
       <div className="content-home">
         <div className="content-home__form">
@@ -233,7 +293,7 @@ export default function ContentHome() {
               <div>
                 <h3>首页轮播图</h3>
                 <span className="home-card__header__label">
-                  建议 750 × 360px，最多展示 {BANNER_LIMIT} 张
+                  建议 750 × 360px，最多展示 {BANNER_LIMIT} 张，数字越小越靠前
                 </span>
               </div>
               <Button color="primary" variant="outlined" icon={<PlusOutlined />} onClick={openCreate}>
@@ -241,25 +301,51 @@ export default function ContentHome() {
               </Button>
             </div>
             <div className="banner-list">
-              {rows.map((record) => (
+              {rows.map((record, index) => (
                 <div className="banner-row" key={record.id}>
-                  <HolderOutlined className="banner-row__drag" />
-                  <i className={`banner-row__thumb${record.image_url ? ' has-image' : ''}`}>
-                    {record.image_url ? <img src={record.image_url} alt={record.title} /> : '图'}
-                  </i>
+                  {record.image ? (
+                    <Image
+                      className="banner-row__thumb"
+                      src={record.image}
+                      alt={record.title}
+                      width={96}
+                      height={48}
+                      style={{ objectFit: 'cover' }}
+                      preview={{ mask: '预览' }}
+                    />
+                  ) : (
+                    <i className="banner-row__thumb">图</i>
+                  )}
                   <div className="banner-row__info">
-                    <strong>{record.title}</strong>
+                    <div className="banner-row__title">
+                      <strong>{record.title}</strong>
+                      <Tag color={record.status === STATUS_ENABLED ? 'success' : 'default'}>
+                        {record.status === STATUS_ENABLED ? '展示中' : '已停用'}
+                      </Tag>
+                    </div>
                     <span>
-                      跳转至：
-                      {record.link_type === 1
-                        ? '无跳转'
-                        : `${linkTypeText[record.link_type] ?? record.link_type}${record.link_title || record.link_value ? `（${record.link_title ?? record.link_value}）` : ''}`}
-                      {' · 排序 '}
-                      {record.sort ?? 0}
+                      {formatLink(record)} · 生效 {formatRange(record)} · 排序 {record.sort ?? 0}
                     </span>
                   </div>
                   <div className="banner-row__actions">
-                    <em>{record.status === STATUS_ENABLED ? '展示中' : '已停用'}</em>
+                    <Button
+                      type="text"
+                      size="small"
+                      title="上移"
+                      icon={<ArrowUpOutlined />}
+                      loading={movingKey === `${record.id}-up`}
+                      disabled={movingKey !== null || index === 0}
+                      onClick={() => void moveBanner(record, 'up')}
+                    />
+                    <Button
+                      type="text"
+                      size="small"
+                      title="下移"
+                      icon={<ArrowDownOutlined />}
+                      loading={movingKey === `${record.id}-down`}
+                      disabled={movingKey !== null || index === rows.length - 1}
+                      onClick={() => void moveBanner(record, 'down')}
+                    />
                     <Button type="link" size="small" onClick={() => openEdit(record)}>
                       编辑
                     </Button>
@@ -277,93 +363,58 @@ export default function ContentHome() {
               )}
             </div>
           </Card>
-
-          {/* 首页快捷入口（接口未对接，静态占位） */}
-          <Card variant="borderless" className="home-card">
-            <div className="home-card__header">
-              <div>
-                <h3>首页快捷入口</h3>
-                <span className="home-card__header__label">
-                  入口固定，仅支持调整显示与排序（接口未对接，当前为设计稿占位）
-                </span>
-              </div>
-            </div>
-            <div className="entry-grid">
-              {ENTRY_PLACEHOLDERS.map((name) => (
-                <div className="entry-tile" key={name}>
-                  <HolderOutlined className="entry-tile__drag" />
-                  <i>{name.slice(0, 1)}</i>
-                  <strong>{name}</strong>
-                  <em>已显示</em>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* 首页推荐内容（接口未对接，静态占位） */}
-          <Card variant="borderless" className="home-card">
-            <div className="home-card__header">
-              <div>
-                <h3>首页推荐内容</h3>
-                <span className="home-card__header__label">
-                  从已上架服务和已发布活动中选择（接口未对接，当前为设计稿占位）
-                </span>
-              </div>
-              <Button color="primary" variant="outlined" icon={<PlusOutlined />} disabled>
-                选择内容
-              </Button>
-            </div>
-            <Empty description="推荐内容配置接口未对接，待后端补充后开放" />
-          </Card>
         </div>
 
-        {/* 患者端首页实时预览 */}
+        {/* 患者端首页实时预览：手机外壳统一为 @/components/PhonePreview */}
         <Card variant="borderless" className="home-card content-home__preview">
           <div className="home-preview__header">
             <h3>患者端首页实时预览</h3>
+            <span>
+              {previewBanners.length} / {BANNER_LIMIT} 张展示中
+            </span>
           </div>
-          <div className="home-phone">
-            <div className="home-phone__bar">
-              <strong>幸福颐养</strong>
-              <span>•••</span>
-            </div>
+          <PhonePreview title="幸福颐养">
             {previewBanners.length ? (
-              <Carousel autoplay dots>
-                {previewBanners.map((item) => (
-                  <div key={item.id}>
-                    <div
-                      className="home-phone__hero"
-                      style={
-                        item.image_url
-                          ? {
-                              backgroundImage: `url(${item.image_url})`,
-                              backgroundSize: 'cover',
-                              backgroundPosition: 'center',
-                            }
-                          : undefined
-                      }
-                    >
-                      <strong>{item.title}</strong>
-                      {item.link_type !== 1 && <em>查看详情 →</em>}
+              <div className="home-preview__carousel">
+                <div
+                  className="home-preview__track"
+                  style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+                >
+                  {previewBanners.map((item) => (
+                    <div className="home-preview__slide" key={item.id}>
+                      {item.image ? (
+                        <img src={item.image} alt={item.title} />
+                      ) : (
+                        <span className="home-preview__slide-empty">暂无图片</span>
+                      )}
+                      <div className="home-preview__caption">
+                        <strong>{item.title}</strong>
+                        {item.link_type !== 1 && <em>查看详情 →</em>}
+                      </div>
                     </div>
+                  ))}
+                </div>
+                {previewBanners.length > 1 && (
+                  <div className="home-preview__dots">
+                    {previewBanners.map((item, index) => (
+                      <i
+                        key={item.id}
+                        className={index === activeIndex ? 'is-active' : ''}
+                        onClick={() => setActiveIndex(index)}
+                      />
+                    ))}
                   </div>
-                ))}
-              </Carousel>
+                )}
+              </div>
             ) : (
-              <div className="home-phone__hero">
+              <div className="home-preview__slide home-preview__slide--empty">
                 <strong>暂无展示中的轮播图</strong>
                 <span>启用轮播图后将在此预览</span>
               </div>
             )}
-            <div className="home-phone__entries">
-              {ENTRY_PLACEHOLDERS.map((name) => (
-                <div key={name}>
-                  <i>{name.slice(0, 1)}</i>
-                  <span>{name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+            {/* 首页其余内容：当前仅维护轮播图，其余模块待配置 */}
+            <div className="home-preview__rest">首页其他内容暂未开放配置</div>
+          </PhonePreview>
         </Card>
       </div>
 

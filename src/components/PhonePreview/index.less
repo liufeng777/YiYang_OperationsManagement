@@ -1,0 +1,68 @@
+/**
+ * 患者端手机预览外壳样式（全站统一外观）
+ * 尺寸与圆角、状态栏、导航栏、滚动区与底部操作栏均在此定义，
+ * 各页面只负责屏幕内容的样式，不再各自定义手机外框。
+ */
+.phone-frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 328px;
+  max-width: 100%;
+  height: 620px;
+  margin: 0 auto;
+  overflow: hidden;
+  background: @color-bg-card;
+  border: 1px solid @color-border;
+  border-radius: (@radius-xl + 8px);
+  box-shadow: @shadow-card;
+
+  &__status {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: @spacing-xs @spacing-md 0;
+    .text-auxiliary();
+
+    i {
+      width: 48px;
+      height: 8px;
+      background: @color-text-primary;
+      border-radius: @radius-full;
+      opacity: 0.85;
+    }
+  }
+
+  &__nav {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: @spacing-xs @spacing-md @spacing-sm;
+
+    strong {
+      .text-body-medium();
+    }
+
+    span {
+      font-size: @font-size-title-card;
+    }
+  }
+
+  /* 屏幕内容区：仅此区域内部滚动 */
+  &__scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* 底部固定操作栏 */
+  &__footer {
+    flex: none;
+    padding: @spacing-sm @spacing-md;
+    background: @color-bg-card;
+    border-top: 1px solid @color-border;
+  }
+}
