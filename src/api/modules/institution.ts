@@ -30,6 +30,16 @@ export interface InstitutionItem {
   district: string // 区
   /** 服务半径 km，NULL=不限 */
   service_radius_km: number | null
+  /** 每日可预约工单数量上限（默认 16） */
+  daily_max_work_orders?: number | null
+  /** 每日可预约开始时间：当天 0 点秒偏移（默认 28800=08:00） */
+  daily_open_second?: number | null
+  /** 每日可预约结束时间：当天 0 点秒偏移（默认 64800=18:00） */
+  daily_close_second?: number | null
+  /** 服务工单预约最少提前时间（分，默认 180） */
+  min_lead_time_min?: number | null
+  /** 已预约工单最迟取消间隔（分，默认 180） */
+  max_cancel_interval_min?: number | null
   cover_url: string; // 封面图片
   /** 环境照片（后端返回） */
   images?: string[]

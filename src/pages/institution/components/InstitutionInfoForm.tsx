@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import { App, Button, Card, Form, Input, Upload } from 'antd'
 import { CheckOutlined, PlusOutlined } from '@ant-design/icons'
+import dayjs, { type Dayjs } from 'dayjs'
 import { institutionApi } from '@/api'
 import { useImageUpload } from '@/hooks'
 import type { InstitutionItem, InstitutionType } from '@/api/modules/institution'
@@ -16,6 +17,24 @@ import RichDetailPreview, { isRichDetailEmpty } from '@/components/RichDetailPre
 import PhonePreview from '@/components/PhonePreview'
 import InstitutionBaseFields from './InstitutionBaseFields'
 import './InstitutionInfoForm.less'
+
+/** 系统默认接单时段：08:00 ~ 18:00（当天 0 点秒偏移） */
+const DEFAULT_OPEN_SECOND = 28800
+const DEFAULT_CLOSE_SECOND = 64800
+/** 系统默认日容量 / 预约提前 / 取消间隔 */
+const DEFAULT_MAX_WORK_ORDERS = 16
+const DEFAULT_LEAD_TIME_MIN = 180
+const DEFAULT_CANCEL_INTERVAL_MIN = 180
+
+/** 当天秒偏移 → 时间选择器值（用于接单时段回填） */
+const secondsToTime = (seconds: number): Dayjs =>
+  dayjs()
+    .startOf('day')
+    .add(Math.min(Math.max(seconds, 0), 86399), 'second')
+
+/** 时间选择器值 → 当天秒偏移（daily_open_second / daily_close_second） */
+const timeToSeconds = (value?: Dayjs | null): number | null =>
+  value ? value.hour() * 3600 + value.minute() * 60 + value.second() : null
 
 export interface InstitutionInfoFormProps {
   /** 编辑模式传入机构详情；不传则为新增模式 */
@@ -37,6 +56,14 @@ interface InstitutionInfoValues {
   manager_name?: string
   manager_phone?: string
   service_radius_km?: number
+  /** 日容量：每日可预约工单数上限 */
+  daily_max_work_orders?: number
+  /** 接单时段（提交时转 daily_open_second / daily_close_second） */
+  daily_time_range?: [Dayjs, Dayjs] | null
+  /** 预约至少提前（分钟） */
+  min_lead_time_min?: number
+  /** 取消规则：服务前多少分钟内不可取消（分钟） */
+  max_cancel_interval_min?: number
   /** 患者端展示标题（存储回 brief） */
   brief: string
 }
@@ -95,6 +122,12 @@ export default function InstitutionInfoForm({ detail, onSaved, onCancel }: Insti
       manager_name: values.manager_name ?? '',
       manager_phone: values.manager_phone ?? '',
       service_radius_km: values.service_radius_km ?? null,
+      // 经营参数：日容量 / 接单时段（秒偏移）/ 预约提前 / 取消间隔
+      daily_max_work_orders: values.daily_max_work_orders ?? null,
+      daily_open_second: timeToSeconds(values.daily_time_range?.[0]),
+      daily_close_second: timeToSeconds(values.daily_time_range?.[1]),
+      min_lead_time_min: values.min_lead_time_min ?? null,
+      max_cancel_interval_min: values.max_cancel_interval_min ?? null,
       brief: values.brief,
       description: richDesc,
       // 封面使用上传接口返回的服务器地址（无新上传时沿用原值）
@@ -137,9 +170,28 @@ export default function InstitutionInfoForm({ detail, onSaved, onCancel }: Insti
                   manager_name: detail.manager_name,
                   manager_phone: detail.manager_phone,
                   service_radius_km: detail.service_radius_km ?? undefined,
+                  daily_max_work_orders: detail.daily_max_work_orders ?? undefined,
+                  daily_time_range:
+                    detail.daily_open_second != null && detail.daily_close_second != null
+                      ? [
+                          secondsToTime(detail.daily_open_second),
+                          secondsToTime(detail.daily_close_second),
+                        ]
+                      : undefined,
+                  min_lead_time_min: detail.min_lead_time_min ?? undefined,
+                  max_cancel_interval_min: detail.max_cancel_interval_min ?? undefined,
                   brief: detail.brief,
                 }
-              : undefined
+              : {
+                  // 新增机构：经营参数给出系统默认值，留空则后端使用默认
+                  daily_max_work_orders: DEFAULT_MAX_WORK_ORDERS,
+                  daily_time_range: [
+                    secondsToTime(DEFAULT_OPEN_SECOND),
+                    secondsToTime(DEFAULT_CLOSE_SECOND),
+                  ],
+                  min_lead_time_min: DEFAULT_LEAD_TIME_MIN,
+                  max_cancel_interval_min: DEFAULT_CANCEL_INTERVAL_MIN,
+                }
           }
         >
           <Card variant="borderless" className="editor-card">

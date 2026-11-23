@@ -3,9 +3,11 @@
  * 仅提供 Form.Item 字段组，外层自行提供 <Form>、initialValues 与提交按钮
  * 字段与 institutionApi 的 InstitutionItem 一一对应：
  * name / name_en / type / province+city+district（region 级联，提交时拆分）/
- * address / contact_phone / manager_name / manager_phone / service_radius_km
+ * address / contact_phone / manager_name / manager_phone / service_radius_km /
+ * daily_max_work_orders / daily_time_range（daily_open_second ~ daily_close_second）/ 
+ * min_lead_time_min / max_cancel_interval_min
  */
-import { Form, Input, InputNumber, Select } from 'antd'
+import { Form, Input, InputNumber, Select, TimePicker } from 'antd'
 import type { InstitutionType } from '@/api/modules/institution'
 import RegionCascader from '@/components/RegionCascader'
 import './institution-form.less'
@@ -66,6 +68,69 @@ export default function InstitutionBaseFields() {
         </Form.Item>
       </div>
       <div className="form-grid form-grid--three">
+        <Form.Item
+          name="daily_max_work_orders"
+          label="日容量"
+          tooltip="每日可预约（接单）的工单数量上限，留空使用系统默认 16"
+        >
+          <InputNumber
+            min={0}
+            max={999}
+            precision={0}
+            style={{ width: '100%' }}
+            placeholder="默认 16 单/天"
+          />
+        </Form.Item>
+        <Form.Item
+          name="daily_time_range"
+          label="接单时段"
+          tooltip="每日可预约的起止时间，留空使用系统默认 08:00 ~ 18:00"
+          rules={[
+            {
+              validator: (_, value?: [unknown, unknown] | null) => {
+                if (!value?.[0] || !value?.[1]) return Promise.resolve()
+                const start = value[0] as { hour: () => number; minute: () => number }
+                const end = value[1] as { hour: () => number; minute: () => number }
+                const startMinutes = start.hour() * 60 + start.minute()
+                const endMinutes = end.hour() * 60 + end.minute()
+                if (endMinutes <= startMinutes) {
+                  return Promise.reject(new Error('接单结束时间需晚于开始时间'))
+                }
+                return Promise.resolve()
+              },
+            },
+          ]}
+        >
+          <TimePicker.RangePicker format="HH:mm" style={{ width: '100%' }} placeholder={['开始', '结束']} />
+        </Form.Item>
+        <Form.Item
+          name="min_lead_time_min"
+          label="预约至少提前（分钟）"
+          tooltip="患者预约服务工单时，至少需提前多少分钟，留空使用系统默认 180"
+        >
+          <InputNumber
+            min={0}
+            max={10080}
+            precision={0}
+            style={{ width: '100%' }}
+            placeholder="默认 180 分钟"
+          />
+        </Form.Item>
+      </div>
+      <div className="form-grid form-grid--three">
+        <Form.Item
+          name="max_cancel_interval_min"
+          label="取消规则（服务前，分钟）"
+          tooltip="服务开始前多少分钟内不再允许取消，留空使用系统默认 180"
+        >
+          <InputNumber
+            min={0}
+            max={10080}
+            precision={0}
+            style={{ width: '100%' }}
+            placeholder="默认 180 分钟"
+          />
+        </Form.Item>
         <Form.Item
           name="manager_name"
           label={<span>管理员姓名</span>}
