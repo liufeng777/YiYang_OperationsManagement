@@ -21,72 +21,93 @@ export const WORK_ORDER_STATUS_TEXT: Record<number, string> = {
   7: '已取消',
 }
 
-/** 工单列表列定义 */
+const fmtTime = (seconds?: number | null, format = 'YYYY-MM-DD HH:mm') =>
+  seconds ? formatDateTime(seconds * 1000, format) : '—'
+
+/** 工单列表列定义：优先展示履约所需信息，时间节点按实际进度显示。 */
 export const workOrderColumns: ColumnsType<WorkOrderDTO> = [
   {
-    title: '工单号',
+    title: '工单信息',
     key: 'work_order_no',
+    width: 210,
     render: (_, record) => (
       <div className="order-service">
-        <strong>{record.work_order_no}</strong>
-        <span>{record.remark || '—'}</span>
+        <strong>{record.work_order_no || '—'}</strong>
+        <span title={[record.service_name, record.remark].filter(Boolean).join(' · ')}>
+          {[record.service_name, record.remark].filter(Boolean).join(' · ') || '—'}
+        </span>
       </div>
     ),
   },
   {
-    title: '会员',
+    title: '服务对象 / 联系人',
     key: 'member',
-    width: 180,
+    width: 190,
     render: (_, record) => (
       <div className="order-user">
         <strong><SensitiveText type="name" value={record.member_name} /></strong>
         <SensitiveText type="phone" value={record.member_phone} />
+        <span className="work-order-table__contact">
+          联系人：<SensitiveText type="name" value={record.contact_name} />
+        </span>
+        <SensitiveText type="phone" value={record.contact_phone} />
       </div>
     ),
   },
   {
     title: '服务人员',
-    key: 'assignee_name',
-    width: 110,
-    render: (_, record) => record.assignee_name || '-',
+    key: 'assigned_staff_name',
+    width: 150,
+    render: (_, record) => (
+      <div className="order-user">
+        <strong>{record.assigned_staff_name || '待分配'}</strong>
+        <span>期望：{record.expect_staff_name || '—'}</span>
+      </div>
+    ),
   },
   {
-    title: '期望医护',
-    key: 'expect_staff_name',
-    width: 110,
-    render: (_, record) => record.expect_staff_name || '—',
-  },
-  {
-    title: '预约服务时间/地址',
+    title: '预约服务时间 / 地址',
     key: 'expected_time',
-    render: (_, record) => (<div className='table-cell'>
-      <strong>
-        {
-          `${formatDateTime(
-              record.expected_start_at && record.expected_start_at * 1000,
-              'MM-DD HH:mm',
-            )} ~ ${formatDateTime(record.expected_stop_at && record.expected_stop_at * 1000, 'HH:mm')}`
-        }
-      </strong>
-      <SensitiveText type="address" value={record.service_address} allowReveal />
-    </div>)
+    width: 250,
+    render: (_, record) => (
+      <div className="table-cell">
+        <strong>
+          {fmtTime(record.expected_start_at, 'MM-DD HH:mm')} ~ {fmtTime(record.expected_stop_at, 'HH:mm')}
+        </strong>
+        <SensitiveText type="address" value={record.service_address} allowReveal />
+      </div>
+    ),
   },
   {
     title: '工单状态',
     key: 'wo_status',
-    width: 110,
+    width: 130,
     render: (_, record) => (
-      <span className={`work-status work-status--${record.wo_status}`}>
-        {WORK_ORDER_STATUS_TEXT[record.wo_status] ?? '—'}
-      </span>
+      <div className="work-order-table__status">
+        <span className={`work-status work-status--${record.wo_status}`}>
+          {WORK_ORDER_STATUS_TEXT[record.wo_status] ?? '—'}
+        </span>
+        {record.cancel_reason ? (
+          <span className="work-order-table__cancel-reason" title={record.cancel_reason}>
+            {record.cancel_reason}
+          </span>
+        ) : null}
+      </div>
     ),
   },
   {
-    title: '完成时间',
-    key: 'completed_at',
-    width: 150,
-    render: (_, record) =>
-      record.completed_at ? formatDateTime(record.completed_at * 1000, 'YYYY-MM-DD HH:mm') : '—',
+    title: '履约时间',
+    key: 'service_progress',
+    width: 190,
+    render: (_, record) => (
+      <div className="work-order-table__times">
+        <span>派单：{fmtTime(record.assigned_at, 'MM-DD HH:mm')}</span>
+        <span>接单：{fmtTime(record.accepted_at, 'MM-DD HH:mm')}</span>
+        <span>到场：{fmtTime(record.arrived_at, 'MM-DD HH:mm')}</span>
+        <span>开始：{fmtTime(record.started_at, 'MM-DD HH:mm')}</span>
+        <span>完成：{fmtTime(record.completed_at, 'MM-DD HH:mm')}</span>
+      </div>
+    ),
   },
 ]
 
@@ -120,13 +141,13 @@ export function WorkOrderTable({ list, loading = false, scrollY = '100%' }: Work
         <span>{summarizeWorkOrders(list)}</span>
       </div>
       <Table<WorkOrderDTO>
-        rowKey="id"
+        rowKey="work_order_no"
         size="small"
         loading={loading}
         columns={workOrderColumns}
         dataSource={list}
         pagination={false}
-        scroll={scrollY === false ? undefined : { y: scrollY }}
+        scroll={{ x: 1300, ...(scrollY === false ? {} : { y: scrollY }) }}
       />
     </Card>
   )

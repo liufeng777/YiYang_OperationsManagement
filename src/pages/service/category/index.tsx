@@ -111,12 +111,7 @@ export default function ServiceCategoryPage() {
       {
         title: '分类名称',
         key: 'name',
-        render: (_, record) => (
-          <div>
-            <strong>{record.name}</strong>
-            {record.name_en ? <div style={{ color: '#8c8c8c', fontSize: 12 }}>{record.name_en}</div> : null}
-          </div>
-        ),
+        dataIndex: 'name',
       },
       { title: '简介', dataIndex: 'brief', key: 'brief', ellipsis: true },
       { title: '排序', dataIndex: 'sort_order', key: 'sort_order', width: 90 },

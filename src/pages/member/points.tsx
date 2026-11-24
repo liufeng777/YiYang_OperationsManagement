@@ -31,11 +31,12 @@ const tabItems = [
 ]
 
 const metrics = [
-  { key: 'account', label: '积分账户', value: '—', note: '与会员账户一一对应', tone: 'primary' },
-  { key: 'issued', label: '累计发放', value: '—', note: '订单完成后自动发放', tone: 'info' },
-  { key: 'deducted', label: '累计扣减', value: '—', note: '退款或后台调整', tone: 'warning' },
+  { key: 'account', changeType: null, label: '积分账户', value: '—', note: '与会员账户一一对应', tone: 'primary' },
+  { key: 'issued', changeType: 'earn', label: '累计发放', value: '—', note: '订单完成后自动发放', tone: 'info' },
+  { key: 'deducted', changeType: 'deduct', label: '累计扣减', value: '—', note: '退款或后台调整', tone: 'warning' },
   {
     key: 'balance',
+    changeType: null,
     label: '当前余额',
     value: '—',
     note: '一期仅查看和调整，不支持兑换',
@@ -86,6 +87,13 @@ export default function PointsList() {
       return keywordHit && typeHit && sourceHit && tabHit
     })
   }, [applied, tab])
+
+  const changeMetricType = (nextType: PointsChangeType | 'all') => {
+    setChangeType(nextType)
+    setTab('all')
+    setPage(1)
+    setApplied({ ...applied, changeType: nextType })
+  }
 
   const applyFilters = () => {
     setApplied({ keyword: keyword.trim(), changeType, source, date })
@@ -198,7 +206,20 @@ export default function PointsList() {
         <ApiPendingAlert feature="积分明细" />
         <div className="metric-cards">
           {metrics.map((metric) => (
-            <Card variant="borderless" className="metric-card" key={metric.key}>
+            <Card
+              variant="borderless"
+              className={`metric-card${metric.changeType ? ' metric-card--clickable' : ''}${metric.changeType && applied.changeType === metric.changeType ? ' is-active' : ''}`}
+              key={metric.key}
+              role={metric.changeType ? 'button' : undefined}
+              tabIndex={metric.changeType ? 0 : undefined}
+              onClick={metric.changeType ? () => changeMetricType(metric.changeType as PointsChangeType) : undefined}
+              onKeyDown={metric.changeType ? (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  changeMetricType(metric.changeType as PointsChangeType)
+                }
+              } : undefined}
+            >
               <div className="metric-card__head">
                 <span className="metric-card__label">{metric.label}</span>
                 <i className={`metric-card__icon status--${metric.tone}`}>
@@ -223,7 +244,7 @@ export default function PointsList() {
           />
           <Select
             value={changeType}
-            onChange={setChangeType}
+            onChange={changeMetricType}
             options={[
               { label: '全部变动类型', value: 'all' },
               { label: '获得', value: 'earn' },

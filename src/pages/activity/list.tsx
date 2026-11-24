@@ -218,6 +218,13 @@ export default function ActivityList() {
     ]
   }, [stats])
 
+  /** 点击统计卡立即筛选，并同步活动状态下拉框。 */
+  const changeStatus = (nextStatus: number | null) => {
+    setStatus(nextStatus)
+    setPage(1)
+    setApplied({ ...applied, status: nextStatus })
+  }
+
   const applyFilters = () => {
     setPage(1)
     setApplied({ keyword: keyword.trim(), type, institution_id: institution, status })
@@ -475,7 +482,19 @@ export default function ActivityList() {
         <Row gutter={[16, 16]}>
           {metrics.map((metric) => (
             <Col xs={24} sm={12} lg={6} key={metric.key}>
-              <Card variant="borderless" className="metric-card">
+              <Card
+                variant="borderless"
+                className={`metric-card metric-card--clickable${applied.status === (metric.key === 0 ? null : metric.key) ? ' is-active' : ''}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => changeStatus(metric.key === 0 ? null : metric.key)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    changeStatus(metric.key === 0 ? null : metric.key)
+                  }
+                }}
+              >
                 <div className="metric-card__head">
                   <span className="metric-card__label">{metric.label}</span>
                   <i className={`metric-card__icon status--${metric.tone}`}>
@@ -522,7 +541,7 @@ export default function ActivityList() {
           />
           <Select
             value={status}
-            onChange={setStatus}
+            onChange={(value) => changeStatus(value ?? null)}
             options={Object.entries(statusText).map(([key, label]) => ({
               label,
               value: Number(key),

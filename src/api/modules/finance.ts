@@ -5,42 +5,47 @@
  * - 对账管理 finance:reconcile
  * 说明：上半部分为支付配置页展示用类型（页面接口未对接，已以 Alert 占位），下半部分 DTO 对齐文档契约。
  */
+import type { AxiosResponse } from 'axios'
 import { http } from '@/utils/request'
 import type { ApiPageParams, ApiPageResult } from '@/types/api'
 
 /** 对账差异明细行 */
 export interface ReconciliationDetailLine {
   id: number
+  channel_code: string
   report_id: number
   order_id: number
   order_type: number
   channel_trade_no: string
-  platform_amount: number
-  channel_amount: number
-  match_status: number // 1-完全匹配 2-金额不一致 3-仅渠道有 4-仅平台有
+  /** 金额字段由后端 DECIMAL 序列化为字符串，兼容旧接口的数值返回 */
+  order_amount: number | string
+  settle_amount: number | string
+  status: number // 1-完全匹配 2-金额不一致 3-仅渠道有 4-仅平台有
   match_note: string
 }
 
-/** 财务对账汇总项（按日期 + 机构 + 支付渠道） */
+/** 对账汇总项：对齐 GET /admin/reconciliations 与 GET /admin/reconciliations/:id */
 export interface ReconcileItem {
-  id: string
-  report_no: string
-  /** 支付渠道，如 微信支付 */
-  channel_type: number // 1-微信 2-支付宝 3-银联 9-其他
+  reconcile_id: number
+  rec_no: string
+  /** 支付渠道：1-微信 2-支付宝 3-银联 9-其他 */
+  channel_type: number
   status: number // 1-对账中 2-已平账 3-有差异
-  reconciliation_type: number // 对账类型
-  start_date: number // 开始时间
-  end_date: number // 结束时间
-  channel_id: number
-  channel_code: string
-  channel_name: string
-  platform_amount: number
-  channel_amount: number
+  reconciliation_type: number // 1-日结 2-周结 3-月结
+  /** 对账周期：ISO 8601 日期时间字符串 */
+  start_date: string
+  end_date: string
+  /** 结算日期 / 平账时间：UTC 秒级时间戳 */
+  settle_date: number
+  reconciled_at: number
+  reconciled_by_name: string
+  /** 账单、平台与渠道金额：元，后端以字符串返回 */
+  amount: string
+  platform_amount: string
+  channel_amount: string
   platform_count: number
   channel_count: number
-  diff_amount: number
   diff_count: number
-  detail_lines?: ReconciliationDetailLine[]
 }
 
 /** 生成对账单 POST /api/admin/reconciliations（swagger admin.ReqCreateReconciliation）
@@ -83,9 +88,11 @@ export function getReconciliationDetails(id: number, params?: ApiPageParams & { 
   })
 }
 
-/** 对账导出 GET /api/admin/reconciliations/export（swagger：reconciliation_type / status） */
-export function exportReconciliations(params?: { reconciliation_type?: number; status?: number }) {
-  return http.get<Blob>('/admin/reconciliations/export', { ...params }, { responseType: 'blob' })
+/** 对账导出 GET /api/admin/reconciliations/export；blob 响应由拦截器返回完整 AxiosResponse */
+export function exportReconciliations(
+  params?: { reconciliation_type?: number; status?: number },
+): Promise<AxiosResponse<Blob>> {
+  return http.get<AxiosResponse<Blob>>('/admin/reconciliations/export', { ...params }, { responseType: 'blob' })
 }
 
 /* ------------------------------------------------------------------ */

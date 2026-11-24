@@ -1,4 +1,6 @@
 /* 订单详情：状态摘要 + 左右两栏（左：订单信息 / 耗材 / 退款 / 工单，右：状态流转 Timeline） */
+@order-detail-info-height: 360px;
+
 .order-detail {
   height: 100%;
   display: flex;
@@ -43,10 +45,12 @@
     align-items: stretch;
   }
 
-  /* 订单进度：与左侧信息卡等高，内容超出时在卡片内滚动 */
+  /* 固定交易信息高度，右侧进度严格等高；两张卡各自内部滚动，避免互相撑高。 */
+  &__info,
   &__status {
     display: flex;
     flex-direction: column;
+    height: @order-detail-info-height;
     min-height: 0;
     overflow: hidden;
 
@@ -57,7 +61,18 @@
       min-height: 0;
       overflow: hidden;
     }
+  }
 
+  &__info {
+    .ant-descriptions {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding-right: @spacing-2xs;
+    }
+  }
+
+  &__status {
     .ant-empty {
       margin: @spacing-md 0;
     }

@@ -2,8 +2,8 @@
  * 财务对账 - 对账详情
  * 数据来源：
  * - 头部信息：financeApi.getReconciliation(id)
- * - 差异明细 detail_lines：financeApi.getReconciliationDetails(id)（分页 + 匹配状态筛选，仅本页展示）
- * 金额单位：后端返回「分」，展示统一换算为「元」
+ * - 差异明细：financeApi.getReconciliationDetails(id)（分页 + 匹配状态筛选）
+ * 汇总金额为元（字符串）；对账周期为 ISO 字符串，结算 / 平账时间为秒级时间戳
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { App, Button, Card, Descriptions, Select, Space, Spin, Table } from 'antd'
@@ -16,18 +16,25 @@ import type { ReconciliationDetailLine, ReconcileItem } from '@/api/modules/fina
 import { formatAmount, formatDateTime } from '@/utils'
 import './detail.less'
 
-/** 对账状态（共通 §6.4）：1-对账中 2-已平账 3-有差异 */
+/** 对账状态：1-对账中 2-已平账 3-有差异 */
 const RECONCILE_STATUS_TEXT: Record<number, string> = {
   1: '对账中',
   2: '已平账',
   3: '有差异',
 }
 
-/** 对账类型：契约未给出枚举，先按常见周期映射，未命中时回显原始值 */
+/** 对账类型：1-日结 2-周结 3-月结 */
 const RECONCILE_TYPE_TEXT: Record<number, string> = {
-  1: '日对账',
-  2: '周对账',
-  3: '月对账',
+  1: '日结',
+  2: '周结',
+  3: '月结',
+}
+
+const CHANNEL_TYPE_TEXT: Record<number, string> = {
+  1: '微信支付',
+  2: '支付宝',
+  3: '银联',
+  9: '其他',
 }
 
 /** 明细匹配状态：1-完全匹配 2-金额不一致 3-仅渠道有 4-仅平台有 */
@@ -107,7 +114,7 @@ export default function ReconcileDetail() {
     if (!detail) return
     modal.confirm({
       title: '确认平账',
-      content: `确认将 ${detail.report_no}（${detail.channel_name || detail.channel_code}）标记为已平账？平账后单据状态不可回退。`,
+      content: `确认将 ${detail.rec_no} 标记为已平账？平账后单据状态不可回退。`,
       okText: '确认平账',
       cancelText: '取消',
       onOk: async () => {
@@ -125,12 +132,12 @@ export default function ReconcileDetail() {
   /** 对账单信息（Descriptions 渲染） */
   const detailDescriptions = useMemo(
     () => [
-      { key: 'report_no', label: '对账批次号', children: detail?.report_no || '—' },
-      {
-        key: 'channel',
-        label: '支付渠道',
-        children: detail?.channel_name || detail?.channel_code || '—',
-      },
+      { key: 'rec_no', label: '对账批次号', children: detail?.rec_no || '—' },
+      // {
+      //   key: 'channel_type',
+      //   label: '支付渠道',
+      //   children: detail ? (CHANNEL_TYPE_TEXT[detail.channel_type] ?? '—') : '—',
+      // },
       {
         key: 'reconciliation_type',
         label: '对账类型',
@@ -142,10 +149,20 @@ export default function ReconcileDetail() {
         key: 'period',
         label: '对账周期',
         children: detail
-          ? `${detail.start_date ? formatDateTime(detail.start_date * 1000, 'YYYY-MM-DD') : '—'} ~ ${
-              detail.end_date ? formatDateTime(detail.end_date * 1000, 'YYYY-MM-DD') : '—'
-            }`
+          ? `${formatDateTime(detail.start_date, 'YYYY-MM-DD')} ~ ${formatDateTime(detail.end_date, 'YYYY-MM-DD')}`
           : '—',
+      },
+      // {
+      //   key: 'settle_date',
+      //   label: '结算日期',
+      //   children: detail?.settle_date
+      //     ? formatDateTime(detail.settle_date * 1000, 'YYYY-MM-DD')
+      //     : '—',
+      // },
+      {
+        key: 'amount',
+        label: '账单金额',
+        children: <strong>{formatAmount(detail?.amount)}</strong>,
       },
       {
         key: 'platform_amount',
@@ -158,11 +175,11 @@ export default function ReconcileDetail() {
         children: <strong>{formatAmount(detail?.channel_amount)}</strong>,
       },
       {
-        key: 'diff_amount',
-        label: '差异金额',
+        key: 'diff_count',
+        label: '差异笔数',
         children: (
-          <strong className={detail?.diff_amount ? 'diff-amount' : ''}>
-            {formatAmount(detail?.diff_amount)}
+          <strong className={detail?.diff_count ? 'diff-amount' : ''}>
+            {detail ? `${detail.diff_count} 笔` : '—'}
           </strong>
         ),
       },
@@ -171,21 +188,20 @@ export default function ReconcileDetail() {
         label: '平台 / 渠道笔数',
         children: detail ? `${detail.platform_count} / ${detail.channel_count}` : '—',
       },
+      {
+        key: 'reconciled_by_name',
+        label: '平账操作人 / 时间',
+        children: (
+          `${detail?.reconciled_by_name || '—'} / ${detail?.reconciled_at
+            ? formatDateTime(detail.reconciled_at * 1000, 'YYYY-MM-DD HH:mm')
+            : '—'}`
+        ),
+      },
     ],
     [detail],
   )
 
   const lineColumns: ColumnsType<ReconciliationDetailLine> = [
-    {
-      title: '关联订单',
-      key: 'order',
-      render: (_, record) => (
-        <div className="line-order">
-          <strong>订单ID {record.order_id ?? '—'}</strong>
-          <span>订单类型 {record.order_type ?? '—'}</span>
-        </div>
-      ),
-    },
     {
       title: '渠道流水号',
       dataIndex: 'channel_trade_no',
@@ -194,36 +210,31 @@ export default function ReconcileDetail() {
       render: (value?: string) => value || '—',
     },
     {
-      title: '平台金额',
-      key: 'platform_amount',
-      width: 110,
-      align: 'right',
-      render: (_, record) => formatAmount(record.platform_amount),
+      title: '订单金额',
+      key: 'order_amount',
+      render: (_, record) => formatAmount(record.order_amount),
     },
     {
-      title: '渠道金额',
-      key: 'channel_amount',
-      width: 110,
-      align: 'right',
-      render: (_, record) => formatAmount(record.channel_amount),
+      title: '结算金额',
+      key: 'settle_amount',
+      render: (_, record) => formatAmount(record.settle_amount),
     },
     {
       title: '差额',
       key: 'gap',
-      width: 110,
-      align: 'right',
+      width: 120,
       render: (_, record) => {
-        const gap = (record.platform_amount ?? 0) - (record.channel_amount ?? 0)
-        return <span className={gap ? 'diff-amount' : ''}>{formatAmount((gap))}</span>
+        const gap = Number(record.order_amount ?? 0) - Number(record.settle_amount ?? 0)
+        return <span className={gap ? 'diff-amount' : ''}>{formatAmount(gap)}</span>
       },
     },
     {
       title: '匹配状态',
-      key: 'match_status',
-      width: 110,
+      key: 'status',
+      width: 120,
       render: (_, record) => (
-        <span className={`match-status match-status--${record.match_status}`}>
-          {MATCH_STATUS_TEXT[record.match_status] ?? record.match_status ?? '—'}
+        <span className={`match-status match-status--${record.status}`}>
+          {MATCH_STATUS_TEXT[record.status] ?? record.status ?? '—'}
         </span>
       ),
     },
@@ -232,6 +243,7 @@ export default function ReconcileDetail() {
       dataIndex: 'match_note',
       key: 'match_note',
       ellipsis: true,
+      width: 200,
       render: (value?: string) => value || '—',
     },
   ]
@@ -239,7 +251,7 @@ export default function ReconcileDetail() {
   return (
     <PageContainer
       title="对账详情"
-      description={detail ? `${detail.report_no} · ${detail.channel_name || detail.channel_code}` : '对账详情'}
+      description={detail ? `${detail.rec_no} · ${CHANNEL_TYPE_TEXT[detail.channel_type] ?? '未知渠道'}` : '对账详情'}
       extra={
         <Space>
           {detail && detail.status !== 2 && (
@@ -261,15 +273,23 @@ export default function ReconcileDetail() {
       <Spin spinning={loading}>
         <div className="reconcile-detail">
           <Card variant="borderless" className="reconcile-detail__summary">
-            <div className="summary-item">
-              <span>对账状态</span>
-              <em className={`reconcile-status reconcile-status--${detail?.status ?? 0}`}>
-                {RECONCILE_STATUS_TEXT[detail?.status ?? 0] ?? '—'}
-              </em>
+             <div className="summary-item">
+              <span>对账批次号</span>
+              <strong>{detail?.rec_no || '—'}</strong>
             </div>
             <div className="summary-item">
+              <span>对账状态</span>
+              <span style={{width: '54px', textAlign: 'center'}} className={`reconcile-status reconcile-status--${detail?.status ?? 0}`}>
+                {RECONCILE_STATUS_TEXT[detail?.status ?? 0] ?? '—'}
+              </span>
+            </div>
+            {/* <div className="summary-item">
               <span>支付渠道</span>
-              <strong>{detail?.channel_name || detail?.channel_code || '—'}</strong>
+              <strong>{detail ? (CHANNEL_TYPE_TEXT[detail.channel_type] ?? '—') : '—'}</strong>
+            </div> */}
+            <div className="summary-item">
+              <span>账单金额</span>
+              <strong>{formatAmount(detail?.amount)}</strong>
             </div>
             <div className="summary-item">
               <span>平台金额</span>
@@ -280,9 +300,9 @@ export default function ReconcileDetail() {
               <strong>{formatAmount(detail?.channel_amount)}</strong>
             </div>
             <div className="summary-item">
-              <span>差异金额</span>
-              <strong className={detail?.diff_amount ? 'diff-amount' : ''}>
-                {formatAmount(detail?.diff_amount)}
+              <span>差异笔数</span>
+              <strong className={detail?.diff_count ? 'diff-amount' : ''}>
+                {detail ? `${detail.diff_count} 笔` : '—'}
               </strong>
             </div>
           </Card>
@@ -290,7 +310,7 @@ export default function ReconcileDetail() {
           <Card variant="borderless" className="detail-card">
             <div className="detail-card__header">
               <h3>对账单信息</h3>
-              <span>{detail?.report_no ?? '—'}</span>
+              <span>{detail?.rec_no ?? '—'}</span>
             </div>
             <Descriptions
               column={{ xs: 1, sm: 2, lg: 3 }}
@@ -304,7 +324,7 @@ export default function ReconcileDetail() {
           <Card variant="borderless" className="detail-card">
             <div className="detail-card__header">
               <h3>差异明细</h3>
-              <Select
+              {/* <Select
                 className="detail-card__filter"
                 value={matchStatus}
                 onChange={(value) => {
@@ -318,7 +338,7 @@ export default function ReconcileDetail() {
                 allowClear
                 placeholder="匹配状态"
                 style={{ width: 140 }}
-              />
+              /> */}
             </div>
             <Table<ReconciliationDetailLine>
               rowKey="id"

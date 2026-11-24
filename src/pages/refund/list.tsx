@@ -225,10 +225,10 @@ export default function RefundList() {
 
   const metrics = useMemo(() => {
     return [
-      { key: 'all', label: '全部退款', value: stats?.total, note: '当前系统全部退款单', tone: 'primary' },
-      { key: 'pending', label: '待审批', value: stats?.pending_approval, note: '等待财务/运营审批', tone: 'warning' },
-      { key: 'refunding', label: '退款中', value: stats?.refunding, note: '款项退回处理中', tone: 'info' },
-      { key: 'refunded', label: '已退款', value: stats?.refunded, note: '退款已完成', tone: 'primary' },
+      { key: 'all', status: null, label: '全部退款', value: stats?.total, note: '当前系统全部退款单', tone: 'primary' },
+      { key: 'pending', status: 8, label: '待财务审批', value: stats?.pending_approval, note: '等待财务审批', tone: 'warning' },
+      { key: 'refunding', status: 3, label: '退款中', value: stats?.refunding, note: '款项退回处理中', tone: 'info' },
+      { key: 'refunded', status: 4, label: '已退款', value: stats?.refunded, note: '退款已完成', tone: 'primary' },
     ]
   }, [stats])
 
@@ -352,7 +352,20 @@ export default function RefundList() {
       <div className="refund-list">
         <div className="metric-cards">
           {metrics.map((metric) => (
-            <Card variant="borderless" className="metric-card" key={metric.key}>
+            <Card
+              variant="borderless"
+              className={`metric-card metric-card--clickable${applied.refund_status === metric.status ? ' is-active' : ''}`}
+              key={metric.key}
+              role="button"
+              tabIndex={0}
+              onClick={() => changeStatus(metric.status)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  changeStatus(metric.status)
+                }
+              }}
+            >
               <div className="metric-card__head">
                 <span className="metric-card__label">{metric.label}</span>
                 <i className={`metric-card__icon status--${metric.tone}`}>

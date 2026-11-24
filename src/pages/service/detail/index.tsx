@@ -367,18 +367,17 @@ export default function ServiceEditorPage() {
       render: (count: number) => `${count}次`,
     },
     {
-      title: '含耗材价',
-      dataIndex: 'price_with_consum',
-      key: 'price_with_consum',
-      // 不涉及耗材时与不含耗材价一致
-      render: (value: number, record) =>
-        formatPackagePrice(usesConsumable ? value : record.price),
-    },
-    {
       title: '不含耗材价',
       dataIndex: 'price',
       key: 'price',
       render: (value: number) => formatPackagePrice(value),
+    },
+    {
+      title: '含耗材价',
+      dataIndex: 'price_with_consum',
+      key: 'price_with_consum',
+      // 服务不涉及耗材时，含耗材价无业务含义，列表统一显示占位符
+      render: (value: number) => (usesConsumable ? formatPackagePrice(value) : '-'),
     },
     {
       title: '操作',

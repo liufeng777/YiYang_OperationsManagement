@@ -194,10 +194,10 @@ export default function OrderList() {
 
   const metrics = useMemo(() => {
     return [
-      { key: 'all', label: '全部订单', value: stats?.total, note: '当前系统全部订单', tone: 'primary' },
-      { key: 'pending', label: '待确认', value: stats?.pending_confirm, note: '需运营确认后生效', tone: 'warning' },
-      { key: 'active', label: '生效中', value: stats?.active, note: '服务履约进行中', tone: 'info' },
-      { key: 'finished', label: '已完成', value: stats?.completed, note: '服务已完成结算', tone: 'primary' },
+      { key: 'all', status: null, label: '全部订单', value: stats?.total, note: '当前系统全部订单', tone: 'primary' },
+      { key: 'pending', status: 2, label: '待确认', value: stats?.pending_confirm, note: '需运营确认后生效', tone: 'warning' },
+      { key: 'active', status: 3, label: '生效中', value: stats?.active, note: '服务履约进行中', tone: 'info' },
+      { key: 'finished', status: 4, label: '已完成', value: stats?.completed, note: '服务已完成结算', tone: 'primary' },
     ]
   }, [stats])
 
@@ -263,7 +263,7 @@ export default function OrderList() {
         render: (_, record) => (
           <div className="order-actions">
             <Button type="link" size="small" onClick={() => navigate(`/order/detail/${record.id}`)}>
-              详情
+              查看详情
             </Button>
             {canCancelOrder(record.order_status) && (
               <Button type="link" size="small" danger onClick={() => setCancelTarget(record)}>
@@ -292,7 +292,20 @@ export default function OrderList() {
       <div className="order-list">
         <div className="metric-cards">
           {metrics.map((metric) => (
-            <Card variant="borderless" className="metric-card" key={metric.key}>
+            <Card
+              variant="borderless"
+              className={`metric-card metric-card--clickable${applied.order_status === metric.status ? ' is-active' : ''}`}
+              key={metric.key}
+              role="button"
+              tabIndex={0}
+              onClick={() => changeStatus(metric.status)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  changeStatus(metric.status)
+                }
+              }}
+            >
               <div className="metric-card__head">
                 <span className="metric-card__label">{metric.label}</span>
                 <i className={`metric-card__icon status--${metric.tone}`}>

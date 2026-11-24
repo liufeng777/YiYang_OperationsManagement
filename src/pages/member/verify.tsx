@@ -35,10 +35,10 @@ const tabItems = [
 ]
 
 const metrics = [
-  { key: 'pending', label: '待审核', value: '—', note: '需运营人员人工核对', tone: 'primary' },
-  { key: 'approved', label: '今日通过', value: '—', note: '审核通过后可建档', tone: 'info' },
-  { key: 'rejected', label: '今日驳回', value: '—', note: '均已填写驳回原因', tone: 'warning' },
-  { key: 'duration', label: '平均审核时长', value: '—', note: '目标 1 个工作日内完成', tone: 'danger' },
+  { key: 'pending', status: 'pending', label: '待审核', value: '—', note: '需运营人员人工核对', tone: 'primary' },
+  { key: 'approved', status: 'approved', label: '已通过', value: '—', note: '审核通过后可建档', tone: 'info' },
+  { key: 'rejected', status: 'rejected', label: '已驳回', value: '—', note: '均已填写驳回原因', tone: 'warning' },
+  { key: 'duration', status: null, label: '平均审核时长', value: '—', note: '目标 1 个工作日内完成', tone: 'danger' },
 ]
 
 interface VerifyFilters {
@@ -84,6 +84,13 @@ export default function VerifyList() {
       return keywordHit && statusHit && sourceHit && tabHit
     })
   }, [records, applied, tab])
+
+  const changeStatus = (nextStatus: VerifyStatus | 'all') => {
+    setStatus(nextStatus)
+    setTab('all')
+    setPage(1)
+    setApplied({ ...applied, status: nextStatus })
+  }
 
   const applyFilters = () => {
     setApplied({ keyword: keyword.trim(), status, source, date })
@@ -196,7 +203,20 @@ export default function VerifyList() {
         <ApiPendingAlert feature="实名审核" />
         <div className="metric-cards">
           {metrics.map((metric) => (
-            <Card variant="borderless" className="metric-card" key={metric.key}>
+            <Card
+              variant="borderless"
+              className={`metric-card${metric.status ? ' metric-card--clickable' : ''}${metric.status && applied.status === metric.status ? ' is-active' : ''}`}
+              key={metric.key}
+              role={metric.status ? 'button' : undefined}
+              tabIndex={metric.status ? 0 : undefined}
+              onClick={metric.status ? () => changeStatus(metric.status as VerifyStatus) : undefined}
+              onKeyDown={metric.status ? (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  changeStatus(metric.status as VerifyStatus)
+                }
+              } : undefined}
+            >
               <div className="metric-card__head">
                 <span className="metric-card__label">{metric.label}</span>
                 <i className={`metric-card__icon status--${metric.tone}`}>
@@ -221,7 +241,7 @@ export default function VerifyList() {
           />
           <Select
             value={status}
-            onChange={setStatus}
+            onChange={changeStatus}
             options={[
               { label: '全部审核状态', value: 'all' },
               { label: '待审核', value: 'pending' },

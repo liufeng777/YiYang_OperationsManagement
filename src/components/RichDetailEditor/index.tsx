@@ -3,7 +3,7 @@
  * - 存储为 ProseMirror JSON 字符串（同服务图文详情），不限制 HTML
  * - 由受控组件使用者持有 value(onChange)，适合纳入表单 / mock 提交
  */
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Button, Drawer } from 'antd'
 import { EditOutlined } from '@ant-design/icons'
 import type { JSONContent } from '@/components/RichTextEditor'
@@ -17,17 +17,6 @@ interface RichDetailEditorProps {
   onChange?: (json: string) => void
   /** 富文本区域最小高度 */
   minHeight?: number
-}
-
-/** 内容概况：是否已填 + 内容块数 */
-function contentMeta(value?: string): { filled: boolean; blocks: number } {
-  if (!value) return { filled: false, blocks: 0 }
-  try {
-    const doc = JSON.parse(value) as { content?: JSONContent['content'] }
-    return { filled: true, blocks: doc.content?.length ?? 0 }
-  } catch {
-    return { filled: true, blocks: 0 }
-  }
 }
 
 /** JSON 字符串 → 编辑器初始化值（非 JSON 时按原样作为 HTML 回退） */
@@ -49,8 +38,6 @@ export default function RichDetailEditor({
   const [open, setOpen] = useState(false)
   // 打开瞬间才从 value 同步一次草稿（编辑器只在首次挂载读 value）
   const [draft, setDraft] = useState('')
-
-  const meta = useMemo(() => contentMeta(value), [value])
 
   const openEditor = () => {
     setDraft(value)

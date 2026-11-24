@@ -27,6 +27,14 @@ import './detail.less'
 const fmtTime = (seconds?: number | null) =>
   seconds ? formatDateTime(seconds * 1000, 'YYYY-MM-DD HH:mm') : '—'
 
+/** 状态文案优先表达结果：负面为红色、积极为绿色，其余过程状态为灰色。 */
+const getTimelineColor = (statusName?: string) => {
+  const text = statusName ?? ''
+  if (/失败|拒绝|停止|取消|驳回|终止|异常|作废/.test(text)) return 'red'
+  if (/完成|成功|通过/.test(text)) return 'green'
+  return 'gray'
+}
+
 /** 退款状态标签色（refund_status：1-待医护审批 2-审批通过 3-退款中 4-已退款 5-已拒绝 6-退款失败） */
 const REFUND_STATUS_COLOR: Record<number, string> = {
   1: 'gold',
@@ -307,7 +315,7 @@ export default function OrderDetailPage() {
 
           {/* 第一行：交易订单信息 + 订单进度（两张卡等高，进度内部滚动） */}
           <div className="order-detail__grid">
-            <Card variant="borderless" className="detail-card">
+            <Card variant="borderless" className="detail-card order-detail__info">
               <div className="detail-card__header">
                 <h3>交易订单信息</h3>
                 <span>{order?.order_no ?? '—'}</span>
@@ -330,8 +338,8 @@ export default function OrderDetailPage() {
                 {history.length ? (
                   <Timeline
                     className="order-timeline"
-                    items={history.map((item, index) => ({
-                      color: index === history.length - 1 ? 'green' : 'gray',
+                    items={history.map((item) => ({
+                      color: getTimelineColor(item.status_name),
                       children: (
                         <div className="order-timeline__item">
                           <div className="order-timeline__head">

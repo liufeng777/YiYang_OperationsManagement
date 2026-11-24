@@ -26,6 +26,30 @@
     }
   }
 
+  .order-service > span,
+  &__cancel-reason {
+    .ellipsis();
+  }
+
+  &__status,
+  &__times {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: @spacing-2xs;
+  }
+
+  &__cancel-reason {
+    max-width: 100%;
+    color: @color-danger;
+    .text-auxiliary();
+  }
+
+  &__times {
+    color: @color-text-secondary;
+    .text-auxiliary();
+  }
+
   /* 工单状态 pill（共通 §6.2）：1-待排单 2-待接单 3-已接单 4-已签到 5-服务中 6-已完成 7-已取消 */
   .work-status {
     display: inline-flex;

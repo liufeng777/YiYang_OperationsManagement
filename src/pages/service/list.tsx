@@ -167,11 +167,18 @@ export default function ServicePoolList() {
   /** 顶部统计：服务总数取自后端 total，其余按当前页分布统计 */
   const metrics = useMemo(() => {
     return [
-      { key: 'all', label: '服务项目', value: total, note: '集团统一定义', tone: 'info' },
-      { key: 'on', label: '已启用', value: stats?.on_shelf, note: '机构可选择添加', tone: 'success' },
-      { key: 'off', label: '已停用', value: stats?.off_shelf, note: '不可新增使用', tone: 'danger' },
+      { key: 'all', status: null, label: '服务项目', value: total, note: '集团统一定义', tone: 'info' },
+      { key: 'on', status: 1, label: '已启用', value: stats?.on_shelf, note: '机构可选择添加', tone: 'success' },
+      { key: 'off', status: 9, label: '已停用', value: stats?.off_shelf, note: '不可新增使用', tone: 'danger' },
     ]
   }, [stats, total])
+
+  /** 点击统计卡立即筛选，并同步服务状态下拉框。 */
+  const changeStatus = (nextStatus: number | null) => {
+    setStatus(nextStatus)
+    setPage(1)
+    setApplied({ ...applied, status: nextStatus })
+  }
 
   /** 应用到过滤：把当前输入的筛选条件一次性生效（重置到第 1 页） */
   const applyFilters = () => {
@@ -539,7 +546,6 @@ export default function ServicePoolList() {
               <strong>{record.name}</strong>
               <span>
                 {catList.find((v) => v.id === record.category_id)?.name ?? '—'}
-                {/* {record.name_en ? ` · ${record.name_en}` : ''} */}
               </span>
             </div>
           </div>
@@ -619,7 +625,20 @@ export default function ServicePoolList() {
       <div className="service-pool">
         <div className="service-pool__metrics">
           {metrics.map((metric) => (
-            <Card variant="borderless" className="pool-metric metric-card" key={metric.key}>
+            <Card
+              variant="borderless"
+              className={`pool-metric metric-card metric-card--clickable${applied.status === metric.status ? ' is-active' : ''}`}
+              key={metric.key}
+              role="button"
+              tabIndex={0}
+              onClick={() => changeStatus(metric.status)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  changeStatus(metric.status)
+                }
+              }}
+            >
               <span>{metric.label}</span>
               <div>
                 <strong>{metric.value}</strong>
@@ -661,7 +680,7 @@ export default function ServicePoolList() {
             allowClear
             value={status}
             placeholder="服务状态"
-            onChange={(value) => setStatus(value ?? null)}
+            onChange={(value) => changeStatus(value ?? null)}
             options={Object.entries(statusText).map(([key, label]) => ({
               label,
               value: Number(key),

@@ -111,6 +111,14 @@ export default function LeadList() {
     })()
   }, [fetchList])
 
+  const changeStatus = (nextStatus: number | null) => {
+    setStatus(nextStatus)
+    const nextFilters: LeadFilters = { ...applied, status: nextStatus }
+    setApplied(nextFilters)
+    setPage(1)
+    void fetchList(1, pageSize, nextFilters)
+  }
+
   const applyFilters = () => {
     const nextFilters: LeadFilters = {
       keyword: keyword.trim(),
@@ -277,10 +285,10 @@ export default function LeadList() {
   /** 顶部统计：全部线索取列表接口 total（真实数据）；分状态统计接口未提供，展示 — */
   const metrics = useMemo(() => {
     return [
-      { key: 'all', label: '全部线索', value: stats?.total, note: '运营线索总量', tone: 'success' },
-      { key: 'following', label: '跟进中', value: stats?.contacting, note: '已认领正在跟进', tone: 'info' },
-      { key: 'pending', label: '待跟进', value: stats?.pending, note: '待认领的新线索', tone: 'warning' },
-      { key: 'converted', label: '已转化', value: stats?.converted, note: '复核达成的线索', tone: 'success' },
+      { key: 'all', status: null, label: '全部线索', value: stats?.total, note: '运营线索总量', tone: 'success' },
+      { key: 'following', status: 2, label: '跟进中', value: stats?.contacting, note: '已认领正在跟进', tone: 'info' },
+      { key: 'pending', status: 1, label: '待跟进', value: stats?.pending, note: '待认领的新线索', tone: 'warning' },
+      { key: 'converted', status: 3, label: '已转化', value: stats?.converted, note: '复核达成的线索', tone: 'success' },
     ]
   }, [stats])
 
@@ -293,7 +301,20 @@ export default function LeadList() {
       <div className="lead-list">
         <div className="metric-cards">
           {metrics.map((metric) => (
-            <Card variant="borderless" className="metric-card" key={metric.key}>
+            <Card
+              variant="borderless"
+              className={`metric-card metric-card--clickable${applied.status === metric.status ? ' is-active' : ''}`}
+              key={metric.key}
+              role="button"
+              tabIndex={0}
+              onClick={() => changeStatus(metric.status)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  changeStatus(metric.status)
+                }
+              }}
+            >
               <div className="metric-card__head">
                 <span className="metric-card__label">{metric.label}</span>
                 <i className={`metric-card__icon status--${metric.tone}`}>
@@ -316,7 +337,7 @@ export default function LeadList() {
           />
           <Select
             value={status}
-            onChange={(value) => setStatus(value ?? null)}
+            onChange={(value) => changeStatus(value ?? null)}
             options={Object.entries(LEAD_STATUS_TEXT).map(([key, label]) => ({
               label,
               value: Number(key),

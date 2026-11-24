@@ -41,6 +41,33 @@
 .metric-card {
   .card-surface();
 
+  &--clickable {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+
+    &:hover {
+      box-shadow: inset 0 0 0 1px @color-primary, @shadow-card;
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid @color-primary;
+      outline-offset: 3px;
+    }
+  }
+
+  /* borderless 卡片没有边框，使用完整内描边避免选中边框被裁切 */
+  &.is-active {
+    background: @color-primary-light;
+    box-shadow: inset 0 0 0 2px @color-primary, @shadow-card;
+
+    .metric-card__label,
+    .metric-card__value {
+      color: @color-primary-dark;
+    }
+  }
+
   > .ant-card-body {
     padding: @spacing-md;
   }

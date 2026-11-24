@@ -1,35 +1,42 @@
 /**
  * 财务对账 - 账单汇总列表
  * 数据来源：financeApi.getReconciliations（分页 + 对账类型 / 状态 / 对账日期范围筛选）
- * 顶部统计：各状态各取 1 条取 total（与退款列表同一轻量方案）
- * 金额单位：后端返回「分」，展示统一换算为「元」
- * 入口：列表「查看详情」进入对账详情页（detail_lines 仅在详情页展示）
+ * 金额单位：后端 DECIMAL 以字符串返回，单位为元，直接格式化展示
+ * 入口：列表「查看详情」进入对账详情页；支持按当前类型 / 状态筛选导出 CSV
  */
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { App, Button, Card, DatePicker, Select } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
-import { BarChartOutlined } from '@ant-design/icons'
+import { BarChartOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
-import type { Dayjs } from 'dayjs'
+import dayjs, { type Dayjs } from 'dayjs'
 import PageContainer from '@/components/PageContainer'
 import { financeApi } from '@/api'
 import type { ReconcileItem } from '@/api/modules/finance'
-import { formatAmount, formatDateTime } from '@/utils'
+import { downloadBlob, formatAmount, formatDateTime } from '@/utils'
 import './index.less'
 
-/** 对账状态（共通 §6.4）：1-对账中 2-已平账 3-有差异 */
+/** 对账状态：1-对账中 2-已平账 3-有差异 */
 const RECONCILE_STATUS_TEXT: Record<number, string> = {
   1: '对账中',
   2: '已平账',
   3: '有差异',
 }
 
-/** 对账类型：契约未给出枚举，先按常见周期映射，未命中时回显原始值 */
+/** 对账类型：1-日结 2-周结 3-月结 */
 const RECONCILE_TYPE_TEXT: Record<number, string> = {
-  1: '日对账',
-  2: '周对账',
-  3: '月对账',
+  1: '日结',
+  2: '周结',
+  3: '月结',
+}
+
+/** 支付渠道：列表仅返回 channel_type，不再依赖旧版渠道名称字段 */
+const CHANNEL_TYPE_TEXT: Record<number, string> = {
+  1: '微信支付',
+  2: '支付宝',
+  3: '银联',
+  9: '其他',
 }
 
 const PAGE_SIZE = 10
@@ -52,6 +59,7 @@ export default function ReconcileList() {
   const [rows, setRows] = useState<ReconcileItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
   /** 顶部统计：全部 / 对账中 / 已平账 / 有差异 */
@@ -75,19 +83,21 @@ export default function ReconcileList() {
     [],
   )
 
-  /** 拉取对账单列表（顶部统计随列表响应的 stats 字段一并返回） */
+  /** 拉取对账单列表；接口未返回 total / stats 时使用当前列表长度并隐藏统计值 */
   const fetchList = useCallback(
     async (targetPage: number, filters: ReconcileFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
       try {
         const res = await financeApi.getReconciliations(buildParams(targetPage, filters, size))
-        setRows(res.list ?? [])
-        setTotal(res.total ?? 0)
+        const list = res.list ?? []
+        setRows(list)
+        setTotal(res.total ?? list.length)
         setStats(res.stats ?? null)
       } catch {
         /* 错误提示由 request 拦截器统一处理 */
         setRows([])
         setTotal(0)
+        setStats(null)
       } finally {
         setLoading(false)
       }
@@ -98,6 +108,14 @@ export default function ReconcileList() {
   useEffect(() => {
     void fetchList(1, emptyFilters, pageSize)
   }, [fetchList])
+
+  const changeStatus = (nextStatus: number | null) => {
+    setStatus(nextStatus)
+    const nextFilters: ReconcileFilters = { ...applied, status: nextStatus }
+    setApplied(nextFilters)
+    setPage(1)
+    void fetchList(1, nextFilters, pageSize)
+  }
 
   const applyFilters = () => {
     const nextFilters: ReconcileFilters = { reconciliation_type: type, status, range }
@@ -115,16 +133,42 @@ export default function ReconcileList() {
     void fetchList(1, emptyFilters, pageSize)
   }
 
+  /** 按已生效的对账类型与状态筛选导出 CSV */
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const res = await financeApi.exportReconciliations({
+        reconciliation_type: applied.reconciliation_type ?? undefined,
+        status: applied.status ?? undefined,
+      })
+      if (!res.data || res.data.size === 0) {
+        message.warning('导出内容为空')
+        return
+      }
+      const disposition = String(res.headers?.['content-disposition'] ?? '')
+      const matched = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';]+)/i)
+      const filename = matched?.[1]
+        ? decodeURIComponent(matched[1])
+        : `账单汇总_${dayjs().format('YYYYMMDDHHmmss')}.csv`
+      downloadBlob(res.data, filename)
+      message.success('导出成功，已开始下载')
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      setExporting(false)
+    }
+  }
+
   /** 平账：对账中 / 有差异的单据可标记平账 */
   const handleFinish = (record: ReconcileItem) => {
     modal.confirm({
       title: '确认平账',
-      content: `确认将 ${record.report_no}（${record.channel_name || record.channel_code}）标记为已平账？平账后单据状态不可回退。`,
+      content: `确认将 ${record.rec_no} 标记为已平账？平账后单据状态不可回退。`,
       okText: '确认平账',
       cancelText: '取消',
       onOk: async () => {
         try {
-          await financeApi.finishReconciliation(Number(record.id))
+          await financeApi.finishReconciliation(record.reconcile_id)
           message.success('该对账单已平账')
           void fetchList(page, applied, pageSize)
         } catch {
@@ -137,67 +181,74 @@ export default function ReconcileList() {
   const columns: ColumnsType<ReconcileItem> = [
     {
       title: '对账批次 / 周期',
-      key: 'report_no',
+      key: 'rec_no',
       render: (_, record) => (
         <div className="reconcile-no">
-          <strong>{record.report_no}</strong>
+          <strong>{record.rec_no}</strong>
           <span>
-            {record.start_date ? formatDateTime(record.start_date * 1000, 'YYYY-MM-DD') : '—'} ~{' '}
-            {record.end_date ? formatDateTime(record.end_date * 1000, 'YYYY-MM-DD') : '—'}
+            {formatDateTime(record.start_date, 'YYYY-MM-DD')} ~{' '}
+            {formatDateTime(record.end_date, 'YYYY-MM-DD')}
           </span>
         </div>
       ),
     },
-    {
-      title: '支付渠道',
-      key: 'channel',
-      width: 120,
-      render: (_, record) => (
-        <span className="channel-pill">{record.channel_name || record.channel_code || '—'}</span>
-      ),
-    },
+    // {
+    //   title: '支付渠道',
+    //   key: 'channel_type',
+    //   width: 110,
+    //   render: (_, record) => (
+    //     <span className="channel-pill">{CHANNEL_TYPE_TEXT[record.channel_type] ?? '—'}</span>
+    //   ),
+    // },
     {
       title: '对账类型',
       key: 'reconciliation_type',
       width: 100,
-      render: (_, record) =>
-        RECONCILE_TYPE_TEXT[record.reconciliation_type] ?? record.reconciliation_type ?? '—',
+      align: 'center',
+      render: (_, record) => <span className="channel-pill">{
+        RECONCILE_TYPE_TEXT[record.reconciliation_type] ?? record.reconciliation_type ?? '—'}</span>
+    },
+    {
+      title: '账单金额',
+      key: 'amount',
+      align: 'right',
+      render: (_, record) => formatAmount(record.amount),
     },
     {
       title: '平台金额',
       key: 'platform_amount',
-      width: 120,
       align: 'right',
-      render: (_, record) => formatAmount((record.platform_amount)),
+      render: (_, record) => formatAmount(record.platform_amount),
     },
     {
       title: '渠道金额',
       key: 'channel_amount',
-      width: 120,
       align: 'right',
-      render: (_, record) => formatAmount((record.channel_amount)),
+      render: (_, record) => formatAmount(record.channel_amount),
     },
     {
-      title: '差异金额',
-      key: 'diff_amount',
-      width: 120,
-      align: 'right',
+      title: '差异笔数',
+      key: 'diff_count',
+      align: 'center',
+      width: 100,
       render: (_, record) => (
-        <span className={record.diff_amount ? 'diff-amount' : ''}>
-          {formatAmount((record.diff_amount))}
+        <span className={record.diff_count > 0 ? 'diff-amount' : ''}>
+          {record.diff_count ?? 0} 笔
         </span>
       ),
     },
     {
       title: '平台 / 渠道笔数',
       key: 'counts',
-      width: 130,
+      align: 'center',
+      width: 120,
       render: (_, record) => `${record.platform_count} / ${record.channel_count}`,
     },
     {
       title: '对账状态',
       key: 'status',
       width: 100,
+      align: 'center',
       render: (_, record) => (
         <span className={`reconcile-status reconcile-status--${record.status}`}>
           {RECONCILE_STATUS_TEXT[record.status] ?? '—'}
@@ -213,7 +264,7 @@ export default function ReconcileList() {
           <Button
             type="link"
             size="small"
-            onClick={() => navigate(`/finance/detail/${record.id}`)}
+            onClick={() => navigate(`/finance/summary/${record.reconcile_id}`)}
           >
             查看详情
           </Button>
@@ -229,12 +280,12 @@ export default function ReconcileList() {
 
   const metrics = useMemo(() => {
     return [
-      { key: 'all', label: '全部账单', value: stats?.total, note: '当前系统全部对账单', tone: 'success' },
-      { key: 'checking', label: '对账中', value: stats?.reconciling, note: '等待核对完成', tone: 'warning' },
-      { key: 'balanced', label: '已平账', value: stats?.balanced, note: '平台与渠道金额一致', tone: 'info' },
-      { key: 'diff', label: '有差异', value: stats?.diff, note: '存在金额或笔数差异', tone: 'danger' },
+      { key: 'all', status: null, label: '全部账单', value: stats?.total ?? total, note: '当前系统全部对账单', tone: 'success' },
+      { key: 'checking', status: 1, label: '对账中', value: stats?.reconciling ?? '—', note: '等待核对完成', tone: 'warning' },
+      { key: 'balanced', status: 2, label: '已平账', value: stats?.balanced ?? '—', note: '平台与渠道金额一致', tone: 'info' },
+      { key: 'diff', status: 3, label: '有差异', value: stats?.diff ?? '—', note: '存在金额或笔数差异', tone: 'danger' },
     ]
-  }, [stats])
+  }, [stats, total])
 
 
   return (
@@ -246,7 +297,20 @@ export default function ReconcileList() {
       <div className="reconcile-list">
         <div className="metric-cards">
           {metrics.map((metric) => (
-            <Card variant="borderless" className="metric-card" key={metric.key}>
+            <Card
+              variant="borderless"
+              className={`metric-card metric-card--clickable${applied.status === metric.status ? ' is-active' : ''}`}
+              key={metric.key}
+              role="button"
+              tabIndex={0}
+              onClick={() => changeStatus(metric.status)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  changeStatus(metric.status)
+                }
+              }}
+            >
               <div className="metric-card__head">
                 <span className="metric-card__label">{metric.label}</span>
                 <i className={`metric-card__icon status--${metric.tone}`}>
@@ -272,7 +336,7 @@ export default function ReconcileList() {
           />
           <Select
             value={status}
-            onChange={(value) => setStatus(value ?? null)}
+            onChange={(value) => changeStatus(value ?? null)}
             options={Object.entries(RECONCILE_STATUS_TEXT).map(([key, label]) => ({
               label,
               value: Number(key),
@@ -296,9 +360,16 @@ export default function ReconcileList() {
             <div>
               <span className="list-card__header__title">账单汇总</span>
             </div>
+            <Button
+              icon={<DownloadOutlined />}
+              loading={exporting}
+              onClick={handleExport}
+            >
+              导出 CSV
+            </Button>
           </div>
           <FillTable<ReconcileItem>
-            rowKey="id"
+            rowKey="reconcile_id"
             size="small"
             loading={loading}
             columns={columns}

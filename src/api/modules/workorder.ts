@@ -12,30 +12,35 @@ import type { ApiPageParams, ApiPageResult } from '@/types/api'
  */
 export type WoStatus = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
-/** 工单 DTO（列表；详情另含排单、服务留痕、证据、改派记录） */
+/** 工单 DTO（列表；详情接口可能额外返回排单、服务留痕和改派记录） */
 export interface WorkOrderDTO {
-  id: number
+  /** 列表新结构不返回 id，详情接口保留兼容 */
+  id?: number
   work_order_no: string
   order_id: number
-  member_id: number
+  order_no: string
+  member_id?: number
   member_name: string
   member_phone: string
+  contact_name: string
+  contact_phone: string
+  service_name: string
   service_address: string
   expected_start_at: number
   expected_stop_at: number
   wo_status: WoStatus
-  assignee_id: number | null
-  assignee_name: string | null
-  schedule_id: number | null
-  /** 期望医护（下单时所填，派单参考） */
-  expect_staff: number | null
-  expect_staff_name: string | null
+  /** 实际服务人员与下单时的期望服务人员 */
+  assigned_staff_name: string
+  expect_staff_name: string
   remark: string
+  cancel_reason: string
   assigned_at: number | null
   accepted_at: number | null
+  arrived_at: number | null
+  started_at: number | null
   completed_at: number | null
   cancelled_at: number | null
-  created_at: number
+  created_at?: number
 }
 
 /** 工单列表 GET /api/admin/work-orders

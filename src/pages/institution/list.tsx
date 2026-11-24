@@ -128,7 +128,35 @@ export default function InstitutionList() {
       { key: 'normal', label: '正常经营', value: stats?.normal_operating, badge: `当前筛选共 ${total} 家`, tone: 'success' },
       { key: 'paused', label: '暂停经营', value: stats?.suspended, badge: '用户端已停止展示', tone: 'danger' },
     ]
-  }, [stats])
+  }, [stats, total])
+
+  /** 类型筛选框与统计卡共用同一套已生效条件，切换时保留另一维度。 */
+  const changeType = (nextType: InstitutionType | null) => {
+    setType(nextType)
+    setPage(1)
+    setApplied({ ...applied, type: nextType })
+  }
+
+  const changeStatus = (nextStatus: InstitutionStatus | null) => {
+    setStatus(nextStatus)
+    setPage(1)
+    setApplied({ ...applied, status: nextStatus })
+  }
+
+  const handleMetricClick = (key: string) => {
+    if (key === 'nursingHome' || key === 'postStation') {
+      changeType(key === 'nursingHome' ? 1 : 2)
+    } else {
+      changeStatus(key === 'normal' ? 1 : 9)
+    }
+  }
+
+  const isMetricActive = (key: string) => {
+    if (key === 'nursingHome') return applied.type === 1
+    if (key === 'postStation') return applied.type === 2
+    if (key === 'normal') return applied.status === 1
+    return applied.status === 9
+  }
 
   const handleQuery = () => {
     setPage(1)
@@ -185,12 +213,7 @@ export default function InstitutionList() {
       {
         title: '机构',
         key: 'name',
-        render: (_, record) => (
-          <div className="table-cell">
-            <strong>{record.name}</strong>
-            <span>{record.name_en || '—'}</span>
-          </div>
-        ),
+        dataIndex: 'name'
       },
       {
         title: '经营地址',
@@ -335,7 +358,19 @@ export default function InstitutionList() {
         <Row gutter={[16, 16]}>
           {metrics.map((metric) => (
             <Col xs={24} sm={12} lg={6} key={metric.key}>
-              <Card variant="borderless" className="metric-card">
+              <Card
+                variant="borderless"
+                className={`metric-card metric-card--clickable${isMetricActive(metric.key) ? ' is-active' : ''}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleMetricClick(metric.key)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    handleMetricClick(metric.key)
+                  }
+                }}
+              >
                 <div className="metric-card__head">
                   <span className="metric-card__label">{metric.label}</span>
                   <i className={`metric-card__icon status--${metric.tone}`}>
@@ -363,7 +398,7 @@ export default function InstitutionList() {
             placeholder='机构类型'
             allowClear
             value={type}
-            onChange={setType}
+            onChange={(value) => changeType(value ?? null)}
             options={([1, 2] as InstitutionType[]).map((key) => ({
               label: typeText[key],
               value: key,
@@ -373,7 +408,7 @@ export default function InstitutionList() {
             placeholder='机构状态'
             allowClear
             value={status}
-            onChange={setStatus}
+            onChange={(value) => changeStatus(value ?? null)}
             options={([1, 9] as InstitutionStatus[]).map((key) => ({
               label: statusText[key],
               value: key,
