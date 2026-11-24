@@ -278,7 +278,7 @@ export default function StaffList() {
               <div className="staff-drawer__profile">
                 <i>{settingTarget.name.slice(0, 1)}</i>
                 <div>
-                  <strong><SensitiveText type="name" value={settingTarget.name} /></strong>
+                  <strong><SensitiveText allowReveal type="name" value={settingTarget.name} /></strong>
                   <span>
                     {settingTarget.title} · {settingTarget.institutionName}
                   </span>
@@ -337,7 +337,7 @@ export default function StaffList() {
                   <i>{settingTarget.name.slice(0, 1)}</i>
                   <div>
                     <strong>
-                      <SensitiveText type="name" value={settingTarget.name} /> {settingTarget.title}
+                      <SensitiveText allowReveal type="name" value={settingTarget.name} /> {settingTarget.title}
                     </strong>
                     <span>{settingTarget.institutionName}</span>
                     <p>{settingIntro || '擅长' + settingTarget.specialty + '，为长者提供个性化健康指导。'}</p>

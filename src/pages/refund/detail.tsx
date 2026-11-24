@@ -285,7 +285,7 @@ export default function RefundDetail() {
             </div>
             <div className="summary-item">
               <span>申请人</span>
-              <strong><SensitiveText type="name" value={refund?.member_name} /></strong>
+              <strong><SensitiveText allowReveal type="name" value={refund?.member_name} /></strong>
             </div>
             <div className="summary-item">
               <span>退款金额</span>

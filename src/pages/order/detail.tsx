@@ -152,7 +152,7 @@ export default function OrderDetailPage() {
         label: '会员',
         children: (
           <span>
-            <SensitiveText type="name" value={order.member_name} />
+            <SensitiveText allowReveal type="name" value={order.member_name} />
             <span>{` (ID: ${order.member_id})`}</span>
           </span>
         ),
@@ -160,18 +160,18 @@ export default function OrderDetailPage() {
       {
         key: 'member_phone',
         label: '会员手机号',
-        children: <SensitiveText type="phone" value={order.member_phone} />,
+        children: <SensitiveText allowReveal type="phone" value={order.member_phone} />,
       },
       { key: 'created_at', label: '下单时间', children: fmtTime(order.created_at) },
       {
         key: 'contact',
         label: '联系人',
-        children: <SensitiveText type="name" value={order.contact_name} />,
+        children: <SensitiveText allowReveal type="name" value={order.contact_name} />,
       },
       {
         key: 'contact_phone',
         label: '联系电话',
-        children: <SensitiveText type="phone" value={order.contact_phone} />,
+        children: <SensitiveText allowReveal type="phone" value={order.contact_phone} />,
       },
       
       { key: 'institution', label: '服务机构', children: institutionName },

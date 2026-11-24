@@ -1,27 +1,32 @@
 /**
- * 机构信息表单（InstitutionInfoForm）样式
- * 布局参照服务编辑页：左侧表单卡片 + 底部操作条，右侧患者端手机实时预览
- * 患者端展示（封面 + 图文详情）区块统一使用公共样式 patient-detail.less
+ * 机构信息表单布局（新增机构 / 机构详情-基础资料共用）
+ * - 桌面端：左侧表单内部滚动，底部操作条固定；右侧预览独立滚动。
+ * - 窄屏端：表单与预览纵向排列，由整个编辑器统一滚动。
  */
+@import './InstitutionPhonePreview.less';
 
 .institution-editor {
-  flex: 1;
-  overflow-y: hidden;
-  margin-top: @spacing-md;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 376px;
+  grid-template-rows: minmax(0, 1fr);
   gap: @spacing-md;
 
   &__form {
-    height: 100%;
-    overflow-y: hidden;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: @spacing-md;
-    min-width: 0;
-    .ant-form {
-      flex: 1;
-      overflow: auto;
+
+    > .ant-form {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: @spacing-md;
@@ -30,6 +35,7 @@
 
   &__footer {
     .card-surface();
+    flex: none;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -47,17 +53,18 @@
 
   &__preview {
     .card-surface();
-    align-self: start;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
 
     .ant-card-body {
-      position: sticky;
-      top: @spacing-xl;
       padding: @spacing-md @spacing-lg;
     }
   }
 
   .editor-card {
     .card-surface();
+    flex: none;
 
     .ant-card-body {
       padding: @spacing-md @spacing-lg;
@@ -79,53 +86,48 @@
       }
     }
   }
-  /* ===== 患者端手机预览内容（外壳见 @/components/PhonePreview） ===== */
-  .institution-phone {
-    &__cover {
-      aspect-ratio: 750 / 420;
-      margin: 0 @spacing-md;
-      overflow: hidden;
-      background: @color-bg-active;
-      border-radius: @radius-md;
 
-      img {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
+  &__patient-detail {
+    margin-top: @spacing-md;
+  }
 
-      &--empty {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: @color-text-secondary;
-        .text-auxiliary();
-      }
-    }
+  &__cover-label {
+    display: flex;
+    align-items: center;
+    gap: @spacing-xs;
+  }
 
-    &__body {
-      padding: @spacing-md;
+  &__cover-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: @radius-sm;
+  }
 
-      h4 {
-        margin: 0 0 @spacing-xs;
-        .text-title-card();
-      }
-
-      > p {
-        .text-auxiliary();
-        color: @color-text-primary;
-      }
-    }
+  &__upload-text {
+    margin-top: @spacing-xs;
   }
 }
 
 @media (max-width: 1200px) {
   .institution-editor {
-    grid-template-columns: 1fr;
+    overflow-y: auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+
+    &__form {
+      flex: none;
+      overflow: visible;
+
+      > .ant-form {
+        flex: none;
+        overflow: visible;
+      }
+    }
 
     &__preview {
-      position: static;
+      overflow: visible;
     }
   }
 }

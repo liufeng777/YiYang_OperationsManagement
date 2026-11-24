@@ -69,11 +69,11 @@ export default function RichDetailEditor({
         <Button icon={<EditOutlined />} color="primary" variant="outlined" onClick={openEditor}>
           编辑图文详情
         </Button>
-        <p className="patient-detail__status">
+        {/* <p className="patient-detail__status">
           {meta.filled
             ? `已填写（${meta.blocks} 个内容块），可再次编辑精细排版。`
             : '尚未填写。点击「编辑图文详情」，用富文本编排图文内容（含图片），完成后随表单保存。'}
-        </p>
+        </p> */}
       </div>
       <Drawer
         open={open}

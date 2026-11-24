@@ -143,30 +143,6 @@ export default function InstitutionDetailPage() {
       }
     >
       <div className="institution-detail">
-        {/* <Card variant="borderless" className="institution-summary">
-          <div className="institution-summary__main">
-            <h3>{detail.name}</h3>
-            <p>
-              {detail.name_en || '—'} · {typeText[detail.type]}
-            </p>
-          </div>
-          <div className="institution-summary__item">
-            <span>经营地址</span>
-            <strong>
-              {detail.province} · {detail.city} · {detail.district} · {detail.address}
-            </strong>
-          </div>
-          <div className="institution-summary__item">
-            <span>联系电话</span>
-            <strong>{detail.contact_phone}</strong>
-          </div>
-          <span
-            className={`status-btn ${detail.status === 1 ? 'status--success' : 'status--danger'}`}
-          >
-            {detail.status === 1 ? '启用' : '停用'}
-          </span>
-        </Card> */}
-
         <Card variant="borderless" className="detail-tabs-card">
           <Tabs activeKey={activeTab} items={tabItems} onChange={handleTabChange} />
         </Card>

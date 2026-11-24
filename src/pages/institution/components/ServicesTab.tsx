@@ -19,6 +19,7 @@ import type { InstitutionItem, InstitutionServiceRow } from '@/api/modules/insti
 import type { ServiceCategory, ServiceItem } from '@/api/modules/service'
 import { serviceTypeText } from '@/pages/service/list'
 import { instServiceStatusText } from '@/pages/service/institution'
+import './ServicesTab.less'
 
 interface ServicesTabProps {
   detail: InstitutionItem

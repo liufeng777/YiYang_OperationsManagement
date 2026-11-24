@@ -241,12 +241,12 @@ export default function LeadDetail() {
                 {
                   key: 'name',
                   label: '联系人',
-                  children: <SensitiveText type="name" value={detail?.name} />,
+                  children: <SensitiveText allowReveal type="name" value={detail?.name} />,
                 },
                 {
                   key: 'phone',
                   label: '联系电话',
-                  children: <SensitiveText type="phone" value={detail?.phone} />,
+                  children: <SensitiveText allowReveal type="phone" value={detail?.phone} />,
                 },
                 {
                   key: 'task_type',
@@ -276,12 +276,12 @@ export default function LeadDetail() {
                 {
                   key: 'user',
                   label: '关联用户',
-                  children: <SensitiveText type="name" value={detail?.user_nickname} />,
+                  children: <SensitiveText allowReveal type="name" value={detail?.user_nickname} />,
                 },
                 {
                   key: 'member',
                   label: '关联会员',
-                  children: <SensitiveText type="name" value={detail?.member_name} />,
+                  children: <SensitiveText allowReveal type="name" value={detail?.member_name} />,
                 },
                 {
                   key: 'remark',

@@ -1,0 +1,39 @@
+/* 患者端手机预览内容（外壳见 @/components/PhonePreview） */
+.institution-phone {
+  &__cover {
+    aspect-ratio: 750 / 420;
+    margin: 0 @spacing-md;
+    overflow: hidden;
+    background: @color-bg-active;
+    border-radius: @radius-md;
+
+    img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    &--empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: @color-text-secondary;
+      .text-auxiliary();
+    }
+  }
+
+  &__body {
+    padding: @spacing-md;
+
+    h4 {
+      margin: 0 0 @spacing-xs;
+      .text-title-card();
+    }
+
+    > p {
+      .text-auxiliary();
+      color: @color-text-primary;
+    }
+  }
+}

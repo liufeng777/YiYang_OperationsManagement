@@ -78,7 +78,7 @@ export default function VerifyDrawer({ open, record, onClose, onAudited }: Verif
             <dl>
               <div>
                 <dt>姓名</dt>
-                <dd><SensitiveText type="name" value={record.targetName} /></dd>
+                <dd><SensitiveText allowReveal type="name" value={record.targetName} /></dd>
               </div>
               <div>
                 <dt>与提交人关系</dt>
@@ -86,11 +86,11 @@ export default function VerifyDrawer({ open, record, onClose, onAudited }: Verif
               </div>
               <div>
                 <dt>身份证号码</dt>
-                <dd><SensitiveText type="idCard" value={record.idCard} /></dd>
+                <dd><SensitiveText allowReveal type="idCard" value={record.idCard} /></dd>
               </div>
               <div>
                 <dt>提交人</dt>
-                <dd><SensitiveText type="name" value={record.submitter.split(' · ')[0]} /></dd>
+                <dd><SensitiveText allowReveal type="name" value={record.submitter.split(' · ')[0]} /></dd>
               </div>
               <div>
                 <dt>提交时间</dt>

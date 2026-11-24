@@ -514,8 +514,8 @@ export default function ActivitySignups() {
             </p>
             <div className="cancel-modal__user">
               <strong>
-                <SensitiveText type="name" value={cancelTarget.name} />{' '}
-                <SensitiveText type="phone" value={cancelTarget.phone} />
+                <SensitiveText allowReveal type="name" value={cancelTarget.name} />{' '}
+                <SensitiveText allowReveal type="phone" value={cancelTarget.phone} />
               </strong>
               <span>
                 {activity?.title ?? '活动'} · {institutionName(cancelTarget)}

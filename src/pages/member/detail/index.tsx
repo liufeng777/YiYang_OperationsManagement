@@ -220,8 +220,8 @@ export default function MemberDetailPage() {
       description={
         detail ? (
           <>
-            <SensitiveText type="name" value={detail.nickname} /> ·{' '}
-            <SensitiveText type="phone" value={detail.phone} /> · 用户编号 U-
+            <SensitiveText allowReveal type="name" value={detail.nickname} /> ·{' '}
+            <SensitiveText allowReveal type="phone" value={detail.phone} /> · 用户编号 U-
             {String(detail.id).padStart(6, '0')}
           </>
         ) : undefined
@@ -242,7 +242,7 @@ export default function MemberDetailPage() {
                 {detail ? registerSourceText(detail) : '—'}
                 {detail?.inviter_name && (
                   <>
-                    {' '}· <SensitiveText type="name" value={detail.inviter_name} />
+                    {' '}· <SensitiveText allowReveal type="name" value={detail.inviter_name} />
                   </>
                 )}
               </span>

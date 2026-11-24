@@ -8,6 +8,7 @@ import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import InstitutionInfoForm from '../components/InstitutionInfoForm'
+import './index.less'
 
 export default function InstitutionCreate() {
   const navigate = useNavigate()
@@ -16,6 +17,7 @@ export default function InstitutionCreate() {
 
   return (
     <PageContainer
+      fixed
       title="新增机构"
       description="登记机构基础信息与患者端展示介绍，保存后进入机构配置页"
       extra={
@@ -24,10 +26,12 @@ export default function InstitutionCreate() {
         </Button>
       }
     >
-      <InstitutionInfoForm
-        onCancel={handleCancel}
-        onSaved={(id) => navigate(`/institution/detail/${id}?tab=services`)}
-      />
+      <div className="institution-create">
+        <InstitutionInfoForm
+          onCancel={handleCancel}
+          onSaved={(id) => navigate(`/institution/detail/${id}?tab=services`)}
+        />
+      </div>
     </PageContainer>
   )
 }

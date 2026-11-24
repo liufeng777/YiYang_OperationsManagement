@@ -219,9 +219,9 @@ export default function InstitutionInfoForm({ detail, onSaved, onCancel }: Insti
                   placeholder="例如：幸福里健康驿站 · 专业照护，安心颐养"
                 />
               </Form.Item>
-              <div className="patient-detail" style={{marginTop: 16}}>
+              <div className="patient-detail institution-editor__patient-detail">
                 <div className="patient-detail__field patient-detail__cover">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className="institution-editor__cover-label">
                     <span className="patient-detail__label">机构封面</span>
                     <p className="patient-detail__tip">建议尺寸 750×420，展示于患者端机构详情页顶部。</p>
                   </div>
@@ -233,15 +233,13 @@ export default function InstitutionInfoForm({ detail, onSaved, onCancel }: Insti
                     beforeUpload={handleCoverUpload}
                   >
                     {coverUrl ? (
-                      <img
-                        src={coverUrl}
-                        alt="机构封面"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
-                      />
+                      <img className="institution-editor__cover-image" src={coverUrl} alt="机构封面" />
                     ) : (
                       <div>
                         <PlusOutlined />
-                        <div style={{ marginTop: 8 }}>{uploading ? '上传中…' : '上传封面'}</div>
+                        <div className="institution-editor__upload-text">
+                          {uploading ? '上传中…' : '上传封面'}
+                        </div>
                       </div>
                     )}
                   </Upload>

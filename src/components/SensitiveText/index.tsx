@@ -100,7 +100,11 @@ export default function SensitiveText({
 }: SensitiveTextProps) {
   const [visible, setVisible] = useState(false)
   const text = value == null ? '' : String(value).trim()
-  const canReveal = allowReveal ?? type !== 'address'
+  /**
+   * 是否提供「查看明文」入口：默认不提供（列表等场景只展示掩码），
+   * 详情页等确需查看明文的场景显式传 allowReveal。
+   */
+  const canReveal = allowReveal ?? false
   const maskedText = useMemo(
     () => (text ? maskSensitiveText(type, text, region) : placeholder),
     [type, text, region, placeholder],
@@ -113,23 +117,22 @@ export default function SensitiveText({
 
   if (!text) return <span className={className}>{placeholder}</span>
 
-  const showPlaintext = visible && canReveal
-  const actionText = showPlaintext ? `隐藏${FIELD_TEXT[type]}` : `查看${FIELD_TEXT[type]}`
-  const disabledText =
-    type === 'address' ? '详细街道门牌仅在履约所需场景开放' : '当前场景无权限查看明文'
+  /** 不允许查看明文：仅展示掩码文本，不渲染眼睛按钮 */
+  if (!canReveal) return <span className={className}>{maskedText}</span>
+
+  const actionText = visible ? `隐藏${FIELD_TEXT[type]}` : `查看${FIELD_TEXT[type]}`
 
   return (
     <span className={`sensitive-text ${className}`.trim()}>
-      <span className="sensitive-text__value">{showPlaintext ? text : maskedText}</span>
-      <Tooltip title={canReveal ? actionText : disabledText}>
+      <span className="sensitive-text__value">{visible ? text : maskedText}</span>
+      <Tooltip title={actionText}>
         <Button
           className="sensitive-text__button"
           type="text"
           size="small"
-          disabled={!canReveal}
-          aria-label={canReveal ? actionText : disabledText}
-          aria-pressed={showPlaintext}
-          icon={showPlaintext ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+          aria-label={actionText}
+          aria-pressed={visible}
+          icon={visible ? <EyeInvisibleOutlined /> : <EyeOutlined />}
           onClick={() => setVisible((current) => !current)}
         />
       </Tooltip>

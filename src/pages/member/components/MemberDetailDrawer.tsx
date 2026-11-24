@@ -67,7 +67,7 @@ export default function MemberDetailDrawer({
             {
               key: 'name',
               label: '姓名',
-              children: <SensitiveText type="name" value={detail?.name} />,
+              children: <SensitiveText allowReveal type="name" value={detail?.name} />,
             },
             {
               key: 'gender',
@@ -78,12 +78,12 @@ export default function MemberDetailDrawer({
             {
               key: 'phone',
               label: '手机号',
-              children: <SensitiveText type="phone" value={detail?.phone} />,
+              children: <SensitiveText allowReveal type="phone" value={detail?.phone} />,
             },
             {
               key: 'id_card',
               label: '证件号',
-              children: <SensitiveText type="idCard" value={detail?.id_card} />,
+              children: <SensitiveText allowReveal type="idCard" value={detail?.id_card} />,
             },
             {
               key: 'institution_id',

@@ -1,57 +1,19 @@
+/* 机构详情页骨架、Tab 与列表卡片；服务配置和弹层样式见 ServicesTab.less。 */
 .institution-detail {
   height: 100%;
+  min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  .institution-summary {
-    .card-surface();
-    .ant-card-body {
-      display: grid;
-      grid-template-columns: minmax(220px, 1.2fr) minmax(280px, 1.6fr) minmax(160px, 0.8fr) auto;
-      gap: @spacing-xl;
-      align-items: center;
-      padding: @spacing-md @spacing-lg ;
-    }
-
-    &__main {
-      h3 {
-        margin: 0;
-        .text-title-card();
-      }
-
-      p {
-        margin: @spacing-2xs 0 0;
-        .text-auxiliary();
-      }
-    }
-
-    &__item {
-      display: flex;
-      flex-direction: column;
-
-      span {
-        .text-auxiliary();
-      }
-
-      strong {
-        margin-top: @spacing-2xs;
-        .text-body-medium();
-      }
-    }
-
-    &__status {
-      justify-self: end;
-      margin-inline-end: 0;
-    }
-  }
+  gap: @spacing-md;
 
   .detail-tabs-card {
-    flex-shrink: 0;
+    flex: none;
     .card-surface();
-    .ant-card-body {
-      padding: 0 4px !important;
-    }
 
+    .ant-card-body {
+      padding: 0 @spacing-2xs !important;
+    }
 
     .ant-tabs {
       .ant-tabs-nav {
@@ -73,10 +35,9 @@
   }
 
   .detail-card {
-    flex: 1;
+    flex: 1 1 0;
     min-height: 0;
     overflow: hidden;
-    margin-top: @spacing-md;
     display: flex;
     flex-direction: column;
     .card-surface();
@@ -88,11 +49,12 @@
       flex-direction: column;
     }
 
-    /* 服务项目 / 医护人员：卡片标题与分页固定，仅表体在剩余空间内滚动 */
+    /* 服务项目 / 医护人员：标题与分页固定，仅表体在剩余空间内滚动。 */
     .ant-table-wrapper {
       flex: 1;
       min-height: 0;
       overflow: hidden;
+
       .ant-spin,
       .ant-spin-nested-loading,
       .ant-spin-container {
@@ -107,10 +69,7 @@
         flex-direction: column;
       }
 
-      .ant-spin-container {
-        min-height: 0;
-      }
-
+      .ant-spin-container,
       .ant-table,
       .ant-table-container,
       .ant-table-body {
@@ -165,283 +124,6 @@
 
     &__alert {
       margin-bottom: @spacing-md;
-    }
-  }
-
-  .service-config {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-    gap: @spacing-md;
-
-    &__panel {
-      padding: @spacing-md;
-      background: @color-bg-page;
-      border-radius: @radius-sm;
-    }
-
-    &__title {
-      height: 34px;
-      display: flex;
-      align-items: center;
-      gap: @spacing-md;
-      margin-bottom: @spacing-md;
-      .text-body-medium();
-    }
-
-    &__grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: @spacing-md;
-
-      &--four {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-      }
-
-      label {
-        display: flex;
-        flex-direction: column;
-        gap: @spacing-2xs;
-
-        span {
-          .text-auxiliary();
-        }
-      }
-    }
-  }
-
-  .service-actions {
-    display: flex;
-    align-items: center;
-    white-space: nowrap;
-
-    .ant-btn {
-      padding-inline: @spacing-2xs;
-    }
-  }
-
-  .inline-link {
-    height: auto;
-    margin-left: @spacing-2xs;
-    padding: 0;
-    vertical-align: baseline;
-  }
-
-  .service-status {
-    display: inline-flex;
-    padding: @spacing-2xs @spacing-xs;
-    font-size: @font-size-auxiliary;
-    border-radius: @radius-full;
-
-    &--on {
-      color: @color-primary;
-      background: @color-primary-light;
-    }
-
-    &--off {
-      color: @color-text-secondary;
-      background: @color-bg-active;
-    }
-  }
-}
-
-/* ===== 添加服务 Drawer ===== */
-.service-drawer {
-  &__title {
-    h3 {
-      margin: 0;
-      .text-title-module();
-    }
-
-    p {
-      margin: @spacing-2xs 0 0;
-      .text-auxiliary();
-    }
-  }
-
-  &__alert {
-    margin-bottom: @spacing-md;
-  }
-
-  &__search {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 160px;
-    gap: @spacing-sm;
-    margin-bottom: @spacing-md;
-  }
-
-  &__categories {
-    display: flex;
-    gap: @spacing-sm;
-    margin-bottom: @spacing-md;
-
-    button {
-      padding: @spacing-2xs @spacing-md;
-      color: @color-text-secondary;
-      background: @color-bg-card;
-      border: 1px solid @color-border;
-      border-radius: @radius-full;
-      cursor: pointer;
-
-      &.is-active {
-        color: @color-primary;
-        border-color: @color-primary;
-        box-shadow: inset 0 0 0 1px @color-primary;
-      }
-    }
-  }
-
-  &__footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    > span {
-      .text-auxiliary();
-    }
-
-    > div {
-      display: flex;
-      gap: @spacing-sm;
-    }
-  }
-
-  /*
-   * 内容区不整体滚动：Drawer body 改为 flex 列，顶部提示 / 搜索 / 分类保持固定，
-   * 滚动交给下方的服务池列表（数据较多时只有列表内部滚动）。
-   */
-  .ant-drawer-body {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-
-    > .ant-table-wrapper {
-      flex: 1;
-      min-height: 0;
-    }
-  }
-
-  /* 服务池列表：占满剩余高度，表体滚动、表头吸顶 */
-  .ant-table-wrapper {
-    .ant-spin,
-    .ant-spin-nested-loading,
-    .ant-spin-container,
-    .ant-table {
-      height: 100%;
-      min-height: 0;
-    }
-
-    .ant-table-container {
-      flex: 1;
-      min-height: 0;
-      .ant-table-content {
-        height: 100%;
-        overflow: auto;
-      }
-    }
-
-    .ant-table {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .ant-table-content,
-    .ant-table-body {
-      flex: 1;
-      min-height: 0;
-      overflow: auto;
-      max-height: none;
-    }
-
-    .ant-table-thead > tr > th {
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-  }
-}
-
-/* ===== 删除确认弹窗 ===== */
-.delete-modal {
-  &__warning {
-    padding: @spacing-md;
-    background: fade(@color-danger, 8%);
-    border-radius: @radius-sm;
-
-    strong {
-      color: @color-danger;
-      .text-body-medium();
-    }
-
-    p {
-      margin: @spacing-2xs 0 0;
-      .text-auxiliary();
-    }
-  }
-
-  &__service {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: @spacing-md;
-    padding: @spacing-md;
-    background: @color-bg-page;
-    border-radius: @radius-sm;
-    .text-body-medium();
-  }
-
-  &__conditions {
-    margin-top: @spacing-md;
-
-    p {
-      margin: 0 0 @spacing-xs;
-      .text-body-medium();
-    }
-
-    > div {
-      display: flex;
-      flex-direction: column;
-      gap: @spacing-sm;
-      padding: @spacing-md;
-      border: 1px solid @color-border;
-      border-radius: @radius-sm;
-
-      span {
-        .text-body();
-        color: @color-text-secondary;
-
-        .anticon {
-          margin-right: @spacing-xs;
-          color: @color-primary;
-        }
-      }
-    }
-  }
-
-  &__footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: @spacing-sm;
-  }
-}
-
-@media (max-width: 1200px) {
-  .institution-detail {
-    .institution-summary {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    .service-config {
-      grid-template-columns: 1fr;
-    }
-  }
-}
-
-@media (max-width: 720px) {
-  .institution-detail {
-    .institution-summary,
-    .service-config__grid,
-    .service-config__grid--four {
-      grid-template-columns: 1fr;
     }
   }
 }
