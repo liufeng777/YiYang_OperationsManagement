@@ -21,6 +21,16 @@ export const WORK_ORDER_STATUS_TEXT: Record<number, string> = {
   7: '已取消',
 }
 
+const WORK_ORDER_STATUS_TONE: Record<number, string> = {
+  1: 'warning',
+  2: 'warning',
+  3: 'info',
+  4: 'info',
+  5: 'success',
+  6: 'success',
+  7: 'danger',
+}
+
 const fmtTime = (seconds?: number | null, format = 'YYYY-MM-DD HH:mm') =>
   seconds ? formatDateTime(seconds * 1000, format) : '—'
 
@@ -84,7 +94,7 @@ export const workOrderColumns: ColumnsType<WorkOrderDTO> = [
     width: 130,
     render: (_, record) => (
       <div className="work-order-table__status">
-        <span className={`work-status work-status--${record.wo_status}`}>
+        <span className={`status-btn status--${WORK_ORDER_STATUS_TONE[record.wo_status] ?? 'cancel'}`}>
           {WORK_ORDER_STATUS_TEXT[record.wo_status] ?? '—'}
         </span>
         {record.cancel_reason ? (

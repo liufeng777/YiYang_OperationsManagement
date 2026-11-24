@@ -16,7 +16,7 @@ import SensitiveText from '@/components/SensitiveText'
 import { institutionApi, orderApi } from '@/api'
 import type { OrderDetail, OrderListParams } from '@/api/modules/order'
 import { downloadBlob, formatAmount, formatDateTime } from '@/utils'
-import { ORDER_STATUS_TEXT, canCancelOrder, canRefundOrder } from './constants'
+import { ORDER_STATUS_TEXT, ORDER_STATUS_TONE, canCancelOrder, canRefundOrder } from './constants'
 import OrderCancelModal from './components/OrderCancelModal'
 import OrderRefundModal from './components/OrderRefundModal'
 import './list.less'
@@ -244,7 +244,7 @@ export default function OrderList() {
         key: 'order_status',
         width: 100,
         render: (_, record) => (
-          <span className={`order-status order-status--${record.order_status}`}>
+          <span className={`status-btn status--${ORDER_STATUS_TONE[record.order_status] ?? 'cancel'}`}>
             {ORDER_STATUS_TEXT[record.order_status] ?? '—'}
           </span>
         ),

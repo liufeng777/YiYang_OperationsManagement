@@ -158,27 +158,6 @@
     }
   }
 
-  .pool-status {
-    display: inline-flex;
-    padding: @spacing-2xs @spacing-xs;
-    font-size: @font-size-auxiliary;
-    border-radius: @radius-full;
-
-    &--on {
-      color: @color-primary;
-      background: @color-primary-light;
-    }
-
-    &--draft {
-      color: @color-text-secondary;
-      background: @color-bg-active;
-    }
-
-    &--off {
-      color: @color-danger;
-      background: fade(@color-danger, 12%);
-    }
-  }
 
   .pool-actions {
     display: flex;
@@ -324,10 +303,7 @@
 
       .pool-category__disabled {
         flex: none; /* 标识不参与压缩 */
-        align-self: flex-start; /* Tag 作为列向 flex 子项时不撑满整行 */
-        font-style: normal;
-        font-size: @font-size-auxiliary;
-        color: @color-danger;
+        align-self: flex-start;
         white-space: nowrap;
       }
     }

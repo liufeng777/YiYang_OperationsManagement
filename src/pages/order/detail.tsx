@@ -7,7 +7,7 @@
  *   右栏：订单进度（status_history 以 Timeline 渲染，按时间升序，最后一条为当前状态）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, Descriptions, Empty, Spin, Table, Tag, Timeline } from 'antd'
+import { Button, Card, Descriptions, Empty, Spin, Table, Timeline } from 'antd'
 import type { DescriptionsProps } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { ArrowLeftOutlined } from '@ant-design/icons'
@@ -18,8 +18,8 @@ import { institutionApi, orderApi, workorderApi } from '@/api'
 import type { OrderConsumable, OrderDetail, OrderRefundSummary } from '@/api/modules/order'
 import type { WorkOrderDTO } from '@/api/modules/workorder'
 import { formatAmount, formatDateTime } from '@/utils'
-import { REFUND_STATUS_TEXT } from '@/pages/refund/list'
-import { ORDER_STATUS_TEXT } from './constants'
+import { REFUND_STATUS_TEXT, REFUND_STATUS_TONE } from '@/pages/refund/list'
+import { ORDER_STATUS_TEXT, ORDER_STATUS_TONE } from './constants'
 import { WorkOrderTable } from './workOrderTable'
 import './detail.less'
 
@@ -33,16 +33,6 @@ const getTimelineColor = (statusName?: string) => {
   if (/失败|拒绝|停止|取消|驳回|终止|异常|作废/.test(text)) return 'red'
   if (/完成|成功|通过/.test(text)) return 'green'
   return 'gray'
-}
-
-/** 退款状态标签色（refund_status：1-待医护审批 2-审批通过 3-退款中 4-已退款 5-已拒绝 6-退款失败） */
-const REFUND_STATUS_COLOR: Record<number, string> = {
-  1: 'gold',
-  2: 'blue',
-  3: 'blue',
-  4: 'success',
-  5: 'default',
-  6: 'error',
 }
 
 /** 耗材明细列 */
@@ -250,9 +240,9 @@ export default function OrderDetailPage() {
         key: 'refund_status',
         width: 130,
         render: (value: number) => (
-          <Tag color={REFUND_STATUS_COLOR[value] ?? 'default'}>
+          <span className={`status-btn status--${REFUND_STATUS_TONE[value] ?? 'cancel'}`}>
             {REFUND_STATUS_TEXT[value] ?? value ?? '—'}
-          </Tag>
+          </span>
         ),
       },
       {
@@ -289,7 +279,7 @@ export default function OrderDetailPage() {
           <Card variant="borderless" className="order-detail__summary">
             <div className="summary-item">
               <span>订单状态</span>
-              <em className={`order-status order-status--${order?.order_status ?? 0}`}>
+              <em className={`status-btn status--${ORDER_STATUS_TONE[order?.order_status ?? 0] ?? 'cancel'}`}>
                 {ORDER_STATUS_TEXT[order?.order_status ?? 0] ?? '—'}
               </em>
             </div>

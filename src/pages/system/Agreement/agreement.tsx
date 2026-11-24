@@ -62,7 +62,7 @@ export default function AgreementList() {
         key: 'status',
         width: 100,
         render: (value: AgreementItem['status']) => (
-          <span className={`agreement-status agreement-status--${value}`}>
+          <span className={`status-btn status--${value === 'effective' ? 'success' : 'cancel'}`}>
             {value === 'effective' ? '已生效' : '草稿'}
           </span>
         ),

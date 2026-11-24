@@ -38,39 +38,5 @@
     flex-shrink: 0;
   }
 
-  /* 线索状态（指南 §2.1）：1-待跟进 2-跟进中 3-已转化 4-转化失败 9-流失 */
-  .lead-status {
-    display: inline-flex;
-    align-items: center;
-    gap: @spacing-2xs;
-    padding: @spacing-2xs @spacing-xs;
-    font-size: @font-size-auxiliary;
-    border-radius: @radius-full;
-
-    &--1 {
-      color: darken(@color-warning, 18%);
-      background: fade(@color-warning, 18%);
-    }
-
-    &--2 {
-      color: @color-info;
-      background: fade(@color-info, 12%);
-    }
-
-    &--3 {
-      color: @color-primary;
-      background: @color-primary-light;
-    }
-
-    &--4 {
-      color: @color-danger;
-      background: fade(@color-danger, 12%);
-    }
-
-    &--9 {
-      color: @color-text-secondary;
-      background: @color-bg-active;
-    }
-  }
 }
 

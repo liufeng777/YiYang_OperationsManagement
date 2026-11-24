@@ -14,54 +14,6 @@
   margin-bottom: @spacing-md;
 }
 
-/* 奖励状态：1-未奖励（警告色） 2-已奖励（主色） 3-已过期（灰） 9-作废（危险色） */
-.referral-reward {
-  display: inline-flex;
-  align-items: center;
-  padding: @spacing-2xs @spacing-xs;
-  color: @color-text-secondary;
-  font-size: @font-size-auxiliary;
-  background: @color-bg-page;
-  border-radius: @radius-full;
-  white-space: nowrap;
-
-  &--1 {
-    color: @color-warning;
-    background: fade(@color-warning, 12%);
-  }
-
-  &--2 {
-    color: @color-primary;
-    background: @color-primary-light;
-  }
-
-  &--9 {
-    color: @color-danger;
-    background: fade(@color-danger, 10%);
-  }
-}
-
-/* 状态：1-待生效（信息色） 2-已生效（主色） 9-无效（灰） */
-.referral-status {
-  display: inline-flex;
-  align-items: center;
-  padding: @spacing-2xs @spacing-xs;
-  color: @color-text-secondary;
-  font-size: @font-size-auxiliary;
-  background: @color-bg-page;
-  border-radius: @radius-full;
-  white-space: nowrap;
-
-  &--1 {
-    color: @color-info;
-    background: fade(@color-info, 10%);
-  }
-
-  &--2 {
-    color: @color-primary;
-    background: @color-primary-light;
-  }
-}
 
 .referral-placeholder {
   display: flex;

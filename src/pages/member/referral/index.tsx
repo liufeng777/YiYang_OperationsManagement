@@ -50,6 +50,19 @@ const REWARD_STATUS_TEXT: Record<number, string> = {
   9: '作废',
 }
 
+const STATUS_TONE: Record<number, string> = {
+  1: 'info',
+  2: 'success',
+  9: 'cancel',
+}
+
+const REWARD_STATUS_TONE: Record<number, string> = {
+  1: 'warning',
+  2: 'success',
+  3: 'cancel',
+  9: 'danger',
+}
+
 /** 时间戳格式化：后端时间为 UTC 秒（小于 1e12 按秒处理），缺失展示 — */
 const formatTs = (value?: number) => {
   if (!value) return '—'
@@ -167,7 +180,7 @@ export default function ReferralList() {
         key: 'reward_status',
         width: 100,
         render: (value: number) => (
-          <span className={`referral-reward referral-reward--${value}`}>
+          <span className={`status-btn status--${REWARD_STATUS_TONE[value] ?? 'cancel'}`}>
             {REWARD_STATUS_TEXT[value] ?? value ?? '—'}
           </span>
         ),
@@ -178,7 +191,7 @@ export default function ReferralList() {
         key: 'status',
         width: 100,
         render: (value: number) => (
-          <span className={`referral-status referral-status--${value}`}>
+          <span className={`status-btn status--${STATUS_TONE[value] ?? 'cancel'}`}>
             {STATUS_TEXT[value] ?? value ?? '—'}
           </span>
         ),

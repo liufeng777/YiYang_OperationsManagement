@@ -99,19 +99,20 @@ export function exportReconciliations(
 /* §6.3 支付渠道流水（权限 finance:channel-log，仅查看）                  */
 /* ------------------------------------------------------------------ */
 
-/** 渠道流水  */
+/** 渠道流水：金额单位为元，时间字段为 UTC 秒级时间戳 */
 export interface PaymentChannelLog {
-  id: number
-  channel_id: number
-  channel_code: string
-  channel_trade_no: string
+  log_id: number
+  transaction_id: string
+  channel_type: number
   order_type: number
   order_id: number
-  amount: number
-  transaction_fee: number
+  order_no: string
+  amount: string
+  transaction_fee: string
   status: number
+  paid_at: number
   matched_at: number | null
-  created_at: number
+  create_at: number
 }
 
 /** 渠道流水列表 GET /api/admin/payment-channel-logs

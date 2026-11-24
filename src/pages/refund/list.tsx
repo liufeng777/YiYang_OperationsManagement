@@ -29,6 +29,16 @@ export const REFUND_STATUS_TEXT: Record<number, string> = {
   8: '待财务审批'
 }
 
+export const REFUND_STATUS_TONE: Record<number, string> = {
+  1: 'warning',
+  2: 'info',
+  3: 'info',
+  4: 'success',
+  5: 'cancel',
+  6: 'danger',
+  8: 'warning',
+}
+
 /** 退款类型：1-用户申请 2-专业审核未通过 3-其他 */
 export const REFUND_TYPE_TEXT: Record<number, string> = {
   1: '用户申请',
@@ -271,7 +281,7 @@ export default function RefundList() {
         key: 'status',
         width: 110,
         render: (_, record) => (
-          <span className={`refund-status refund-status--${record.status}`}>
+          <span className={`status-btn status--${REFUND_STATUS_TONE[record.status] ?? 'cancel'}`}>
             {REFUND_STATUS_TEXT[record.status] ?? '—'}
           </span>
         ),

@@ -5,7 +5,7 @@
  * 说明：后端当前列表为空，字段按接口文档契约；关键字 / 类型 / 发布状态全部下推后端（前端不做本地过滤）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, DatePicker, Drawer, Form, Input, Select, Space, Tag, Upload } from 'antd'
+import { App, Button, Card, DatePicker, Drawer, Form, Input, Select, Space, Upload } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons'
@@ -22,10 +22,10 @@ const announcementTypeMap: Record<number, string> = {
   4: '运营通知',
 }
 
-const publishStatusMap: Record<AnnouncementDTO['publish_status'], { text: string; color: string }> = {
-  1: { text: '草稿', color: 'default' },
-  2: { text: '已发布', color: 'success' },
-  3: { text: '已撤回', color: 'warning' },
+const publishStatusMap: Record<AnnouncementDTO['publish_status'], { text: string; tone: string }> = {
+  1: { text: '草稿', tone: 'cancel' },
+  2: { text: '已发布', tone: 'success' },
+  3: { text: '已撤回', tone: 'warning' },
 }
 
 /** 公告封面受控上传（配合 Form.Item）：本地预览 + 后台上传，value 为服务器的封面地址 */
@@ -309,7 +309,9 @@ export default function AnnouncementsTab() {
         key: 'publish_status',
         width: 100,
         render: (value: AnnouncementDTO['publish_status']) => (
-          <Tag color={publishStatusMap[value]?.color}>{publishStatusMap[value]?.text ?? value}</Tag>
+          <span className={`status-btn status--${publishStatusMap[value]?.tone ?? 'cancel'}`}>
+            {publishStatusMap[value]?.text ?? value}
+          </span>
         ),
       },
       {

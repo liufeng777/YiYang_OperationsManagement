@@ -464,7 +464,7 @@ export default function ServicesTab({ detail, onCountChange }: ServicesTabProps)
             </div>
             <div className="delete-modal__conditions">
               <p>
-                删除条件 <Tag color="green">已满足</Tag>
+                删除条件 <span className="status-btn status--success">已满足</span>
               </p>
               <div>
                 <span>

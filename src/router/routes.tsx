@@ -192,6 +192,11 @@ export const routes: RouteConfig[] = [
         component: lazy(() => import('@/pages/finance/channel-log')),
       },
       {
+        path: 'channel-log/:id',
+        meta: { title: '渠道流水详情', hideInMenu: true },
+        component: lazy(() => import('@/pages/finance/channel-log/detail')),
+      },
+      {
         path: 'summary/:id',
         meta: { title: '对账详情', hideInMenu: true },
         component: lazy(() => import('@/pages/finance/reconcile/detail')),

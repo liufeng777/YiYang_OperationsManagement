@@ -38,35 +38,4 @@
     // }
   }
 
-  .reconcile-status {
-    display: inline-flex;
-    align-items: center;
-    gap: @spacing-2xs;
-    padding: @spacing-2xs @spacing-xs;
-    font-size: @font-size-auxiliary;
-    border-radius: @radius-full;
-
-    // &::before {
-    //   width: 6px;
-    //   height: 6px;
-    //   border-radius: @radius-full;
-    //   background: currentColor;
-    //   content: '';
-    // }
-
-    &--pending {
-      color: darken(@color-warning, 18%);
-      background: fade(@color-warning, 18%);
-    }
-
-    &--confirmed {
-      color: @color-primary;
-      background: @color-primary-light;
-    }
-
-    &--diff {
-      color: @color-danger;
-      background: fade(@color-danger, 12%);
-    }
-  }
 }

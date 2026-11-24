@@ -21,7 +21,6 @@ import {
   InputNumber,
   Select,
   Space,
-  Tag,
   Upload,
 } from 'antd'
 import type { Dayjs } from 'dayjs'
@@ -319,9 +318,9 @@ export default function ContentHome() {
                   <div className="banner-row__info">
                     <div className="banner-row__title">
                       <strong>{record.title}</strong>
-                      <Tag color={record.status === STATUS_ENABLED ? 'success' : 'default'}>
+                      <span className={`status-btn status--${record.status === STATUS_ENABLED ? 'success' : 'cancel'}`}>
                         {record.status === STATUS_ENABLED ? '展示中' : '已停用'}
-                      </Tag>
+                      </span>
                     </div>
                     <span>
                       {formatLink(record)} · 生效 {formatRange(record)} · 排序 {record.sort ?? 0}

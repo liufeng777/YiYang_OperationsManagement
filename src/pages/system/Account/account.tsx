@@ -265,7 +265,7 @@ export default function AccountList() {
       key: 'status',
       width: 100,
       render: (value: number) => (
-        <span className={`account-status${value === STATUS_ENABLED ? ' is-on' : ''}`}>
+        <span className={`status-btn status--${value === STATUS_ENABLED ? 'success' : 'cancel'}`}>
           {statusText[value] ?? '—'}
         </span>
       ),

@@ -28,8 +28,8 @@ const registrationStatusText: Record<number, string> = {
   3: '已取消',
 }
 
-/** 状态 → 样式修饰（对应 index.less 的 .signup-status--*） */
-const statusTone: Record<number, string> = { 1: 'signed', 2: 'checked', 3: 'cancelled' }
+/** 报名状态统一使用全局状态色。 */
+const statusTone: Record<number, string> = { 1: 'info', 2: 'success', 3: 'cancel' }
 
 /** 报名来源文案 */
 const sourceText: Record<string, string> = {
@@ -320,7 +320,7 @@ export default function ActivitySignups() {
         key: 'status',
         width: 100,
         render: (value: number) => (
-          <span className={`signup-status signup-status--${statusTone[value] ?? 'cancelled'}`}>
+          <span className={`status-btn status--${statusTone[value] ?? 'cancel'}`}>
             {registrationStatusText[value] ?? '—'}
           </span>
         ),

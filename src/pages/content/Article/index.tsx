@@ -27,11 +27,11 @@ const statusText: Record<number, string> = {
   3: '已下架',
 }
 
-/** 发布状态 → 样式修饰类（对齐设计稿 article-status--*） */
+/** 发布状态统一使用全局状态色。 */
 const statusClass: Record<number, string> = {
-  1: 'draft',
-  2: 'published',
-  3: 'offline',
+  1: 'cancel',
+  2: 'success',
+  3: 'cancel',
 }
 
 const statusOptions: Array<{ value: number; label: string }> = [
@@ -230,7 +230,7 @@ export default function ArticleList() {
         key: 'status',
         width: 100,
         render: (value: number) => (
-          <span className={`article-status article-status--${statusClass[value] ?? 'draft'}`}>
+          <span className={`status-btn status--${statusClass[value] ?? 'cancel'}`}>
             {statusText[value] ?? value}
           </span>
         ),

@@ -714,7 +714,7 @@ export default function ServicePoolList() {
                 >
                   <span className="pool-category__name">
                     {item.brief ? <Tooltip title={item.brief}><span className='name-value'>{item.name}</span></Tooltip> : <span className='name-value'>{item.name}</span>}
-                    {item.status === 9 && <Tag className="pool-category__disabled">已停用</Tag>}
+                    {item.status === 9 && <span className="status-btn status--danger pool-category__disabled">已停用</span>}
                   </span>
                   <Dropdown
                     menu={buildCategoryMenu(item, index)}

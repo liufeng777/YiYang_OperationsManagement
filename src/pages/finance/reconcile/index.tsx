@@ -24,19 +24,17 @@ const RECONCILE_STATUS_TEXT: Record<number, string> = {
   3: '有差异',
 }
 
+const RECONCILE_STATUS_TONE: Record<number, string> = {
+  1: 'warning',
+  2: 'success',
+  3: 'danger',
+}
+
 /** 对账类型：1-日结 2-周结 3-月结 */
 const RECONCILE_TYPE_TEXT: Record<number, string> = {
   1: '日结',
   2: '周结',
   3: '月结',
-}
-
-/** 支付渠道：列表仅返回 channel_type，不再依赖旧版渠道名称字段 */
-const CHANNEL_TYPE_TEXT: Record<number, string> = {
-  1: '微信支付',
-  2: '支付宝',
-  3: '银联',
-  9: '其他',
 }
 
 const PAGE_SIZE = 10
@@ -250,7 +248,7 @@ export default function ReconcileList() {
       width: 100,
       align: 'center',
       render: (_, record) => (
-        <span className={`reconcile-status reconcile-status--${record.status}`}>
+        <span className={`status-btn status--${RECONCILE_STATUS_TONE[record.status] ?? 'cancel'}`}>
           {RECONCILE_STATUS_TEXT[record.status] ?? '—'}
         </span>
       ),

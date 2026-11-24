@@ -19,7 +19,7 @@ import type { OrderDetail } from '@/api/modules/order'
 import type { RefundItem } from '@/api/modules/refund'
 import { formatAmount, formatDateTime } from '@/utils'
 import RefundApproveModal from './components/RefundApproveModal'
-import { REFUND_STATUS_TEXT, REFUND_TYPE_TEXT } from './list'
+import { REFUND_STATUS_TEXT, REFUND_STATUS_TONE, REFUND_TYPE_TEXT } from './list'
 import './detail.less'
 
 /** 订单退款类型 */
@@ -273,7 +273,7 @@ export default function RefundDetail() {
           <Card variant="borderless" className="refund-detail__summary">
             <div className="summary-item">
               <span>退款状态</span>
-              <em className={`refund-status refund-status--${refund?.status ?? 0}`}>
+              <em className={`status-btn status--${REFUND_STATUS_TONE[refund?.status ?? 0] ?? 'cancel'}`}>
                 {REFUND_STATUS_TEXT[refund?.status ?? 0] ?? '—'}
               </em>
             </div>
@@ -347,7 +347,7 @@ export default function RefundDetail() {
                   children: (
                     <div className="channel-log">
                       <div className="channel-log__head">
-                        <em className={`refund-status refund-status--${log.status}`}>
+                        <em className={`status-btn status--${REFUND_STATUS_TONE[log.status] ?? 'cancel'}`}>
                           {REFUND_STATUS_TEXT[log.status] ?? log.status}
                         </em>
                         <strong>{log.channel || '—'}</strong>

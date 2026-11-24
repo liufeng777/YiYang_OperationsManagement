@@ -155,7 +155,9 @@ export default function VerifyList() {
         key: 'status',
         width: 100,
         render: (value: VerifyStatus) => (
-          <span className={`verify-status verify-status--${value}`}>{statusText[value]}</span>
+          <span className={`status-btn status--${value === 'approved' ? 'success' : value === 'rejected' ? 'danger' : 'warning'}`}>
+            {statusText[value]}
+          </span>
         ),
       },
       {

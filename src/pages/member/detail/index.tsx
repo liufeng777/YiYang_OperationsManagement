@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Button, Card, Table, Tag } from 'antd'
+import { Button, Card, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
@@ -21,8 +21,7 @@ import { registerSourceText } from '@/api/modules/memberOperation'
 import type { RegisteredUserRow } from '@/api/modules/memberOperation'
 import { formatAmount, formatDateTime } from '@/utils'
 import { GENDER_TEXT } from '../constants';
-import { ORDER_STATUS_TEXT } from '@/pages/order/constants'
-import '@/pages/order/list.less'
+import { ORDER_STATUS_TEXT, ORDER_STATUS_TONE } from '@/pages/order/constants'
 import './index.less'
 
 /** 有效订单状态（用于购买情况统计） */
@@ -178,7 +177,7 @@ export default function MemberDetailPage() {
       key: 'order_status',
       width: 110,
       render: (_, record) => (
-        <span className={`order-status order-status--${record.order_status}`}>
+        <span className={`status-btn status--${ORDER_STATUS_TONE[record.order_status] ?? 'cancel'}`}>
           {ORDER_STATUS_TEXT[record.order_status] ?? '—'}
         </span>
       ),
@@ -267,9 +266,9 @@ export default function MemberDetailPage() {
               <span className="member-detail__field-label">账号状态</span>
               <span className="member-detail__field-value">
                 {detail ? (
-                  <Tag color={detail.status === 1 ? 'success' : 'default'}>
+                  <span className={`status-btn status--${detail.status === 1 ? 'success' : 'cancel'}`}>
                     {detail.status === 1 ? '正常' : detail.status === 9 ? '已禁用' : `状态 ${detail.status}`}
-                  </Tag>
+                  </span>
                 ) : (
                   '—'
                 )}

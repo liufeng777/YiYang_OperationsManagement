@@ -280,8 +280,11 @@ export default function TemplatesTab() {
         dataIndex: 'status',
         key: 'status',
         width: 90,
-        render: (value: CommonStatus) =>
-          value === STATUS_ENABLED ? <Tag color="success">启用</Tag> : <Tag color="default">停用</Tag>,
+        render: (value: CommonStatus) => (
+          <span className={`status-btn status--${value === STATUS_ENABLED ? 'success' : 'cancel'}`}>
+            {value === STATUS_ENABLED ? '启用' : '停用'}
+          </span>
+        ),
       },
       {
         title: '操作',

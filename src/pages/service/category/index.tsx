@@ -121,7 +121,7 @@ export default function ServiceCategoryPage() {
         key: 'status',
         width: 110,
         render: (value: number) => (
-          <span className={`category-status category-status--${value === 1 ? 'enabled' : 'disabled'}`}>
+          <span className={`status-btn status--${value === 1 ? 'success' : 'cancel'}`}>
             {value === 1 ? '启用中' : '已停用'}
           </span>
         ),

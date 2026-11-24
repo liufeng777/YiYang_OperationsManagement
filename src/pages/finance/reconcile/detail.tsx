@@ -6,7 +6,7 @@
  * 汇总金额为元（字符串）；对账周期为 ISO 字符串，结算 / 平账时间为秒级时间戳
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Descriptions, Select, Space, Spin, Table } from 'antd'
+import { App, Button, Card, Descriptions, Space, Spin, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { ArrowLeftOutlined, CheckOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -45,6 +45,19 @@ const MATCH_STATUS_TEXT: Record<number, string> = {
   4: '仅平台有',
 }
 
+const RECONCILE_STATUS_TONE: Record<number, string> = {
+  1: 'warning',
+  2: 'success',
+  3: 'danger',
+}
+
+const MATCH_STATUS_TONE: Record<number, string> = {
+  1: 'success',
+  2: 'danger',
+  3: 'danger',
+  4: 'danger',
+}
+
 const PAGE_SIZE = 10
 
 export default function ReconcileDetail() {
@@ -61,7 +74,7 @@ export default function ReconcileDetail() {
   const [linesLoading, setLinesLoading] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
-  const [matchStatus, setMatchStatus] = useState<number | null>(null)
+  const [matchStatus] = useState<number | null>(null)
 
   /** 拉取对账单头部信息 */
   const fetchDetail = useCallback(async () => {
@@ -233,7 +246,7 @@ export default function ReconcileDetail() {
       key: 'status',
       width: 120,
       render: (_, record) => (
-        <span className={`match-status match-status--${record.status}`}>
+        <span className={`status-btn status--${MATCH_STATUS_TONE[record.status] ?? 'cancel'}`}>
           {MATCH_STATUS_TEXT[record.status] ?? record.status ?? '—'}
         </span>
       ),
@@ -279,7 +292,7 @@ export default function ReconcileDetail() {
             </div>
             <div className="summary-item">
               <span>对账状态</span>
-              <span style={{width: '54px', textAlign: 'center'}} className={`reconcile-status reconcile-status--${detail?.status ?? 0}`}>
+              <span className={`status-btn status--${RECONCILE_STATUS_TONE[detail?.status ?? 0] ?? 'cancel'}`}>
                 {RECONCILE_STATUS_TEXT[detail?.status ?? 0] ?? '—'}
               </span>
             </div>

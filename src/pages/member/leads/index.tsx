@@ -22,6 +22,14 @@ import './index.less'
 
 const DEFAULT_PAGE_SIZE = 10
 
+const LEAD_STATUS_TONE: Record<number, string> = {
+  1: 'warning',
+  2: 'info',
+  3: 'success',
+  4: 'danger',
+  9: 'cancel',
+}
+
 interface LeadFilters {
   keyword: string
   status: number | null
@@ -251,7 +259,7 @@ export default function LeadList() {
       key: 'status',
       width: 100,
       render: (_, record) => (
-        <span className={`lead-status lead-status--${record.status}`}>
+        <span className={`status-btn status--${LEAD_STATUS_TONE[record.status] ?? 'cancel'}`}>
           {LEAD_STATUS_TEXT[record.status] ?? record.status}
         </span>
       ),

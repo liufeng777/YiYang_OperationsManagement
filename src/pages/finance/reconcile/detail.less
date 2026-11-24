@@ -72,51 +72,6 @@
     color: @color-danger;
   }
 
-  /* 对账状态（共通 §6.4）：1-对账中 2-已平账 3-有差异 */
-  .reconcile-status {
-    display: inline-flex;
-    align-items: center;
-    gap: @spacing-2xs;
-    padding: @spacing-2xs @spacing-xs;
-    font-size: @font-size-auxiliary;
-    border-radius: @radius-full;
-    text-align: center;
-
-    &--1 {
-      color: darken(@color-warning, 18%);
-      background: fade(@color-warning, 18%);
-    }
-
-    &--2 {
-      color: @color-primary;
-      background: @color-primary-light;
-    }
-
-    &--3 {
-      color: @color-danger;
-      background: fade(@color-danger, 12%);
-    }
-  }
-
-  /* 明细匹配状态：1-完全匹配 2-金额不一致 3-仅渠道有 4-仅平台有 */
-  .match-status {
-    display: inline-flex;
-    padding: @spacing-2xs @spacing-xs;
-    font-size: @font-size-auxiliary;
-    border-radius: @radius-full;
-
-    &--1 {
-      color: @color-primary;
-      background: @color-primary-light;
-    }
-
-    &--2,
-    &--3,
-    &--4 {
-      color: @color-danger;
-      background: fade(@color-danger, 12%);
-    }
-  }
 
   .line-order {
     display: flex;

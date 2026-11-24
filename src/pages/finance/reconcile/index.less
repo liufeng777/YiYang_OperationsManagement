@@ -36,28 +36,4 @@
     font-weight: 600;
   }
 
-  /* 对账状态（共通 §6.4）：1-对账中 2-已平账 3-有差异 */
-  .reconcile-status {
-    display: inline-flex;
-    align-items: center;
-    gap: @spacing-2xs;
-    padding: @spacing-2xs @spacing-xs;
-    font-size: @font-size-auxiliary;
-    border-radius: @radius-full;
-
-    &--1 {
-      color: darken(@color-warning, 18%);
-      background: fade(@color-warning, 18%);
-    }
-
-    &--2 {
-      color: @color-primary;
-      background: @color-primary-light;
-    }
-
-    &--3 {
-      color: @color-danger;
-      background: fade(@color-danger, 12%);
-    }
-  }
 }
