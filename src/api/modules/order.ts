@@ -142,9 +142,21 @@ export function createOrderRefund(id: number, data: OrderRefundBody) {
   return http.post<null>(`/admin/orders/${id}/refund`, data)
 }
 
+/** 支付渠道查询结果；trade_state 为微信交易状态，如 SUCCESS / NOTPAY / NOT_EXIST。 */
+export interface OrderPayQueryResult {
+  message: string
+  order_id: number
+  order_no: string
+  outsider_paid: number
+  success_time: string
+  trade_state: string
+  transaction_id: string
+  triggered_update: boolean
+}
+
 /** 手动查询订单支付结果 POST /api/admin/orders/:id/query-pay（无请求体） */
 export function queryOrderPay(id: number) {
-  return http.post<null>(`/admin/orders/${id}/query-pay`)
+  return http.post<OrderPayQueryResult>(`/admin/orders/${id}/query-pay`)
 }
 
 /**

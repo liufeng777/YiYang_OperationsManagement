@@ -7,15 +7,21 @@
  *   右栏：订单进度（status_history 以 Timeline 渲染，按时间升序，最后一条为当前状态）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Descriptions, Empty, Space, Spin, Table, Timeline } from 'antd'
+import { Button, Card, Descriptions, Empty, Space, Spin, Table, Timeline } from 'antd'
 import type { DescriptionsProps } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { ArrowLeftOutlined, SyncOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import SensitiveText from '@/components/SensitiveText'
+import ChannelQueryResultModal from '@/components/ChannelQueryResultModal'
 import { institutionApi, orderApi, workorderApi } from '@/api'
-import type { OrderConsumable, OrderDetail, OrderRefundSummary } from '@/api/modules/order'
+import type {
+  OrderConsumable,
+  OrderDetail,
+  OrderPayQueryResult,
+  OrderRefundSummary,
+} from '@/api/modules/order'
 import type { WorkOrderDTO } from '@/api/modules/workorder'
 import { formatAmount, formatDateTime } from '@/utils'
 import { REFUND_STATUS_TEXT, REFUND_STATUS_TONE } from '@/pages/refund/list'
@@ -26,6 +32,14 @@ import './detail.less'
 /** 时间戳（UTC 秒）格式化，空值显示占位 */
 const fmtTime = (seconds?: number | null) =>
   seconds ? formatDateTime(seconds * 1000, 'YYYY-MM-DD HH:mm') : '—'
+
+const PAY_STATE_TEXT: Record<string, string> = {
+  SUCCESS: '支付成功',
+  NOTPAY: '未支付',
+  CLOSED: '支付已关闭',
+  PAYERROR: '支付失败',
+  NOT_EXIST: '微信侧订单不存在',
+}
 
 /** 状态文案优先表达结果：负面为红色、积极为绿色，其余过程状态为灰色。 */
 const getTimelineColor = (statusName?: string) => {
@@ -59,7 +73,6 @@ const consumableColumns: ColumnsType<OrderConsumable> = [
 
 export default function OrderDetailPage() {
   const navigate = useNavigate()
-  const { message } = App.useApp()
   const params = useParams<{ id: string }>()
   const orderId = Number(params.id)
 
@@ -67,6 +80,7 @@ export default function OrderDetailPage() {
   const [institutions, setInstitutions] = useState<Array<{ id: number; name: string }>>([])
   const [loading, setLoading] = useState(false)
   const [queryingPay, setQueryingPay] = useState(false)
+  const [payResult, setPayResult] = useState<OrderPayQueryResult | null>(null)
   /** 该订单下的工单列表 */
   const [workOrders, setWorkOrders] = useState<WorkOrderDTO[]>([])
   const [workOrderLoading, setWorkOrderLoading] = useState(false)
@@ -108,8 +122,8 @@ export default function OrderDetailPage() {
     if (!orderId || queryingPay) return
     setQueryingPay(true)
     try {
-      await orderApi.queryOrderPay(orderId)
-      message.success('支付结果查询完成')
+      const result = await orderApi.queryOrderPay(orderId)
+      setPayResult(result)
       await Promise.all([fetchOrder(), fetchWorkOrders()])
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
@@ -422,6 +436,38 @@ export default function OrderDetailPage() {
           <WorkOrderTable list={workOrders} loading={workOrderLoading} scrollY={false} />
         </div>
       </Spin>
+
+      <ChannelQueryResultModal
+        open={!!payResult}
+        title="支付结果查询"
+        status={payResult?.trade_state ?? ''}
+        statusLabel={payResult ? (PAY_STATE_TEXT[payResult.trade_state] ?? payResult.trade_state) : ''}
+        message={payResult?.message ?? ''}
+        items={payResult ? [
+          { key: 'order_no', label: '订单号', children: payResult.order_no || '—' },
+          { key: 'order_id', label: '订单 ID', children: payResult.order_id },
+          { key: 'trade_state', label: '渠道状态码', children: payResult.trade_state || '—' },
+          { key: 'transaction_id', label: '支付交易单号', children: payResult.transaction_id || '—' },
+          {
+            key: 'success_time',
+            label: '支付成功时间',
+            children: payResult.success_time
+              ? formatDateTime(payResult.success_time, 'YYYY-MM-DD HH:mm:ss')
+              : '—',
+          },
+          {
+            key: 'outsider_paid',
+            label: '是否外部支付',
+            children: payResult.outsider_paid ? '是' : '否',
+          },
+          {
+            key: 'triggered_update',
+            label: '是否触发订单更新',
+            children: payResult.triggered_update ? '是' : '否',
+          },
+        ] : []}
+        onClose={() => setPayResult(null)}
+      />
     </PageContainer>
   )
 }

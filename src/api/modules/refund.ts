@@ -87,9 +87,22 @@ export function getRefund(id: number) {
   return http.get<RefundItem>(`/admin/refunds/${id}`)
 }
 
+/** 退款渠道查询结果；status 为渠道退款状态，如 SUCCESS / PROCESSING / NOT_EXIST。 */
+export interface RefundQueryResult {
+  message: string
+  refund_amount: number
+  refund_id: number
+  refund_id_wx: string
+  refund_no: string
+  status: string
+  success_time: string
+  transaction_id: string
+  triggered_update: boolean
+}
+
 /** 手动查询退款结果 POST /api/admin/refunds/:id/query-refund（无请求体） */
 export function queryRefundResult(id: number) {
-  return http.post<null>(`/admin/refunds/${id}/query-refund`)
+  return http.post<RefundQueryResult>(`/admin/refunds/${id}/query-refund`)
 }
 
 /**

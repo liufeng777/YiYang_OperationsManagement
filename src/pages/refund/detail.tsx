@@ -8,15 +8,16 @@
  *           在退款单信息中展示套餐履约（served_count / service_count 高亮），标明「退剩余次数费用」
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Descriptions, Space, Spin, Table, Timeline } from 'antd'
+import { Button, Card, Descriptions, Space, Spin, Table, Timeline } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { ArrowLeftOutlined, FileTextOutlined, SyncOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import SensitiveText from '@/components/SensitiveText'
+import ChannelQueryResultModal from '@/components/ChannelQueryResultModal'
 import { orderApi, refundApi } from '@/api'
 import type { OrderDetail } from '@/api/modules/order'
-import type { RefundItem } from '@/api/modules/refund'
+import type { RefundItem, RefundQueryResult } from '@/api/modules/refund'
 import { formatAmount, formatDateTime } from '@/utils'
 import RefundApproveModal from './components/RefundApproveModal'
 import { REFUND_STATUS_TEXT, REFUND_STATUS_TONE, REFUND_TYPE_TEXT } from './list'
@@ -26,6 +27,14 @@ import './detail.less'
 export const ORDER_REFUND_TYPE: Record<number, string> = {
   1: '全额退款',
   2: '部分退款',
+}
+
+const REFUND_QUERY_STATUS_TEXT: Record<string, string> = {
+  SUCCESS: '退款成功',
+  PROCESSING: '退款处理中',
+  CLOSED: '退款已关闭',
+  ABNORMAL: '退款异常',
+  NOT_EXIST: '微信侧退款单不存在',
 }
 
 /** 审批结果（契约未定义数值枚举，按常见约定 1-通过 2-拒绝，未知值回显原始值） */
@@ -43,13 +52,13 @@ const channelLogDotColor = (status: number) =>
 
 export default function RefundDetail() {
   const navigate = useNavigate()
-  const { message } = App.useApp()
   const params = useParams<{ id: string }>()
   const refundId = Number(params.id)
 
   const [refund, setRefund] = useState<RefundItem | null>(null)
   const [loading, setLoading] = useState(false)
   const [queryingRefund, setQueryingRefund] = useState(false)
+  const [refundResult, setRefundResult] = useState<RefundQueryResult | null>(null)
   /** 审批弹窗开关：仅 status === 8（待财务审批）时可打开 */
   const [approveOpen, setApproveOpen] = useState(false)
   /** 部分退款（order_type === 2）时关联订单详情，用于展示履约次数 */
@@ -87,8 +96,8 @@ export default function RefundDetail() {
     if (!refundId || queryingRefund) return
     setQueryingRefund(true)
     try {
-      await refundApi.queryRefundResult(refundId)
-      message.success('退款结果查询完成')
+      const result = await refundApi.queryRefundResult(refundId)
+      setRefundResult(result)
       await fetchRefund()
     } catch {
       /* 错误提示由 request 拦截器统一处理 */
@@ -422,6 +431,41 @@ export default function RefundDetail() {
           )}
         </div>
       </Spin>
+
+      <ChannelQueryResultModal
+        open={!!refundResult}
+        title="退款结果查询"
+        status={refundResult?.status ?? ''}
+        statusLabel={refundResult
+          ? (REFUND_QUERY_STATUS_TEXT[refundResult.status] ?? refundResult.status)
+          : ''}
+        message={refundResult?.message ?? ''}
+        items={refundResult ? [
+          { key: 'refund_no', label: '退款单号', children: refundResult.refund_no || '—' },
+          { key: 'refund_id', label: '退款单 ID', children: refundResult.refund_id },
+          { key: 'status', label: '渠道状态码', children: refundResult.status || '—' },
+          {
+            key: 'refund_amount',
+            label: '退款金额',
+            children: <strong>{formatAmount(refundResult.refund_amount)}</strong>,
+          },
+          { key: 'refund_id_wx', label: '微信退款单号', children: refundResult.refund_id_wx || '—' },
+          { key: 'transaction_id', label: '支付交易单号', children: refundResult.transaction_id || '—' },
+          {
+            key: 'success_time',
+            label: '退款成功时间',
+            children: refundResult.success_time
+              ? formatDateTime(refundResult.success_time, 'YYYY-MM-DD HH:mm:ss')
+              : '—',
+          },
+          {
+            key: 'triggered_update',
+            label: '是否触发退款更新',
+            children: refundResult.triggered_update ? '是' : '否',
+          },
+        ] : []}
+        onClose={() => setRefundResult(null)}
+      />
 
       {approveOpen && <RefundApproveModal
         refund={refund}
