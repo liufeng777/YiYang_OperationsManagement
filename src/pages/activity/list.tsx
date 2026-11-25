@@ -20,7 +20,6 @@ import { institutionApi } from '@/api'
 import type { InstitutionItem } from '@/api/modules/institution'
 import InstitutionConfigDrawer, {
   toInstitutionConfigs,
-  toInstitutionRows,
   type ActivityInstitutionRow,
 } from './components/InstitutionConfigDrawer'
 import {
@@ -176,10 +175,10 @@ export default function ActivityList() {
   }
 
   /** 打开「配置机构」抽屉：以列表行已配置的机构初始化（提交时再取详情做全量覆盖） */
-  const openInstitutionDrawer = (record: ActivityItem) => {
-    setConfigRows(toInstitutionRows(record.institutions))
-    setConfigTarget(record)
-  }
+  // const openInstitutionDrawer = (record: ActivityItem) => {
+  //   setConfigRows(toInstitutionRows(record.institutions))
+  //   setConfigTarget(record)
+  // }
 
   const closeInstitutionDrawer = () => {
     setConfigTarget(null)
@@ -260,24 +259,24 @@ export default function ActivityList() {
   }
 
   /** 删除活动：仅限未发布活动，危险操作需二次确认 */
-  const handleDelete = (record: ActivityItem) => {
-    modal.confirm({
-      title: `确认删除活动「${record.title}」？`,
-      content: '删除后，该活动的所有报名信息将被清空，且无法恢复。',
-      okText: '确认删除',
-      okButtonProps: { danger: true },
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          await activityApi.deleteActivity(Number(record.id))
-          message.success(`已删除「${record.title}」`)
-        } catch {
-          /* 拦截器已提示 */
-        }
-        void fetchList(page)
-      },
-    })
-  }
+  // const handleDelete = (record: ActivityItem) => {
+  //   modal.confirm({
+  //     title: `确认删除活动「${record.title}」？`,
+  //     content: '删除后，该活动的所有报名信息将被清空，且无法恢复。',
+  //     okText: '确认删除',
+  //     okButtonProps: { danger: true },
+  //     cancelText: '取消',
+  //     onOk: async () => {
+  //       try {
+  //         await activityApi.deleteActivity(Number(record.id))
+  //         message.success(`已删除「${record.title}」`)
+  //       } catch {
+  //         /* 拦截器已提示 */
+  //       }
+  //       void fetchList(page)
+  //     },
+  //   })
+  // }
 
   const columns = useMemo<ColumnsType<ActivityItem>>(
     () => [
@@ -350,13 +349,8 @@ export default function ActivityList() {
           return (
             <div className="activity-actions">
               <Button type="link" size="small" onClick={openDetail}>
-                查看详情
+                {canEdit ? '查看详情 / 编辑' : '查看详情'}
               </Button>
-              {canEdit && (
-                <Button type="link" size="small" onClick={openDetail}>
-                  编辑
-                </Button>
-              )}
               {record.status === 1 && (
                 <Button type="link" size="small" onClick={() => handlePublish(record)}>
                   发布

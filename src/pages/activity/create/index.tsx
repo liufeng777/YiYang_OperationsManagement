@@ -67,9 +67,10 @@ const typeValueToLabel = (value?: number) =>
 const labelToTypeValue = (label?: unknown) =>
   activityTypeOptions.find((item) => item.label === label)?.value ?? 1
 
-/** 提交状态：1-存为草稿（未发布） 2-发布（已发布） */
+/** 提交状态：1-存为草稿（未发布） 2-发布（已发布）9-已下架 */
 const STATUS_DRAFT = 1
 const STATUS_PUBLISHED = 2
+const STATUS_UNPUBLISHED = 9
 
 export default function ActivityCreate() {
   const navigate = useNavigate()
@@ -572,7 +573,9 @@ export default function ActivityCreate() {
                       loading={submitting || detailLoading}
                       onClick={() => void submitActivity(STATUS_PUBLISHED)}
                     >
-                      {isEdit && originStatus !== STATUS_DRAFT ? '保存活动' : '发布活动'}
+                      {
+                        originStatus === STATUS_UNPUBLISHED ? '重新发布' : (isEdit && originStatus !== STATUS_DRAFT ? '保存活动' : '发布活动')
+                      }
                     </Button>
                   </div>
                 {noticeOpen && (

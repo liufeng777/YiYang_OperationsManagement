@@ -135,7 +135,7 @@ export default function ActivityDetail() {
       extra={
         <Space>
           {detail && detail.status !== 1 && (
-            <Button onClick={() => navigate(`/activity/signups/${activityId}`)}>报名查询</Button>
+            <Button color="primary" variant='outlined' onClick={() => navigate(`/activity/signups/${activityId}`)}>报名查询</Button>
           )}
           <Button color="primary" variant="outlined" icon={<ArrowLeftOutlined />} onClick={() => navigate('/activity')}>
             返回活动列表
