@@ -35,7 +35,7 @@ export interface ActivityItem {
   /** 活动类型：1社区活动 / 2康养旅游 / 3健康课堂 / 4健康活动 / 5其他
    *  注意：后端出参与创建入参均为 activity_type（筛选入参为 type，见 getActivities） */
   activity_type: number
-  status: number  // 1-待发布 2-报名中 9-已取消
+  status: number  // 发布状态：1-未发布 2-已发布 9-已下架
   /** 封面图：创建 / 编辑入参字段名同为 cover_url */
   cover_url: string
   description?: string // 富文本json
@@ -75,7 +75,7 @@ export interface ActivitySaveBody {
   institutions?: ActivityInstitutionConfig[]
   /** 适用人群 */
   target_crowd?: string
-  /** 活动状态：1-草稿 2-上架 9-已取消（空则新建默认草稿） */
+  /** 发布状态：1-未发布 2-已发布 9-已下架（空则新建默认未发布） */
   status?: number
 }
 
@@ -106,7 +106,7 @@ export function updateActivity(id: number, data: ActivitySaveBody) {
   return http.put<null>(`/admin/activities/${id}`, data)
 }
 
-/** 发布/取消 POST /api/admin/activities/:id/status（swagger：body {status:1|2|3|9}，remark 为 query 选填） */
+/** 发布/下架 POST /api/admin/activities/:id/status（前端使用 status:1|2|9，remark 为 query 选填） */
 export function updateActivityStatus(id: number, status: number, remark?: string) {
   return http.post<null>(`/admin/activities/${id}/status`, { status }, { params: { remark } })
 }

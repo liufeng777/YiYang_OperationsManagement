@@ -16,6 +16,7 @@ import type { InstitutionItem } from '@/api/modules/institution'
 import { formatDateTime } from '@/utils'
 import {
   activityTypeText,
+  canEditActivity,
   formatActivityDate,
   resolveActivityStatus,
   resolveActivityTimeStatus,
@@ -64,7 +65,7 @@ export default function ActivityDetail() {
   )
   const status = detail ? resolveActivityStatus(detail) : null
   const timeStatus = detail ? resolveActivityTimeStatus(detail) : null
-  const canEdit = timeStatus?.key === 'notStarted'
+  const canEdit = detail ? canEditActivity(detail) : false
 
   const institutionColumns: ColumnsType<ActivityInstitutionConfig> = [
     {
@@ -121,7 +122,7 @@ export default function ActivityDetail() {
     },
   ]
 
-  // 查看详情与编辑共用当前活动数据：未开始时回显可编辑表单，其余状态使用只读布局。
+  // 查看详情与编辑共用当前活动数据：符合权限时回显表单，其余情况使用只读布局。
   if (!loading && detail && canEdit) {
     return <ActivityCreate />
   }
@@ -161,7 +162,7 @@ export default function ActivityDetail() {
                   },
                   {
                     key: 'status',
-                    label: '活动状态',
+                    label: '发布状态',
                     children: status ? (
                       <span className={`status-btn ${status.className}`}>{status.label}</span>
                     ) : '—',
@@ -175,7 +176,7 @@ export default function ActivityDetail() {
                   },
                   {
                     key: 'timeStatus',
-                    label: '时间状态',
+                    label: '活动状态',
                     children: timeStatus ? (
                       <span className={`status-btn ${timeStatus.className}`}>{timeStatus.label}</span>
                     ) : '—',

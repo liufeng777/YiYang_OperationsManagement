@@ -38,6 +38,7 @@ import InstitutionConfigDrawer, {
   toInstitutionRows,
   type ActivityInstitutionRow,
 } from '../components/InstitutionConfigDrawer'
+import { canEditActivity } from '../constants'
 import './index.less'
 
 /** 预览状态：正常报名 / 报名成功 / 名额已满 */
@@ -66,7 +67,7 @@ const typeValueToLabel = (value?: number) =>
 const labelToTypeValue = (label?: unknown) =>
   activityTypeOptions.find((item) => item.label === label)?.value ?? 1
 
-/** 提交状态：1-存为草稿 2-发布（报名中） */
+/** 提交状态：1-存为草稿（未发布） 2-发布（已发布） */
 const STATUS_DRAFT = 1
 const STATUS_PUBLISHED = 2
 
@@ -211,9 +212,8 @@ export default function ActivityCreate() {
       .getActivity(Number(params.id))
       .then((detail) => {
         if (cancelled) return
-        const isNotStarted = !!detail.start_date && Date.now() < detail.start_date * 1000
-        if (!isNotStarted) {
-          message.warning('仅未开始的活动支持编辑，已为您打开活动详情')
+        if (!canEditActivity(detail)) {
+          message.warning('当前发布状态或活动进度不支持编辑，已为您打开活动详情')
           navigate(`/activity/detail/${params.id}`, { replace: true })
           return
         }
@@ -557,7 +557,7 @@ export default function ActivityCreate() {
             <Card variant="borderless" className="create-card create-card--footer">
                   <div className="create-footer">
                     <Button onClick={() => setPreviewOpen(true)}>手机预览</Button>
-                    {/* 已发布过的活动（含已取消）不再提供「存为草稿」 */}
+                    {/* 已发布过的活动（含已下架）不再提供「存为草稿」 */}
                     {draftVisible && (
                       <Button
                         onClick={() => void submitActivity(STATUS_DRAFT)}

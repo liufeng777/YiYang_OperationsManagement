@@ -19,6 +19,7 @@ import { activityApi, institutionApi } from '@/api'
 import type { ActivityItem, ActivityRegistrationDTO } from '@/api/modules/activity'
 import type { InstitutionItem } from '@/api/modules/institution'
 import { downloadBlob, formatDateTime } from '@/utils'
+import { canEditActivity } from '../constants'
 import './index.less'
 
 /** 报名状态：1-已报名 2-已签到 3-已取消 */
@@ -89,11 +90,8 @@ export default function ActivitySignups() {
   const institutionName = (record: ActivityRegistrationDTO) =>
     instMap.get(record.institution_id) ?? `机构 ${record.institution_id}`
 
-  /**
-   * 是否允许编辑：活动开始时间已早于当前时间说明活动已开始，不再提供编辑入口
-   * （与活动列表行内「编辑活动」规则一致：仅未开始的活动可编辑）
-   */
-  const canEditActivity = !!activity?.start_date && Date.now() / 1000 < activity.start_date
+  /** 与列表、详情共用发布状态和活动进度权限，避免已发布未开始活动出现编辑入口。 */
+  const canEdit = activity ? canEditActivity(activity) : false
 
   // 活动信息 + 参与机构（页面描述与筛选下拉）
   useEffect(() => {
@@ -391,7 +389,7 @@ export default function ActivitySignups() {
       } 家参与机构`}
       extra={
         <Space>
-          {canEditActivity && (
+          {canEdit && (
             <Button color="primary" variant='outlined' icon={<EditOutlined />} onClick={() => navigate(`/activity/detail/${activityId}`)}>
               编辑活动
             </Button>

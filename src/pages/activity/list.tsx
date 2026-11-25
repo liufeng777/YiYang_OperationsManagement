@@ -1,17 +1,16 @@
 /**
  * 活动管理 - 活动列表
- * 视觉对齐设计稿：顶部统计 + 筛选 + 状态 Tabs + 活动表格
- * 数据来源：activityApi.getActivities（分页 + 类型/机构/状态/关键字筛选）
- * 操作列：主操作（发布/重新发布/报名查询）+ 配置机构（独立抽屉组件）+ 查看详情 + 更多（取消/删除）
+ * 视觉对齐设计稿：顶部统计 + 筛选 + 活动表格
+ * 数据来源：activityApi.getActivities（分页 + 类型/机构/发布状态/关键字筛选）
+ * 操作列按发布状态与活动进度控制：查看、编辑、发布/重新发布、下架、配置机构、删除。
  * 字段以后端实际契约为准：类型出参 activity_type、筛选入参 type、时间 start_date/end_date、
  * 聚合字段 institution_count / total_registered / total_max_participants（列表接口返回，不含 institutions）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { App, Button, Card, Dropdown, Input, Select, Col, Row, Tag, Divider, Tooltip } from 'antd'
+import { App, Button, Card, Input, Select, Col, Row, Tag, Tooltip } from 'antd'
 import FillTable from '@/components/FillTable'
-import type { MenuProps } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { BarChartOutlined, DownOutlined, PlusOutlined } from '@ant-design/icons'
+import { BarChartOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import PageContainer from '@/components/PageContainer'
@@ -26,6 +25,7 @@ import InstitutionConfigDrawer, {
 } from './components/InstitutionConfigDrawer'
 import {
   activityStatusText,
+  canEditActivity,
   formatActivityDate,
   resolveActivityStatus,
   resolveActivityTimeStatus,
@@ -144,17 +144,17 @@ export default function ActivityList() {
     void fetchList(page)
   }, [fetchList, page])
 
-  /** 顶部统计：活动总数与各状态数量（基于当前列表数据汇总） */
+  /** 顶部统计卡片与发布状态筛选一一对应，不再混用活动时间状态。 */
   const metrics = useMemo(() => {
     return [
-      { key: 0, label: '全部活动', value: stats?.total, badge: '按当前筛选条件统计', tone: 'primary' },
-      { key: 2, label: '报名中', value: stats?.registering, badge: '报名中活动', tone: 'info' },
-      { key: 1, label: '待发布', value: stats?.draft, badge: '待发布活动', tone: 'danger' },
-      { key: 3, label: '已结束', value: stats?.ended, badge: '已结束活动', tone: 'warning' },
+      { key: 0, label: '全部活动', value: stats?.total ?? 0, badge: '按当前筛选条件统计', tone: 'primary' },
+      { key: 2, label: '已发布', value: stats?.publish ?? 0, badge: '已发布活动', tone: 'success' },
+      { key: 1, label: '未发布', value: stats?.draft ?? 0, badge: '未发布活动', tone: 'warning' },
+      { key: 9, label: '已下架', value: stats?.unpublish ?? 0, badge: '已下架活动', tone: 'cancel' },
     ]
   }, [stats])
 
-  /** 点击统计卡立即筛选，并同步活动状态下拉框。 */
+  /** 点击统计卡立即筛选，并同步发布状态下拉框。 */
   const changeStatus = (nextStatus: number | null) => {
     setStatus(nextStatus)
     setPage(1)
@@ -217,7 +217,7 @@ export default function ActivityList() {
     }
   }
 
-  /** 发布活动（待发布 → 报名中） */
+  /** 发布活动（未发布 → 已发布） */
   const handlePublish = async (record: ActivityItem) => {
     try {
       await activityApi.updateActivityStatus(Number(record.id), 2)
@@ -228,18 +228,18 @@ export default function ActivityList() {
     }
   }
 
-  /** 取消活动（报名中 → 已取消）：危险操作，二次确认 */
-  const handleCancelActivity = (record: ActivityItem) => {
+  /** 下架活动（已发布 → 已下架）：危险操作，二次确认 */
+  const handleOfflineActivity = (record: ActivityItem) => {
     modal.confirm({
-      title: `确认取消活动「${record.title}」？`,
-      content: '取消后用户端将立即停止报名，已报名用户的报名信息保留但活动标记为已取消。',
-      okText: '确认取消',
+      title: `确认下架活动「${record.title}」？`,
+      content: '下架后用户端将立即停止报名，已报名用户的报名信息保留。未开始的活动可编辑并重新发布。',
+      okText: '确认下架',
       okButtonProps: { danger: true },
       cancelText: '再想想',
       onOk: async () => {
         try {
           await activityApi.updateActivityStatus(Number(record.id), 9)
-          message.success(`「${record.title}」已取消`)
+          message.success(`「${record.title}」已下架`)
         } catch {
           /* 拦截器已提示 */
         }
@@ -248,22 +248,22 @@ export default function ActivityList() {
     })
   }
 
-  /** 重新发布（已取消 → 报名中） */
+  /** 重新发布（已下架且未开始 → 已发布） */
   const handleRepublish = async (record: ActivityItem) => {
     try {
       await activityApi.updateActivityStatus(Number(record.id), 2)
-      message.success(`「${record.title}」已重新发布，报名通道已开启`)
+      message.success(`「${record.title}」已重新发布`)
       void fetchList(page)
     } catch {
       /* 拦截器已提示 */
     }
   }
 
-  /** 删除活动：危险操作，二次确认 */
+  /** 删除活动：仅限未发布活动，危险操作需二次确认 */
   const handleDelete = (record: ActivityItem) => {
     modal.confirm({
       title: `确认删除活动「${record.title}」？`,
-      content: '删除后该活动后，所有的报名信息将被清空',
+      content: '删除后，该活动的所有报名信息将被清空，且无法恢复。',
       okText: '确认删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
@@ -315,7 +315,7 @@ export default function ActivityList() {
         ),
       },
       {
-        title: '活动状态',
+        title: '发布状态',
         key: 'status',
         render: (_, record) => (
           <span className={`status-btn ${resolveActivityStatus(record).className}`}>
@@ -327,74 +327,61 @@ export default function ActivityList() {
         title: '活动时间',
         key: 'activityTime',
         width: 120,
+        render: (_, record) => (`${formatActivityDate(record.start_date)} ~ ${formatActivityDate(record.end_date)}`)
+      },
+      {
+        title: '活动状态',
+        key: 'time-status',
         render: (_, record) => {
           const timeStatus = resolveActivityTimeStatus(record)
           return (
-            <div className="table-cell">
-              <strong>
-                {formatActivityDate(record.start_date)} ~ {formatActivityDate(record.end_date)}
-              </strong>
-              <span className={`status-btn ${timeStatus.className}`}>{timeStatus.label}</span>
-            </div>
+            <span className={`status-btn ${timeStatus.className}`}>{timeStatus.label}</span>
           )
         },
       },
       {
         title: '操作',
         key: 'action',
-        width: 300,
+        width: 190,
         render: (_, record) => {
-          const canEdit = resolveActivityTimeStatus(record).key === 'notStarted'
-          const primary =
-            record.status === 1
-              ? { label: '发布活动', onClick: () => handlePublish(record) }
-              : record.status === 9
-                ? { label: '重新发布', onClick: () => handleRepublish(record) }
-                : { label: '报名查询', onClick: () => navigate(`/activity/signups/${record.id}`) }
-
-          const moreItems: MenuProps['items'] = [
-            ...((record.status === 2 && canEdit) ? [{ key: 'cancel', label: '取消活动', danger: true }] : []),
-            ...(canEdit ? [{ key: 'delete', label: '删除活动', danger: true }] : []),
-          ]
-          const onMoreClick: MenuProps['onClick'] = ({ key }) => {
-            if (key === 'cancel') handleCancelActivity(record)
-            if (key === 'delete') handleDelete(record)
-          }
+          const canEdit = canEditActivity(record)
+          const openDetail = () => navigate(`/activity/detail/${record.id}`)
 
           return (
             <div className="activity-actions">
-              <Button type="link" size="small" onClick={primary.onClick}>
-                {primary.label}
-              </Button>
-              <Button type="link" size="small" onClick={() => openInstitutionDrawer(record)}>
-                配置机构
-              </Button>
-              {canEdit ? (
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={() => navigate(`/activity/detail/${record.id}`)}
-                >
-                  查看 / 编辑
-                </Button>
-              ) : <Button
-                type="link"
-                size="small"
-                onClick={() => navigate(`/activity/detail/${record.id}`)}
-              >
+              <Button type="link" size="small" onClick={openDetail}>
                 查看详情
-              </Button>}
-              {!!moreItems?.length && (
-                <>
-                  <Divider vertical />
-                  <Dropdown menu={{ items: moreItems, onClick: onMoreClick }} trigger={['click']}>
-                    <Button type="link" size="small">
-                      更多
-                      <DownOutlined style={{ fontSize: 10 }} />
-                    </Button>
-                  </Dropdown>
-                </>
+              </Button>
+              {canEdit && (
+                <Button type="link" size="small" onClick={openDetail}>
+                  编辑
+                </Button>
               )}
+              {record.status === 1 && (
+                <Button type="link" size="small" onClick={() => handlePublish(record)}>
+                  发布
+                </Button>
+              )}
+              {record.status === 2 && (
+                <Button type="link" size="small" danger onClick={() => handleOfflineActivity(record)}>
+                  下架
+                </Button>
+              )}
+              {record.status === 9 && canEdit && (
+                <Button type="link" size="small" onClick={() => handleRepublish(record)}>
+                  重新发布
+                </Button>
+              )}
+              {/* {canEdit && (
+                <Button type="link" size="small" onClick={() => openInstitutionDrawer(record)}>
+                  配置机构
+                </Button>
+              )} */}
+              {/* {record.status === 1 && (
+                <Button type="link" size="small" danger onClick={() => handleDelete(record)}>
+                  删除
+                </Button>
+              )} */}
             </div>
           )
         },
@@ -484,7 +471,7 @@ export default function ActivityList() {
               value: Number(key),
             }))}
             allowClear
-            placeholder="活动状态"
+            placeholder="发布状态"
           />
           <Button onClick={handleReset}>重置</Button>
           <Button type="primary" onClick={applyFilters}>
