@@ -24,79 +24,15 @@ import InstitutionConfigDrawer, {
   toInstitutionRows,
   type ActivityInstitutionRow,
 } from './components/InstitutionConfigDrawer'
+import {
+  activityStatusText,
+  formatActivityDate,
+  resolveActivityStatus,
+  resolveActivityTimeStatus,
+} from './constants'
 import './list.less'
 
 /** 活动类型：1社区活动 / 2康养旅游 / 3健康课堂 / 4健康活动 / 5其他 */
-
-/** 原活动状态：保留发布状态及报名进度展示。 */
-const statusText: Record<number, string> = {
-  0: '未知',
-  1: '待发布',
-  2: '报名中',
-  3: '已结束',
-  9: '已取消',
-}
-
-export function resolveActivityStatus(
-  record: ActivityItem,
-  nowSeconds: number = Math.floor(Date.now() / 1000),
-): { label: string; className: string } {
-  if (record.status !== 2) return {
-    label: statusText[record.status],
-    className: record.status === 1 ? 'status--warning' : 'status--danger',
-  }
-  if (record.end_date && nowSeconds > record.end_date) return {
-    label: '报名已结束',
-    className: 'status--cancel',
-  }
-  if (record.start_date && nowSeconds < record.start_date) return {
-    label: '报名未开始',
-    className: 'status--info',
-  }
-  const registered = record.total_registered ?? 0
-  const maxParticipants = record.total_max_participants ?? 0
-  if (maxParticipants > 0 && registered >= maxParticipants) return {
-    label: '已满员',
-    className: 'status--info',
-  }
-  return { label: '报名中', className: 'status--success' }
-}
-
-export type ActivityTimeStatus = 'notStarted' | 'inProgress' | 'ended'
-
-const activityTimeStatusOptions: Array<{
-  value: ActivityTimeStatus
-  label: string
-  className: string
-}> = [
-  { value: 'notStarted', label: '未开始', className: 'status--info' },
-  { value: 'inProgress', label: '活动中', className: 'status--success' },
-  { value: 'ended', label: '已结束', className: 'status--cancel' },
-]
-
-/** 时间状态仅根据活动起止时间计算，与原活动状态独立展示。 */
-export function resolveActivityTimeStatus(
-  record: Pick<ActivityItem, 'start_date' | 'end_date'>,
-  nowSeconds: number = Math.floor(Date.now() / 1000),
-): { key: ActivityTimeStatus; label: string; className: string } {
-  const key: ActivityTimeStatus = record.start_date && nowSeconds < record.start_date
-    ? 'notStarted'
-    : record.end_date && nowSeconds > record.end_date
-      ? 'ended'
-      : 'inProgress'
-  const status = activityTimeStatusOptions.find((item) => item.value === key)!
-  return { key, label: status.label, className: status.className }
-}
-
-/** UTC 秒 → 日期文案：当年只显示「MM-DD」，跨年显示「YYYY-MM-DD」；缺值显示 - */
-export function formatActivityDate(
-  seconds?: number,
-  nowYear: number = dayjs().year(),
-): string {
-  if (!seconds) return '-'
-  const value = dayjs(seconds * 1000)
-  return value.year() === nowYear ? value.format('MM-DD') : value.format('YYYY-MM-DD')
-}
 
 const typeText: Record<number, {text: string, color: string}> = {
   1: {
@@ -348,6 +284,7 @@ export default function ActivityList() {
       {
         title: '活动名称',
         key: 'title',
+        ellipsis: true,
         render: (_, record) => (
           <div className="activity-name">
             <strong>{record.title}</strong>
@@ -358,13 +295,11 @@ export default function ActivityList() {
         title: '活动类型',
         dataIndex: 'activity_type',
         key: 'activity_type',
-        width: 110,
         render: (v: number) => <Tag color={typeText[v]?.color} variant='outlined'>{typeText[v]?.text ?? '—'}</Tag>
       },
       {
         title: '承接机构',
         key: 'institution_count',
-        width: 110,
         // 列表接口返回聚合字段 institution_count
         render: (_, record) =>
           `${record.institution_count ?? record.institutions?.length ?? 0} 家机构`,
@@ -372,7 +307,6 @@ export default function ActivityList() {
       {
         title: '报名人数',
         key: 'registered',
-        width: 120,
         // 已报名 / 最多承接人数（列表聚合字段），浮层给出含义说明
         render: (_, record) => (
           <Tooltip title="已报名人数 / 最多承接人数">
@@ -383,7 +317,6 @@ export default function ActivityList() {
       {
         title: '活动状态',
         key: 'status',
-        width: 110,
         render: (_, record) => (
           <span className={`status-btn ${resolveActivityStatus(record).className}`}>
             {resolveActivityStatus(record).label}
@@ -391,27 +324,25 @@ export default function ActivityList() {
         ),
       },
       {
-        title: '时间状态',
-        key: 'timeStatus',
-        width: 100,
-        render: (_, record) => (
-          <span className={`status-btn ${resolveActivityTimeStatus(record).className}`}>
-            {resolveActivityTimeStatus(record).label}
-          </span>
-        ),
-      },
-      {
         title: '活动时间',
         key: 'activityTime',
-        width: 200,
-        // 后端返回 UTC 秒，需 ×1000 交给 dayjs；只展示活动起止日期，当年不显示年份
-        render: (_, record) =>
-          `${formatActivityDate(record.start_date)} ~ ${formatActivityDate(record.end_date)}`,
+        width: 120,
+        render: (_, record) => {
+          const timeStatus = resolveActivityTimeStatus(record)
+          return (
+            <div className="table-cell">
+              <strong>
+                {formatActivityDate(record.start_date)} ~ {formatActivityDate(record.end_date)}
+              </strong>
+              <span className={`status-btn ${timeStatus.className}`}>{timeStatus.label}</span>
+            </div>
+          )
+        },
       },
       {
         title: '操作',
         key: 'action',
-        width: 220,
+        width: 300,
         render: (_, record) => {
           const canEdit = resolveActivityTimeStatus(record).key === 'notStarted'
           const primary =
@@ -422,7 +353,7 @@ export default function ActivityList() {
                 : { label: '报名查询', onClick: () => navigate(`/activity/signups/${record.id}`) }
 
           const moreItems: MenuProps['items'] = [
-            ...(record.status === 2 ? [{ key: 'cancel', label: '取消活动', danger: true }] : []),
+            ...((record.status === 2 && canEdit) ? [{ key: 'cancel', label: '取消活动', danger: true }] : []),
             ...(canEdit ? [{ key: 'delete', label: '删除活动', danger: true }] : []),
           ]
           const onMoreClick: MenuProps['onClick'] = ({ key }) => {
@@ -438,15 +369,21 @@ export default function ActivityList() {
               <Button type="link" size="small" onClick={() => openInstitutionDrawer(record)}>
                 配置机构
               </Button>
-              {canEdit && (
+              {canEdit ? (
                 <Button
                   type="link"
                   size="small"
                   onClick={() => navigate(`/activity/detail/${record.id}`)}
                 >
-                  编辑活动
+                  查看 / 编辑
                 </Button>
-              )}
+              ) : <Button
+                type="link"
+                size="small"
+                onClick={() => navigate(`/activity/detail/${record.id}`)}
+              >
+                查看详情
+              </Button>}
               {!!moreItems?.length && (
                 <>
                   <Divider vertical />
@@ -542,7 +479,7 @@ export default function ActivityList() {
           <Select
             value={status}
             onChange={(value) => changeStatus(value ?? null)}
-            options={Object.entries(statusText).map(([key, label]) => ({
+            options={Object.entries(activityStatusText).map(([key, label]) => ({
               label,
               value: Number(key),
             }))}

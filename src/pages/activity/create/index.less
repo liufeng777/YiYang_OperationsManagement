@@ -4,13 +4,32 @@
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: @spacing-md;
   align-items: start;
-
-  &__form {
+  .activity-create-left {
+    height: 100%;
     display: flex;
     flex-direction: column;
     gap: @spacing-md;
+    overflow-y: hidden;
+    .activity-create-form {
+      flex: 1 !important;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: @spacing-md;
+    }
+    /* 底部操作条：左侧须知状态 + 右侧按钮 */
+    .create-footer {
+      display: flex;
+      gap: @spacing-sm;
+      flex-shrink: 0;
+      justify-content: flex-end;
+    }
+  }
+
+  &__preview {
     height: 100%;
-    overflow: auto;
+    min-height: 0;
+    overflow-y: auto;
   }
   .ant-form-item {
     margin-bottom: 0 !important;
@@ -143,14 +162,6 @@
     margin-top: @spacing-md;
   }
 
-  /* 底部操作条：左侧须知状态 + 右侧按钮 */
-  .create-footer {
-    display: flex;
-    gap: @spacing-sm;
-    flex-shrink: 0;
-    justify-content: flex-end;
-  }
-
   .create-notice {
     margin-top: @spacing-md;
     margin-bottom: 0;
@@ -158,7 +169,6 @@
   .create-preview {
     .card-surface();
     position: sticky;
-    top: @spacing-md;
     .ant-card-body{
       padding: @spacing-md @spacing-lg;
     }

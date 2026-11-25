@@ -177,7 +177,7 @@ export default function ArticleEdit() {
       title={isEdit ? '编辑科普内容' : '新建科普内容'}
       description="左侧编辑内容，右侧完成发布设置并实时查看患者端效果"
       extra={
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/content/article')}>
+        <Button color="primary" variant="outlined" icon={<ArrowLeftOutlined />} onClick={() => navigate('/content/article')}>
           返回列表
         </Button>
       }

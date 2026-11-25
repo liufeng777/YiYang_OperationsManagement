@@ -213,8 +213,8 @@ export default function ActivityCreate() {
         if (cancelled) return
         const isNotStarted = !!detail.start_date && Date.now() < detail.start_date * 1000
         if (!isNotStarted) {
-          message.warning('仅未开始的活动支持编辑')
-          navigate('/activity', { replace: true })
+          message.warning('仅未开始的活动支持编辑，已为您打开活动详情')
+          navigate(`/activity/detail/${params.id}`, { replace: true })
           return
         }
         form.setFieldsValue({
@@ -374,6 +374,7 @@ export default function ActivityCreate() {
 
   return (
     <PageContainer
+      fixed
       title={isEdit ? '编辑活动' : '新建活动'}
       description="单页面配置活动信息、参与机构和患者端详情图片"
       extra={
@@ -396,187 +397,189 @@ export default function ActivityCreate() {
         style={{height: '100%'}}
       >
         <div className="activity-create">
-          <div className="activity-create__form">
-            <Card variant="borderless" className="create-card basic-card">
-              <h3>活动基础信息<span>患者端结构化展示</span></h3>
-              <div className='create-card__basicInfo'>
-                <div className='create-card__basicInfo__left'>
-                  <div className="form-grid form-grid--two">
-                    <Form.Item
-                      name="name"
-                      label="活动名称"
-                      rules={[{ required: true, message: '请输入活动名称' }]}
-                    >
-                      <Input placeholder="请输入活动名称" />
-                    </Form.Item>
-                    <Form.Item
-                      name="type"
-                      label="活动类型"
-                      rules={[{ required: true, message: '请选择活动类型' }]}
-                    >
-                      <Select
-                        options={activityTypeOptions.map((item) => ({
-                          label: item.label,
-                          value: item.label,
-                        }))}
+          <div className='activity-create-left'>
+            <div className="activity-create-form">
+              <Card variant="borderless" className="create-card basic-card">
+                <h3>活动基础信息<span>患者端结构化展示</span></h3>
+                <div className='create-card__basicInfo'>
+                  <div className='create-card__basicInfo__left'>
+                    <div className="form-grid form-grid--two">
+                      <Form.Item
+                        name="name"
+                        label="活动名称"
+                        rules={[{ required: true, message: '请输入活动名称' }]}
+                      >
+                        <Input placeholder="请输入活动名称" />
+                      </Form.Item>
+                      <Form.Item
+                        name="type"
+                        label="活动类型"
+                        rules={[{ required: true, message: '请选择活动类型' }]}
+                      >
+                        <Select
+                          options={activityTypeOptions.map((item) => ({
+                            label: item.label,
+                            value: item.label,
+                          }))}
+                        />
+                      </Form.Item>
+                    </div>
+
+                    <Form.Item name="location" label="活动简介">
+                      <Input
+                        maxLength={20}
+                        showCount
+                        placeholder="请输入活动简介，最多 20 字"
                       />
                     </Form.Item>
                   </div>
+                  {/* <div className='create-card__basicInfo__right'>
+                    <Form.Item label="活动封面" className="create-cover">
+                      <Upload accept="image/*" showUploadList={false} beforeUpload={handleCoverUpload}>
+                        <button type="button" className={`create-upload${coverUrl ? ' has-image' : ''}`}>
+                          {coverUrl ? (
+                            <img src={coverUrl} alt="活动封面" />
+                          ) : (
+                            <>
+                              <PlusOutlined />
+                              <span>上传 750 × 560px</span>
+                            </>
+                          )}
+                        </button>
+                      </Upload>
+                    </Form.Item>
+                  </div> */}
+                </div>
+              </Card>
 
-                  <Form.Item name="location" label="活动简介">
-                    <Input
-                      maxLength={20}
-                      showCount
-                      placeholder="请输入活动简介，最多 20 字"
+              <Card variant="borderless" className="create-card">
+                <h3>报名与参与设置<span>活动内容统一配置；各机构独立设置活动时间和承接人数</span></h3>
+                <div className="form-grid form-grid--four">
+                  <Form.Item
+                    name="start_date"
+                    label={<span>报名开始</span>}
+                    rules={[
+                      { required: true, message: '请选择报名开始日期' },
+                      { validator: validateStartDate },
+                    ]}
+                  >
+                    <DatePicker
+                      placeholder="选择开始日期"
+                      style={{ width: '100%' }}
+                      disabledDate={disabledPastDate}
+                    />
+                  </Form.Item>
+                  <Form.Item
+                    name="end_date"
+                    label={<span>报名结束</span>}
+                    dependencies={['start_date']}
+                    rules={[
+                      { required: true, message: '请选择报名结束日期' },
+                      { validator: validateEndDate },
+                    ]}
+                  >
+                    <DatePicker
+                      placeholder="选择结束日期"
+                      style={{ width: '100%' }}
+                      disabledDate={disabledEndDate}
+                    />
+                  </Form.Item>
+                  <Form.Item name="target_crowd" label="适用人群">
+                    <Input placeholder="如 60 岁以上长者" />
+                  </Form.Item>
+                  <Form.Item
+                    name="feeType"
+                    label="收费方式"
+                    rules={[{ message: '请选择收费方式' }]}
+                  >
+                    <Select
+                      disabled
+                      options={[
+                        { label: '免费', value: 'free' },
+                        { label: '付费', value: 'paid' },
+                      ]}
                     />
                   </Form.Item>
                 </div>
-                {/* <div className='create-card__basicInfo__right'>
-                  <Form.Item label="活动封面" className="create-cover">
-                    <Upload accept="image/*" showUploadList={false} beforeUpload={handleCoverUpload}>
-                      <button type="button" className={`create-upload${coverUrl ? ' has-image' : ''}`}>
-                        {coverUrl ? (
-                          <img src={coverUrl} alt="活动封面" />
-                        ) : (
-                          <>
-                            <PlusOutlined />
-                            <span>上传 750 × 560px</span>
-                          </>
-                        )}
-                      </button>
-                    </Upload>
-                  </Form.Item>
-                </div> */}
-              </div>
-            </Card>
-
-            <Card variant="borderless" className="create-card">
-              <h3>报名与参与设置<span>活动内容统一配置；各机构独立设置活动时间和承接人数</span></h3>
-              <div className="form-grid form-grid--four">
-                <Form.Item
-                  name="start_date"
-                  label={<span>报名开始</span>}
-                  rules={[
-                    { required: true, message: '请选择报名开始日期' },
-                    { validator: validateStartDate },
-                  ]}
-                >
-                  <DatePicker
-                    placeholder="选择开始日期"
-                    style={{ width: '100%' }}
-                    disabledDate={disabledPastDate}
-                  />
-                </Form.Item>
-                <Form.Item
-                  name="end_date"
-                  label={<span>报名结束</span>}
-                  dependencies={['start_date']}
-                  rules={[
-                    { required: true, message: '请选择报名结束日期' },
-                    { validator: validateEndDate },
-                  ]}
-                >
-                  <DatePicker
-                    placeholder="选择结束日期"
-                    style={{ width: '100%' }}
-                    disabledDate={disabledEndDate}
-                  />
-                </Form.Item>
-                <Form.Item name="target_crowd" label="适用人群">
-                  <Input placeholder="如 60 岁以上长者" />
-                </Form.Item>
-                <Form.Item
-                  name="feeType"
-                  label="收费方式"
-                  rules={[{ message: '请选择收费方式' }]}
-                >
-                  <Select
-                    disabled
-                    options={[
-                      { label: '免费', value: 'free' },
-                      { label: '付费', value: 'paid' },
-                    ]}
-                  />
-                </Form.Item>
-              </div>
-              <div className="create-config">
-                <div className="create-config__bar">
-                  <strong>已配置 {institutions.length} 家参与机构 · 总承接 {totalCapacity} 人</strong>
-                  {institutions.length > 0 ? (
-                    <div className="create-config__names" aria-label="已配置参与机构">
-                      {institutions.map((item) => (
-                        <span key={item.id}>{item.name || `机构 ${item.id}`}</span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span>尚未配置机构，发布后用户可选择参与机构报名</span>
-                  )}
-                  <span>总名额由各机构承接人数自动汇总</span>
-                </div>
-                <Button type="primary" onClick={() => setDrawerOpen(true)}>
-                  {institutions.length > 0 ? '调整参与机构' : '配置参与机构'}
-                </Button>
-              </div>
-            </Card>
-
-            <Card variant="borderless" className="create-card">
-              <h3>患者端展示详情</h3>
-              <div className="patient-detail">
-                <div className="patient-detail__field patient-detail__cover">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="patient-detail__label">活动封面</span>
-                    <p className="patient-detail__tip">建议尺寸 750×560，展示于患者端活动详情页顶部。</p>
-                  </div>
-                  <Upload
-                    listType="picture-card"
-                    accept="image/*"
-                    showUploadList={false}
-                    disabled={uploading}
-                    beforeUpload={handleCoverUpload}
-                  >
-                    {coverUrl ? (
-                      <img
-                        src={coverUrl}
-                        alt="活动封面"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
-                      />
-                    ) : (
-                      <div>
-                        <PlusOutlined />
-                        <div style={{ marginTop: 8 }}>上传封面</div>
+                <div className="create-config">
+                  <div className="create-config__bar">
+                    <strong>已配置 {institutions.length} 家参与机构 · 总承接 {totalCapacity} 人</strong>
+                    {institutions.length > 0 ? (
+                      <div className="create-config__names" aria-label="已配置参与机构">
+                        {institutions.map((item) => (
+                          <span key={item.id}>{item.name || `机构 ${item.id}`}</span>
+                        ))}
                       </div>
+                    ) : (
+                      <span>尚未配置机构，发布后用户可选择参与机构报名</span>
                     )}
-                  </Upload>
-                </div>
-                <RichDetailEditor label="图文详情" value={description} onChange={setDescription} />
-              </div>
-            </Card>
-
-            <Card variant="borderless" className="create-card create-card--footer">
-                <div className="create-footer">
-                  <Button onClick={() => setPreviewOpen(true)}>手机预览</Button>
-                  {/* 已发布过的活动（含已取消）不再提供「存为草稿」 */}
-                  {draftVisible && (
-                    <Button
-                      onClick={() => void submitActivity(STATUS_DRAFT)}
-                      disabled={submitting || detailLoading}
-                    >
-                      存为草稿
-                    </Button>
-                  )}
-                  <Button
-                    type="primary"
-                    loading={submitting || detailLoading}
-                    onClick={() => void submitActivity(STATUS_PUBLISHED)}
-                  >
-                    {isEdit && originStatus !== STATUS_DRAFT ? '保存活动' : '发布活动'}
+                    <span>总名额由各机构承接人数自动汇总</span>
+                  </div>
+                  <Button type="primary" onClick={() => setDrawerOpen(true)}>
+                    {institutions.length > 0 ? '调整参与机构' : '配置参与机构'}
                   </Button>
                 </div>
-              {noticeOpen && (
-                <Form.Item name="notice" className="create-notice">
-                  <Input.TextArea rows={3} placeholder="将展示在患者端报名确认页" />
-                </Form.Item>
-              )}
+              </Card>
+
+              <Card variant="borderless" className="create-card">
+                <h3>患者端展示详情</h3>
+                <div className="patient-detail">
+                  <div className="patient-detail__field patient-detail__cover">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="patient-detail__label">活动封面</span>
+                      <p className="patient-detail__tip">建议尺寸 750×560，展示于患者端活动详情页顶部。</p>
+                    </div>
+                    <Upload
+                      listType="picture-card"
+                      accept="image/*"
+                      showUploadList={false}
+                      disabled={uploading}
+                      beforeUpload={handleCoverUpload}
+                    >
+                      {coverUrl ? (
+                        <img
+                          src={coverUrl}
+                          alt="活动封面"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
+                        />
+                      ) : (
+                        <div>
+                          <PlusOutlined />
+                          <div style={{ marginTop: 8 }}>上传封面</div>
+                        </div>
+                      )}
+                    </Upload>
+                  </div>
+                  <RichDetailEditor label="图文详情" value={description} onChange={setDescription} />
+                </div>
+              </Card>
+            </div>          
+            <Card variant="borderless" className="create-card create-card--footer">
+                  <div className="create-footer">
+                    <Button onClick={() => setPreviewOpen(true)}>手机预览</Button>
+                    {/* 已发布过的活动（含已取消）不再提供「存为草稿」 */}
+                    {draftVisible && (
+                      <Button
+                        onClick={() => void submitActivity(STATUS_DRAFT)}
+                        disabled={submitting || detailLoading}
+                      >
+                        存为草稿
+                      </Button>
+                    )}
+                    <Button
+                      icon={<CheckOutlined />}
+                      type="primary"
+                      loading={submitting || detailLoading}
+                      onClick={() => void submitActivity(STATUS_PUBLISHED)}
+                    >
+                      {isEdit && originStatus !== STATUS_DRAFT ? '保存活动' : '发布活动'}
+                    </Button>
+                  </div>
+                {noticeOpen && (
+                  <Form.Item name="notice" className="create-notice">
+                    <Input.TextArea rows={3} placeholder="将展示在患者端报名确认页" />
+                  </Form.Item>
+                )}
             </Card>
           </div>
 

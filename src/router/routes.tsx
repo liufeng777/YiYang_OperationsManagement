@@ -138,10 +138,16 @@ export const routes: RouteConfig[] = [
         component: lazy(() => import('@/pages/activity/sigunps')),
       },
       {
-        // 编辑活动嵌套在详情路径下，面包屑自然形成 活动管理 / 编辑活动
+        // 详情页根据时间状态自动切换只读 / 编辑布局
         path: 'detail/:id',
+        meta: { title: '活动详情', hideInMenu: true },
+        component: lazy(() => import('@/pages/activity/detail')),
+      },
+      {
+        // 兼容已有编辑链接，统一进入可按权限切换的详情页
+        path: 'edit/:id',
         meta: { title: '编辑活动', hideInMenu: true },
-        component: lazy(() => import('@/pages/activity/create')),
+        component: lazy(() => import('@/pages/activity/detail')),
       },
     ],
   },

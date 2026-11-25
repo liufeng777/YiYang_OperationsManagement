@@ -271,8 +271,8 @@ export default function ServiceEditorPage() {
       packages: (packageEnabled ? packages : packages.filter((item) => item.fixed)).map(
         ({ count, price, price_with_consum }) => ({
           count,
-          price: price.toFixed(2),
-          price_with_consum: (usesConsumable ? price_with_consum : price).toFixed(2),
+          price: Number(price).toFixed(2),
+          price_with_consum: Number((usesConsumable ? price_with_consum : price)).toFixed(2),
         }),
       ),
       // 封面使用上传接口返回的服务器地址（无新上传时沿用原值）
@@ -434,212 +434,215 @@ export default function ServiceEditorPage() {
         style={{height: '100%'}}
       >
         <div className="service-editor">
-          <div className="service-editor__form">
-            <Card variant="borderless" className="editor-card">
-              <div className="editor-card__header">
-                <h3>服务基础信息</h3>
-                {/* <span>这些字段由集团统一维护，机构不可单独修改</span> */}
-              </div>
-              <div className="form-grid form-grid--three">
+          <div className='service-editor-left'>
+            <div className="service-editor__form">
+              <Card variant="borderless" className="editor-card">
+                <div className="editor-card__header">
+                  <h3>服务基础信息</h3>
+                  {/* <span>这些字段由集团统一维护，机构不可单独修改</span> */}
+                </div>
+                <div className="form-grid form-grid--three">
+                    <Form.Item
+                      name="name"
+                      label={<span>服务名称</span>}
+                      rules={[{ required: true, message: '请输入服务名称' }]}
+                    >
+                      <Input placeholder="例如：上门助浴服务" />
+                    </Form.Item>
+                    <Form.Item
+                      name="category_id"
+                      label={<span>服务分类</span>}
+                      rules={[{ required: true, message: '请选择服务分类' }]}
+                    >
+                      <Select
+                        placeholder="请选择服务分类"
+                        /* 已停用的分类同样展示，但不可选择并注明停用状态 */
+                        options={catList.map((item) => ({
+                          label: item.status === 1 ? item.name : `${item.name}（已停用）`,
+                          value: item.id,
+                          disabled: item.status !== 1,
+                        }))}
+                      />
+                    </Form.Item>
+                    <Form.Item
+                      name="service_type"
+                      label={<span>服务方式</span>}
+                      rules={[{ required: true, message: '请选择服务方式' }]}
+                    >
+                      <Select placeholder="请选择服务方式" options={Object.keys(serviceTypeText).map((key) => ({
+                        label: serviceTypeText[Number(key)]?.label,
+                        value: Number(key),
+                      }))} />
+                    </Form.Item>
+                </div>
+                <div className="form-grid form-grid--three">
                   <Form.Item
-                    name="name"
-                    label={<span>服务名称</span>}
-                    rules={[{ required: true, message: '请输入服务名称' }]}
+                    name="unit"
+                    label={<span>计价单位</span>}
+                    rules={[{ required: true, message: '请选择计价单位' }]}
                   >
-                    <Input placeholder="例如：上门助浴服务" />
+                    <Input placeholder='如：次、小时、天' />
                   </Form.Item>
                   <Form.Item
-                    name="category_id"
-                    label={<span>服务分类</span>}
-                    rules={[{ required: true, message: '请选择服务分类' }]}
+                    name="price"
+                    label={<span>参考起售价</span>}
+                    rules={[
+                      { required: true, message: '请输入参考起售价' },
+                      { pattern: /^\d+(\.\d{1,2})?$/, message: '请输入正确价格（最多两位小数）' },
+                    ]}
                   >
+                    <Input placeholder='请输入参考起售价' />
+                  </Form.Item>
+                  <Form.Item name="duration" label="服务时长（分钟）">
+                    <InputNumber min={0} precision={0} style={{ width: '100%' }} placeholder="例如：60" />
+                  </Form.Item>
+                </div>
+                <div className="form-grid form-grid--three">
+                  <Form.Item
+                    name="target_crowd"
+                    label={<span>适用人群</span>}
+                  >
+                    <Input placeholder="如：老年人、术后康复人群" />
+                  </Form.Item>
+                  <Form.Item
+                    name="consumable"
+                    label={<span>是否涉及耗材</span>}
+                  >
+                    <Select options={consumableOptions} placeholder="请选择是否涉及耗材" />
+                  </Form.Item>
+                  <Form.Item name="consumables_desc" label="耗材描述">
+                    <Input placeholder='如：清洁用品、护理垫' />
+                  </Form.Item>
+                </div>
+                <div className="form-grid form-grid--three">
+                  <Form.Item name="vital_sign" label="生命体征监测项">
                     <Select
-                      placeholder="请选择服务分类"
-                      /* 已停用的分类同样展示，但不可选择并注明停用状态 */
-                      options={catList.map((item) => ({
-                        label: item.status === 1 ? item.name : `${item.name}（已停用）`,
-                        value: item.id,
-                        disabled: item.status !== 1,
-                      }))}
+                      mode="multiple"
+                      placeholder="请选择一项或多项"
+                      options={vitalSignOptions}
                     />
                   </Form.Item>
-                  <Form.Item
-                    name="service_type"
-                    label={<span>服务方式</span>}
-                    rules={[{ required: true, message: '请选择服务方式' }]}
-                  >
-                    <Select placeholder="请选择服务方式" options={Object.keys(serviceTypeText).map((key) => ({
-                      label: serviceTypeText[Number(key)]?.label,
-                      value: Number(key),
-                    }))} />
-                  </Form.Item>
-              </div>
-              <div className="form-grid form-grid--three">
-                <Form.Item
-                  name="unit"
-                  label={<span>计价单位</span>}
-                  rules={[{ required: true, message: '请选择计价单位' }]}
-                >
-                  <Input placeholder='如：次、小时、天' />
-                </Form.Item>
-                <Form.Item
-                  name="price"
-                  label={<span>参考起售价</span>}
-                  rules={[
-                    { required: true, message: '请输入参考起售价' },
-                    { pattern: /^\d+(\.\d{1,2})?$/, message: '请输入正确价格（最多两位小数）' },
-                  ]}
-                >
-                  <Input placeholder='请输入参考起售价' />
-                </Form.Item>
-                <Form.Item name="duration" label="服务时长（分钟）">
-                  <InputNumber min={0} precision={0} style={{ width: '100%' }} placeholder="例如：60" />
-                </Form.Item>
-              </div>
-              <div className="form-grid form-grid--three">
-                <Form.Item
-                  name="target_crowd"
-                  label={<span>适用人群</span>}
-                >
-                  <Input placeholder="如：老年人、术后康复人群" />
-                </Form.Item>
-                <Form.Item
-                  name="consumable"
-                  label={<span>是否涉及耗材</span>}
-                >
-                  <Select options={consumableOptions} placeholder="请选择是否涉及耗材" />
-                </Form.Item>
-                <Form.Item name="consumables_desc" label="耗材描述">
-                  <Input placeholder='如：清洁用品、护理垫' />
-                </Form.Item>
-              </div>
-              <div className="form-grid form-grid--three">
-                <Form.Item name="vital_sign" label="生命体征监测项">
-                  <Select
-                    mode="multiple"
-                    placeholder="请选择一项或多项"
-                    options={vitalSignOptions}
-                  />
-                </Form.Item>
-              </div>
-            </Card>
-
-            <Card variant="borderless" className="editor-card">
-              <div className="editor-card__header">
-                <h3>服务过程</h3>
-                <Button color="primary" variant="outlined" icon={<PlusOutlined />} onClick={addStep}>
-                  添加步骤
-                </Button>
-              </div>
-              <div className="process-steps">
-                {processSteps.map((step, index) => (
-                  <div className="process-step" key={step.id}>
-                    <span className="process-step__badge">{index + 1}</span>
-                    <div className="process-step__fields">
-                      <Input
-                        value={step.title}
-                        placeholder="步骤名称，如：上门评估"
-                        onChange={(e) => updateStep(step.id, { title: e.target.value })}
-                      />
-                      <Input
-                        value={step.description}
-                        placeholder="步骤说明（可选），如：核对身份，评估环境安全"
-                        onChange={(e) => updateStep(step.id, { description: e.target.value })}
-                      />
-                    </div>
-                    <div className="process-step__actions">
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<ArrowUpOutlined />}
-                        disabled={index === 0}
-                        onClick={() => moveStep(step.id, -1)}
-                      />
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<ArrowDownOutlined />}
-                        disabled={index === processSteps.length - 1}
-                        onClick={() => moveStep(step.id, 1)}
-                      />
-                      <Button
-                        type="text"
-                        size="small"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => removeStep(step.id)}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* <div className="editor-tip">
-                步骤按顺序序列化为 JSON 存入 service_process；步骤名称为空的行保存时会被忽略。
-              </div> */}
-            </Card>
-
-            <Card variant="borderless" className="editor-card">
-              <div className="editor-card__header">
-                <h3>服务套餐</h3>
-                <Button
-                  color="primary" variant="outlined"
-                  icon={<PlusOutlined />}
-                  disabled={!packageEnabled}
-                  onClick={() => openPackageModal()}
-                >
-                  添加套餐
-                </Button>
-              </div>
-              <div className="editor-spec">
-                <Table<PackageItem>
-                  className="package-table"
-                  rowKey="id"
-                  size="small"
-                  pagination={false}
-                  dataSource={packageEnabled ? packages : packages.filter((item) => item.fixed)}
-                  columns={packageColumns}
-                />
-
-                <div className="editor-tip editor-spec__tip">
-                  套餐支付成功后，按“服务次数”自动生成对应数量的待预约子工单；每预约一次激活一张。
                 </div>
-              </div>
-            </Card>
+              </Card>
 
-            <Card variant="borderless" className="editor-card">
-              <div className="editor-card__header">
-                <h3>患者端展示详情</h3>
-              </div>
-              <div className="patient-detail">
-                <div className="patient-detail__field patient-detail__cover">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="patient-detail__label">服务封面</span>
-                    <p className="patient-detail__tip">建议尺寸 1:1，展示于服务列表与患者端服务详情顶部。</p>
-                  </div>
-                  <Upload
-                    listType="picture-card"
-                    accept="image/*"
-                    showUploadList={false}
-                    disabled={uploading}
-                    beforeUpload={handleCoverUpload}
-                  >
-                    {coverUrl ? (
-                      <img
-                        src={coverUrl}
-                        alt="列表封面"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
-                      />
-                    ) : (
-                      <div>
-                        <PlusOutlined />
-                        <div style={{ marginTop: 8 }}>{uploading ? '上传中…' : '上传封面'}</div>
+              <Card variant="borderless" className="editor-card">
+                <div className="editor-card__header">
+                  <h3>服务过程</h3>
+                  <Button color="primary" variant="outlined" icon={<PlusOutlined />} onClick={addStep}>
+                    添加步骤
+                  </Button>
+                </div>
+                <div className="process-steps">
+                  {processSteps.map((step, index) => (
+                    <div className="process-step" key={step.id}>
+                      <span className="process-step__badge">{index + 1}</span>
+                      <div className="process-step__fields">
+                        <Input
+                          value={step.title}
+                          placeholder="步骤名称，如：上门评估"
+                          onChange={(e) => updateStep(step.id, { title: e.target.value })}
+                        />
+                        <Input
+                          value={step.description}
+                          placeholder="步骤说明（可选），如：核对身份，评估环境安全"
+                          onChange={(e) => updateStep(step.id, { description: e.target.value })}
+                        />
                       </div>
-                    )}
-                  </Upload>
+                      <div className="process-step__actions">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<ArrowUpOutlined />}
+                          disabled={index === 0}
+                          onClick={() => moveStep(step.id, -1)}
+                        />
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<ArrowDownOutlined />}
+                          disabled={index === processSteps.length - 1}
+                          onClick={() => moveStep(step.id, 1)}
+                        />
+                        <Button
+                          type="text"
+                          size="small"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => removeStep(step.id)}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <RichDetailEditor label="图文详情" value={description} onChange={setDescription} />
-              </div>
-            </Card>
+                {/* <div className="editor-tip">
+                  步骤按顺序序列化为 JSON 存入 service_process；步骤名称为空的行保存时会被忽略。
+                </div> */}
+              </Card>
+
+              <Card variant="borderless" className="editor-card">
+                <div className="editor-card__header">
+                  <h3>服务套餐</h3>
+                  <Button
+                    color="primary" variant="outlined"
+                    icon={<PlusOutlined />}
+                    disabled={!packageEnabled}
+                    onClick={() => openPackageModal()}
+                  >
+                    添加套餐
+                  </Button>
+                </div>
+                <div className="editor-spec">
+                  <Table<PackageItem>
+                    className="package-table"
+                    rowKey="id"
+                    size="small"
+                    pagination={false}
+                    dataSource={packageEnabled ? packages : packages.filter((item) => item.fixed)}
+                    columns={packageColumns}
+                  />
+
+                  <div className="editor-tip editor-spec__tip">
+                    套餐支付成功后，按“服务次数”自动生成对应数量的待预约子工单；每预约一次激活一张。
+                  </div>
+                </div>
+              </Card>
+
+              <Card variant="borderless" className="editor-card">
+                <div className="editor-card__header">
+                  <h3>患者端展示详情</h3>
+                </div>
+                <div className="patient-detail">
+                  <div className="patient-detail__field patient-detail__cover">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="patient-detail__label">服务封面</span>
+                      <p className="patient-detail__tip">建议尺寸 1:1，展示于服务列表与患者端服务详情顶部。</p>
+                    </div>
+                    <Upload
+                      listType="picture-card"
+                      accept="image/*"
+                      showUploadList={false}
+                      disabled={uploading}
+                      beforeUpload={handleCoverUpload}
+                    >
+                      {coverUrl ? (
+                        <img
+                          src={coverUrl}
+                          alt="列表封面"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }}
+                        />
+                      ) : (
+                        <div>
+                          <PlusOutlined />
+                          <div style={{ marginTop: 8 }}>{uploading ? '上传中…' : '上传封面'}</div>
+                        </div>
+                      )}
+                    </Upload>
+                  </div>
+                  <RichDetailEditor label="图文详情" value={description} onChange={setDescription} />
+                </div>
+              </Card>
+            </div>
+
             <div className="service-editor__footer">
               <span>上架后机构可从服务池选择添加；历史订单保留创建时快照。</span>
               <div>
@@ -649,7 +652,6 @@ export default function ServiceEditorPage() {
               </div>
             </div>
           </div>
-
           <Card variant="borderless" className="editor-preview">
             <div className="editor-card__header">
               <h3>患者端预览</h3>

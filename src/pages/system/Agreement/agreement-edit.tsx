@@ -17,7 +17,7 @@ export default function AgreementEdit() {
       title="新建 / 编辑协议版本"
       description="维护协议文本与版本，发布后按生效时间切换"
       extra={
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/system/agreement')}>
+        <Button color="primary" variant="outlined" icon={<ArrowLeftOutlined />} onClick={() => navigate('/system/agreement')}>
           返回列表
         </Button>
       }

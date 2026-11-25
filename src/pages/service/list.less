@@ -293,12 +293,14 @@
     padding: @spacing-2xs @spacing-sm;
 
     .pool-category__name {
-      display: flex;
-      flex-direction: column;
       /* 分类名称：过长时自身折行，不挤压右侧标识 */
       .name-value {
         min-width: 0;
         overflow-wrap: anywhere;
+      }
+      .status-btn {
+        padding: 0 2px;
+        margin-left: 6px;
       }
 
       .pool-category__disabled {

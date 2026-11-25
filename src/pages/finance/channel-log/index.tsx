@@ -18,7 +18,6 @@ import {
   CHANNEL_LOG_STATUS_TONE,
   CHANNEL_TYPE_TEXT,
   MATCH_STATUS_TEXT,
-  ORDER_TYPE_TEXT,
 } from './constants'
 import './index.less'
 
