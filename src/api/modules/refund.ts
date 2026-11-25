@@ -87,6 +87,11 @@ export function getRefund(id: number) {
   return http.get<RefundItem>(`/admin/refunds/${id}`)
 }
 
+/** 手动查询退款结果 POST /api/admin/refunds/:id/query-refund（无请求体） */
+export function queryRefundResult(id: number) {
+  return http.post<null>(`/admin/refunds/${id}/query-refund`)
+}
+
 /**
  * 退款导出 GET /api/admin/refunds/export（swagger：status / start_time / end_time）
  * 与订单导出一致：后端可能返回 JSON（{ download_url }）或文件流，故返回整个 AxiosResponse，

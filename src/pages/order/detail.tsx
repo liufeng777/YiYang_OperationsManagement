@@ -7,10 +7,10 @@
  *   右栏：订单进度（status_history 以 Timeline 渲染，按时间升序，最后一条为当前状态）
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, Descriptions, Empty, Spin, Table, Timeline } from 'antd'
+import { App, Button, Card, Descriptions, Empty, Space, Spin, Table, Timeline } from 'antd'
 import type { DescriptionsProps } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { ArrowLeftOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, SyncOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import SensitiveText from '@/components/SensitiveText'
@@ -59,12 +59,14 @@ const consumableColumns: ColumnsType<OrderConsumable> = [
 
 export default function OrderDetailPage() {
   const navigate = useNavigate()
+  const { message } = App.useApp()
   const params = useParams<{ id: string }>()
   const orderId = Number(params.id)
 
   const [order, setOrder] = useState<OrderDetail | null>(null)
   const [institutions, setInstitutions] = useState<Array<{ id: number; name: string }>>([])
   const [loading, setLoading] = useState(false)
+  const [queryingPay, setQueryingPay] = useState(false)
   /** 该订单下的工单列表 */
   const [workOrders, setWorkOrders] = useState<WorkOrderDTO[]>([])
   const [workOrderLoading, setWorkOrderLoading] = useState(false)
@@ -100,6 +102,21 @@ export default function OrderDetailPage() {
       setWorkOrderLoading(false)
     }
   }, [orderId])
+
+  /** 主动向支付渠道查询并回写结果，再刷新订单和关联工单。 */
+  const handleQueryPay = async () => {
+    if (!orderId || queryingPay) return
+    setQueryingPay(true)
+    try {
+      await orderApi.queryOrderPay(orderId)
+      message.success('支付结果查询完成')
+      await Promise.all([fetchOrder(), fetchWorkOrders()])
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      setQueryingPay(false)
+    }
+  }
 
   useEffect(() => {
     void fetchOrder()
@@ -264,14 +281,25 @@ export default function OrderDetailPage() {
       title="订单详情"
       description={order ? `${order.order_no} · ${institutionName}` : '订单详情'}
       extra={
-        <Button
-          color="primary"
-          variant="outlined"
-          icon={<ArrowLeftOutlined />}
-          onClick={() => navigate('/order')}
-        >
-          返回订单列表
-        </Button>
+        <Space>
+          <Button
+            color="primary" variant='outlined'
+            icon={<SyncOutlined />}
+            loading={queryingPay}
+            disabled={!order}
+            onClick={() => void handleQueryPay()}
+          >
+            查询支付结果
+          </Button>
+          <Button
+            color="primary"
+            variant="outlined"
+            icon={<ArrowLeftOutlined />}
+            onClick={() => navigate('/order')}
+          >
+            返回订单列表
+          </Button>
+        </Space>
       }
     >
       <Spin spinning={loading}>

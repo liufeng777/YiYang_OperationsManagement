@@ -142,6 +142,11 @@ export function createOrderRefund(id: number, data: OrderRefundBody) {
   return http.post<null>(`/admin/orders/${id}/refund`, data)
 }
 
+/** 手动查询订单支付结果 POST /api/admin/orders/:id/query-pay（无请求体） */
+export function queryOrderPay(id: number) {
+  return http.post<null>(`/admin/orders/${id}/query-pay`)
+}
+
 /**
  * 订单导出 GET /api/admin/orders/export
  * 后端当前返回 JSON（{ download_url }）而非文件流，故类型为 AxiosResponse<Blob>；

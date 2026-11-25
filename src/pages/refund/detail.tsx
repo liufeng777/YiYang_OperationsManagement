@@ -8,9 +8,9 @@
  *           在退款单信息中展示套餐履约（served_count / service_count 高亮），标明「退剩余次数费用」
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, Descriptions, Space, Spin, Table, Timeline } from 'antd'
+import { App, Button, Card, Descriptions, Space, Spin, Table, Timeline } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { ArrowLeftOutlined, FileTextOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, FileTextOutlined, SyncOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import SensitiveText from '@/components/SensitiveText'
@@ -43,11 +43,13 @@ const channelLogDotColor = (status: number) =>
 
 export default function RefundDetail() {
   const navigate = useNavigate()
+  const { message } = App.useApp()
   const params = useParams<{ id: string }>()
   const refundId = Number(params.id)
 
   const [refund, setRefund] = useState<RefundItem | null>(null)
   const [loading, setLoading] = useState(false)
+  const [queryingRefund, setQueryingRefund] = useState(false)
   /** 审批弹窗开关：仅 status === 8（待财务审批）时可打开 */
   const [approveOpen, setApproveOpen] = useState(false)
   /** 部分退款（order_type === 2）时关联订单详情，用于展示履约次数 */
@@ -79,6 +81,21 @@ export default function RefundDetail() {
       setOrder(null)
     }
   }, [refund?.order_id, refund?.order_type])
+
+  /** 主动向退款渠道查询并回写结果，再刷新退款单及渠道记录。 */
+  const handleQueryRefund = async () => {
+    if (!refundId || queryingRefund) return
+    setQueryingRefund(true)
+    try {
+      await refundApi.queryRefundResult(refundId)
+      message.success('退款结果查询完成')
+      await fetchRefund()
+    } catch {
+      /* 错误提示由 request 拦截器统一处理 */
+    } finally {
+      setQueryingRefund(false)
+    }
+  }
 
   useEffect(() => {
     void fetchRefund()
@@ -243,6 +260,15 @@ export default function RefundDetail() {
       description={refund ? `${refund.refund_no}` : '退款详情'}
       extra={
         <Space>
+          <Button
+            color="primary" variant='outlined'
+            icon={<SyncOutlined />}
+            loading={queryingRefund}
+            disabled={!refund}
+            onClick={() => void handleQueryRefund()}
+          >
+            查询退款结果
+          </Button>
           <Button
             color="primary"
             variant="outlined"

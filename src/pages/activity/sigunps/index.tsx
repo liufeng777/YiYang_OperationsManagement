@@ -391,16 +391,16 @@ export default function ActivitySignups() {
       } 家参与机构`}
       extra={
         <Space>
-          <Button
-            color="primary" variant='outlined'
-            icon={<ArrowLeftOutlined />} onClick={() => navigate('/activity')}>
-            返回活动列表
-          </Button>
           {canEditActivity && (
             <Button color="primary" variant='outlined' icon={<EditOutlined />} onClick={() => navigate(`/activity/detail/${activityId}`)}>
               编辑活动
             </Button>
           )}
+          <Button
+            color="primary" variant='outlined'
+            icon={<ArrowLeftOutlined />} onClick={() => navigate('/activity')}>
+            返回活动列表
+          </Button>
         </Space>
       }
     >
@@ -468,7 +468,7 @@ export default function ActivitySignups() {
               <span className="list-card__header__title">报名记录</span>
             </div>
             <Space>
-              <Button icon={<DownloadOutlined />} loading={exporting} onClick={handleExport}>
+              <Button color="primary" variant='outlined' icon={<DownloadOutlined />} loading={exporting} onClick={handleExport}>
                 导出
               </Button>
             </Space>
