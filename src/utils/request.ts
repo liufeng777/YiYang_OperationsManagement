@@ -54,10 +54,10 @@ function handleUnauthorized(msg?: string) {
 // 请求拦截器
 service.interceptors.request.use(
   (config) => {
-    // const { token } = useUserStore.getState()
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`
-    // }
+    const { token } = useUserStore.getState()
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
     // 客户端类型标识（共通 §3.1）
     config.headers['X-Client-Type'] = 'web-admin'
     return config

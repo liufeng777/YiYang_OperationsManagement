@@ -257,24 +257,30 @@ export default function RefundList() {
         // ),
       },
       {
+        title: '订单号',
+        key: 'order_no',
+        dataIndex: 'order_no',
+        ellipsis: true,
+        render: (v: string, record) => (
+          <Button type="link" style={{padding: 0, margin: 0}} onClick={() => navigate(`/order/detail/${record.order_id}`)}>{v}</Button>
+        ),
+      },
+      {
         title: '申请人',
         key: 'member_name',
         dataIndex: 'member_name',
-        width: 140,
         ellipsis: true,
         render: (value: string) => <SensitiveText type="name" value={value} />,
       },
       {
-        title: '退款类型',
-        key: 'refund_type',
-        width: 120,
-        render: (_, record) => REFUND_TYPE_TEXT[record.refund_type] ?? record.refund_type ?? '—',
-      },
-      {
-        title: '退款金额',
+        title: '退款',
         key: 'amount',
-        width: 120,
-        render: (_, record) => formatAmount((record.amount)),
+        render: (_, record) => (
+          <div className='table-cell'>
+            <strong>{formatAmount((record.amount))}</strong>
+            <span>{REFUND_TYPE_TEXT[record.refund_type] ?? record.refund_type ?? '—'}</span>
+          </div>
+        )
       },
       {
         title: '退款状态',
@@ -312,7 +318,7 @@ export default function RefundList() {
       {
         title: '操作',
         key: 'action',
-        width: 200,
+        width: 130,
         render: (_, record) => (
           <Space>
             <Button
@@ -321,13 +327,6 @@ export default function RefundList() {
               onClick={() => navigate(`/refund/detail/${record.refund_id}`)}
             >
               查看详情
-            </Button>
-            <Button
-              type="link"
-              size="small"
-              onClick={() => navigate(`/order/detail/${record.order_id}`)}
-            >
-              原订单
             </Button>
             {record.status === 8 && (
               <Button type="link" size="small" onClick={() => setApproveTarget(record)}>
