@@ -12,8 +12,8 @@ import { BarChartOutlined, DownloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import dayjs, { type Dayjs } from 'dayjs'
 import PageContainer from '@/components/PageContainer'
-import SensitiveText, { maskName } from '@/components/SensitiveText'
-import { memberApi, refundApi } from '@/api'
+import SensitiveText from '@/components/SensitiveText'
+import {refundApi } from '@/api'
 import type { RefundItem } from '@/api/modules/refund'
 import { downloadBlob, formatAmount, formatDateTime } from '@/utils'
 import RefundApproveModal from './components/RefundApproveModal'
@@ -64,8 +64,6 @@ const PAGE_SIZE = 10
 export default function RefundList() {
   const navigate = useNavigate()
   const { message } = App.useApp()
-  /** 会员：把申请人 member_id 渲染为姓名 */
-  const [memberMap, setMemberMap] = useState<Map<number, { name: string; phone: string }>>(new Map())
   const [rows, setRows] = useState<RefundItem[]>([])
   const [total, setTotal] = useState(0)
   const [stats, setStats] = useState<any>(null)
@@ -80,36 +78,6 @@ export default function RefundList() {
   const [applied, setApplied] = useState<RefundFilters>(emptyFilters)
   /** 审批弹窗：待财务审批（status=8）的退款单，null 表示未打开 */
   const [approveTarget, setApproveTarget] = useState<RefundItem | null>(null)
-
-  /** 申请人展示：姓名（会员ID），取不到姓名时只显示 ID */
-  const applicantText = useCallback(
-    (record: RefundItem) => {
-      const member = memberMap.get(record.member_id)
-      return member ? `${maskName(member.name)}（${record.member_id}）` : `会员ID ${record.member_id}`
-    },
-    [memberMap],
-  )
-
-  // 会员列表：用于展示/筛选申请人
-  useEffect(() => {
-    let cancelled = false
-    memberApi
-      .getMembers({ page: 1, page_size: 1000 })
-      .then((res) => {
-        if (cancelled) return
-        setMemberMap(
-          new Map(
-            (res.list ?? []).map((item) => [item.id, { name: item.name, phone: item.phone }]),
-          ),
-        )
-      })
-      .catch(() => {
-        if (!cancelled) setMemberMap(new Map())
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   /** 组装查询参数（时间范围按申请时间 applied_at 转 UTC 秒） */
   const buildParams = useCallback(
@@ -178,22 +146,6 @@ export default function RefundList() {
     setPage(1)
     void fetchList(1, emptyFilters, pageSize)
   }
-
-  /** 当前页兜底过滤：关键字匹配退款单号 / 关联订单ID / 申请人姓名（后端未提供该筛选参数） */
-  const filteredRows = useMemo(() => {
-    const kw = applied.keyword.trim()
-    if (!kw) return rows
-    const lower = kw.toLowerCase()
-    return rows.filter((item) => {
-      const member = memberMap.get(item.member_id)
-      return (
-        item.refund_no.toLowerCase().includes(lower) ||
-        String(item.order_id ?? '').includes(lower) ||
-        (member?.name ?? '').includes(kw) ||
-        (member?.phone ?? '').includes(kw)
-      )
-    })
-  }, [applied.keyword, rows, memberMap])
 
   /**
    * 导出退款单：与订单导出一致，兼容「JSON 下载地址」与「二进制文件流」两种后端形态
@@ -338,7 +290,7 @@ export default function RefundList() {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [navigate, applicantText],
+    [navigate],
   )
 
   return (
@@ -390,7 +342,7 @@ export default function RefundList() {
         <Card variant="borderless" className="filter-bar refund-list__filter">
           <Input
             allowClear
-            placeholder="退款单号 / 关联订单ID / 申请人姓名或手机号"
+            placeholder="退款单号 / 订单号 / 申请人姓名"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             onPressEnter={applyFilters}
@@ -427,7 +379,7 @@ export default function RefundList() {
             size="small"
             loading={loading}
             columns={columns}
-            dataSource={filteredRows}
+            dataSource={rows}
             pagination={{
               current: page,
               pageSize,
