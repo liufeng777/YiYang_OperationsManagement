@@ -7,7 +7,7 @@
  *   退款单信息（Descriptions）+ 退款进度（Timeline：申请 → 业务审批 → 财务审批 → 渠道执行 → 到账）
  *   订单与服务信息（Descriptions：机构 / 服务项目 / 会员 / 联系人 / 金额构成 / 服务次数）
  *   履约记录（Timeline：work_orders 按次服务，含服务人员与关键时间）
- * 审批入口：status === 8（待财务审批）时展示「审批」按钮，弹出 RefundApproveModal
+ * 审批入口：status === 1 且具备 payment:edit 时可业务审批；status === 8 且具备 payment:manage 时可财务审批
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
@@ -28,6 +28,7 @@ import type {
 import { formatAmount, formatDateTime } from '@/utils'
 import { ORDER_STATUS_TEXT, ORDER_STATUS_TONE } from '@/pages/order/constants'
 import RefundApproveModal from './components/RefundApproveModal'
+import { hasUserPermission, useUserStore } from '@/store'
 import { REFUND_STATUS_TEXT, REFUND_STATUS_TONE, REFUND_TYPE_TEXT } from './list'
 import './detail.less'
 
@@ -138,7 +139,15 @@ export default function RefundDetail() {
   const [loading, setLoading] = useState(false)
   const [queryingRefund, setQueryingRefund] = useState(false)
   const [refundResult, setRefundResult] = useState<RefundQueryResult | null>(null)
-  /** 审批弹窗开关：仅 status === 8（待财务审批）时可打开 */
+  const canBusinessApprove = useUserStore((state) =>
+    hasUserPermission(state.userInfo, 'payment:edit'),
+  )
+  const canFinanceApprove = useUserStore((state) =>
+    hasUserPermission(state.userInfo, 'payment:manage'),
+  )
+  const canApprove =
+    (refund?.status === 1 && canBusinessApprove) || (refund?.status === 8 && canFinanceApprove)
+  /** 审批弹窗开关：仅当前环节与当前用户审批权限匹配时可打开 */
   const [approveOpen, setApproveOpen] = useState(false)
 
   /** 拉取退款单详情 */
@@ -552,7 +561,7 @@ export default function RefundDetail() {
           >
             返回退款列表
           </Button>
-          {(refund?.status === 8) && (
+          {canApprove && (
             <Button type="primary" onClick={() => setApproveOpen(true)}>
               审批
             </Button>
@@ -684,7 +693,7 @@ export default function RefundDetail() {
                       <div className="work-order-event">
                         <div className="work-order-event__head">
                           <strong>
-                            第 {record.order_seq ?? '—'} 次服务 · {record.work_order_no || '—'}
+                            {record.work_order_no || '—'}
                           </strong>
                           <em className={`status-btn status--${status.tone}`}>{status.text}</em>
                         </div>

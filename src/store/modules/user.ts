@@ -16,6 +16,18 @@ export interface UserInfo {
   permissions: string[]
 }
 
+/** 超级管理员角色编码：登录出参未返回 permissions 时，仍按角色识别为全权限 */
+export const SUPER_ROLE_CODES = ['super_admin', 'super', 'admin', '超级管理员']
+
+/** 根据角色与权限码判断权限；超级管理员直接拥有全部权限 */
+export function hasUserPermission(userInfo: UserInfo | null, permission: string) {
+  if (!userInfo) return false
+  return (
+    userInfo.roles.some((role) => SUPER_ROLE_CODES.includes(role)) ||
+    userInfo.permissions.includes(permission)
+  )
+}
+
 interface UserState {
   token: string
   userInfo: UserInfo | null

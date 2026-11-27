@@ -1,6 +1,6 @@
 /**
  * 退款审批弹窗（退款列表 / 退款详情共用）
- * 触发条件：退款单 status === 8（待财务审批）
+ * 触发条件：退款单处于待业务审批（status=1）或待财务审批（status=8），且当前用户具备对应权限
  * 数据来源：refundApi.approveRefunds（POST /admin/refunds/:id/approve）
  * 金额单位：页面输入「元」，提交按后端契约换算为「分」
  */

@@ -17,6 +17,7 @@ import {refundApi } from '@/api'
 import type { RefundItem } from '@/api/modules/refund'
 import { downloadBlob, formatAmount, formatDateTime } from '@/utils'
 import RefundApproveModal from './components/RefundApproveModal'
+import { hasUserPermission, useUserStore } from '@/store'
 import './list.less'
 
 export const REFUND_STATUS_TEXT: Record<number, string> = {
@@ -76,7 +77,13 @@ export default function RefundList() {
   const [status, setStatus] = useState<number | null>(null)
   const [range, setRange] = useState<[Dayjs, Dayjs] | null>(null)
   const [applied, setApplied] = useState<RefundFilters>(emptyFilters)
-  /** 审批弹窗：待财务审批（status=8）的退款单，null 表示未打开 */
+  const canBusinessApprove = useUserStore((state) =>
+    hasUserPermission(state.userInfo, 'payment:edit'),
+  )
+  const canFinanceApprove = useUserStore((state) =>
+    hasUserPermission(state.userInfo, 'payment:manage'),
+  )
+  /** 审批弹窗：待业务审批（status=1）或待财务审批（status=8）的退款单，null 表示未打开 */
   const [approveTarget, setApproveTarget] = useState<RefundItem | null>(null)
 
   /** 组装查询参数（时间范围按申请时间 applied_at 转 UTC 秒） */
@@ -280,7 +287,8 @@ export default function RefundList() {
             >
               查看详情
             </Button>
-            {record.status === 8 && (
+            {((record.status === 1 && canBusinessApprove) ||
+              (record.status === 8 && canFinanceApprove)) && (
               <Button type="link" size="small" onClick={() => setApproveTarget(record)}>
                 审批
               </Button>
@@ -289,8 +297,7 @@ export default function RefundList() {
         ),
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [navigate],
+    [canBusinessApprove, canFinanceApprove, navigate],
   )
 
   return (
