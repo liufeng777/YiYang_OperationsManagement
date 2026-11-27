@@ -1,10 +1,10 @@
 /**
  * 记录沟通跟进 Drawer（设计稿：四项信息）
- * - 沟通对象：当前注册会员（只读展示）
+ * - 沟通对象：当前注册用户（只读展示）
  * - 沟通要点：必填
  * - 推荐服务：选填多选，候选来自 GET /admin/services（status=1 上架中）
  * - 下次联系时间：选填
- * - 保存：addMemberFollowup —— swagger 未提供注册会员跟进接口，捕获 ApiPendingError 后提示「接口未对接」
+ * - 保存：addMemberFollowup —— swagger 未提供注册用户跟进接口，捕获 ApiPendingError 后提示「接口未对接」
  */
 import { useEffect, useState } from 'react'
 import { App, Button, Checkbox, DatePicker, Drawer, Form, Input } from 'antd'
@@ -105,13 +105,13 @@ export default function FollowupDrawer(props: FollowupDrawerProps) {
         )}
       </p>
       <p className="followup-drawer__hint">
-        沟通记录保存在注册会员下；普通服务咨询不创建健康管理接入线索。
+        沟通记录保存在注册用户下；普通服务咨询不创建健康管理接入线索。
       </p>
 
       <Form form={form} layout="vertical">
         <Form.Item label="沟通对象" required>
           <div className="followup-drawer__contact">
-            <SensitiveText allowReveal type="name" value={member?.nickname} />（注册会员） ·{' '}
+            <SensitiveText allowReveal type="name" value={member?.nickname} />（注册用户） ·{' '}
             <SensitiveText allowReveal type="phone" value={member?.phone} />
           </div>
         </Form.Item>

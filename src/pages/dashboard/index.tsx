@@ -1,7 +1,7 @@
 /**
  * 运营首页 - 数据总览（对齐设计稿《运营首页》）
  * 布局：统计日期行（今日 / 昨日 / 本月 / 自定义日期 + 查询 + 数据更新时间）
- *       + 指标卡（新增注册会员数 / 首单转化会员数 / 服务净成交金额）
+ *       + 指标卡（新增注册用户数 / 首单转化会员数 / 服务净成交金额）
  *       + 待办事项 / 服务净成交趋势 + 近期订单表格
  * 数据来源：dashboardApi.getDashboardOverview({ scope:'all', start_ts, end_ts, limit })
  *          一次性返回 { accounts, dataset_dura, recent_orders, todos }
@@ -143,7 +143,7 @@ export default function Dashboard() {
 
   const dataset = overview?.dataset_dura
 
-  /** 新增注册会员数：所选区间内 registered_trend 之和（val 为字符串，转数值累加） */
+  /** 新增注册用户数：所选区间内 registered_trend 之和（val 为字符串，转数值累加） */
   const registeredTotal = useMemo(
     () => (dataset?.registered_trend ?? []).reduce((sum, point) => sum + (Number(point.val) || 0), 0),
     [dataset],
@@ -153,7 +153,7 @@ export default function Dashboard() {
   const metricCards: MetricCard[] = [
     {
       key: 'registered',
-      label: '新增注册会员数',
+      label: '新增注册用户数',
       value: overview ? registeredTotal : undefined,
       badge: '按首次注册时间统计',
       tone: 'success',
@@ -290,7 +290,7 @@ export default function Dashboard() {
   const dense = trend.points.length > TREND_DENSE_COUNT
 
   return (
-    <PageContainer fixed title="运营首页" description="注册会员拉新、首单转化与服务成交概览">
+    <PageContainer fixed title="运营首页" description="注册用户拉新、首单转化与服务成交概览">
       {/* 统计日期 */}
       <div className="dashboard-filter">
         <span className="dashboard-filter__label">统计日期</span>

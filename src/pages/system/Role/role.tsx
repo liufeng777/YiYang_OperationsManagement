@@ -18,7 +18,7 @@ import './role.less'
 /** 权限模块 → 中文标题 */
 const MODULE_TITLE: Record<string, string> = {
   activity: '活动管理',
-  admin: '管理员账号',
+  admin: '管理员',
   all: '全部功能',
   consultation: '咨询管理',
   content: '内容管理',
@@ -26,15 +26,16 @@ const MODULE_TITLE: Record<string, string> = {
   institution: '机构管理',
   lead: '线索管理',
   log: '操作日志',
-  member: '会员管理',
+  member: '健康会员',
   message: '消息通知',
   order: '订单与工单',
-  payment: '支付配置',
+  payment: '支付/退款/对账',
   role: '角色管理',
   service: '服务项目',
-  setting: '系统设置',
-  staff: '员工管理',
-  user: '用户管理',
+  setting: '运营配置',
+  staff: '医护人员',
+  user: '注册用户',
+  reward: '推荐与奖励'
 }
 
 const moduleTitle = (module: string) => MODULE_TITLE[module] ?? module

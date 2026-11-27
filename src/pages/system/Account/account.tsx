@@ -319,11 +319,11 @@ export default function AccountList() {
   return (
     <PageContainer
       fixed
-      title="管理员管理"
+      title="人员管理"
       description="创建运营平台管理员并分配角色，用户权限全部继承所属角色"
       extra={
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-          新增管理员
+          新增人员
         </Button>
       }
     >

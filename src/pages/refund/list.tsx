@@ -20,7 +20,7 @@ import RefundApproveModal from './components/RefundApproveModal'
 import './list.less'
 
 export const REFUND_STATUS_TEXT: Record<number, string> = {
-  1: '待医护审批',
+  1: '待业务审批',
   2: '审批通过',
   3: '退款中',
   4: '已退款',

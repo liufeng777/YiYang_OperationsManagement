@@ -387,10 +387,10 @@ export default function LeadList() {
               </span>
             </div>
             <div className="list-card__header__actions">
-              <Button icon={<UploadOutlined />} loading={importing} onClick={() => fileInputRef.current?.click()}>
+              <Button color="primary" variant="outlined" icon={<UploadOutlined />} loading={importing} onClick={() => fileInputRef.current?.click()}>
                 CSV 导入
               </Button>
-              <Button icon={<DownloadOutlined />} loading={exporting} onClick={handleExport}>
+              <Button color="primary" variant="outlined" icon={<DownloadOutlined />} loading={exporting} onClick={handleExport}>
                 导出 CSV
               </Button>
               <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>

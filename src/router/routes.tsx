@@ -241,7 +241,7 @@ export const routes: RouteConfig[] = [
     children: [
       {
         path: 'registered',
-        meta: { title: '注册会员' },
+        meta: { title: '注册用户' },
         component: lazyWithReload(() => import('@/pages/member/list')),
       },
       {
@@ -272,7 +272,7 @@ export const routes: RouteConfig[] = [
     children: [
       {
         path: 'account',
-        meta: { title: '管理员管理' },
+        meta: { title: '人员管理' },
         component: lazyWithReload(() => import('@/pages/system/Account/account')),
       },
       {

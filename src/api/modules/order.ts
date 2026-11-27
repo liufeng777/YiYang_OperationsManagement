@@ -23,7 +23,7 @@ export interface OrderConsumable {
   amount: number
 }
 
-/** 订单关联的退款单摘要（refund_status 见 refund 模块：1-待医护审批 2-审批通过 3-退款中 4-已退款 5-已拒绝 6-退款失败） */
+/** 订单关联的退款单摘要（refund_status 见 refund 模块：1-待业务审批 2-审批通过 3-退款中 4-已退款 5-已拒绝 6-退款失败） */
 export interface OrderRefundSummary {
   id: number
   refund_no: string

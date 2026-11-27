@@ -1,7 +1,7 @@
 /**
- * 会员运营（注册会员运营视角）
+ * 会员运营（注册用户运营视角）
  *
- * 设计稿来源：注册会员管理（导出拉新明细 / 会员详情）
+ * 设计稿来源：注册用户管理（导出拉新明细 / 会员详情）
  *
  * 接口对接现状（对照 src/api/swagger.json）：
  * ✅ 已具备：
@@ -10,7 +10,7 @@
  *   - 拉新注册事件：GET /admin/referral-events（event_type=100 注册，start_time/stop_time）
  *   - 导出拉新明细：GET /admin/referral-events/export（CSV，见 reward.ts，入口在推荐与奖励页）
  * ❌ swagger.json 未提供（下方以 ApiPendingError 占位，页面捕获后统一提示「接口未对接」）：
- *   - 注册会员沟通跟进记录的新增 / 列表（沟通要点、推荐服务、下次联系时间）
+ *   - 注册用户沟通跟进记录的新增 / 列表（沟通要点、推荐服务、下次联系时间）
  */
 import type { ApiPageParams, ApiPageResult } from '@/types/api'
 import type { UserDTO } from './member'
@@ -33,11 +33,11 @@ export function isApiPendingError(error: unknown): error is ApiPendingError {
 }
 
 /* ------------------------------------------------------------------ */
-/* 注册会员（注册用户）列表行                                            */
+/* 注册用户（注册用户）列表行                                            */
 /* ------------------------------------------------------------------ */
 
 /**
- * 注册会员列表行：GET /admin/users 返回的 UserDTO
+ * 注册用户列表行：GET /admin/users 返回的 UserDTO
  * 注册来源 / OpenID 筛选已对接（register_source / wx_openid）；
  * 运营归属字段接口未返回，在此以可选字段预留（FollowupDrawer 展示用）
  */
@@ -74,7 +74,7 @@ export function registerSourceText(row: RegisteredUserRow): string {
  * 入口在「会员管理 - 推荐与奖励」页（pages/member/referral/ExportRecruitModal.tsx）。 */
 
 /* ------------------------------------------------------------------ */
-/* 沟通跟进（❌ swagger 未提供注册会员跟进接口；线索跟进接口不适用于注册会员） */
+/* 沟通跟进（❌ swagger 未提供注册用户跟进接口；线索跟进接口不适用于注册用户） */
 /* ------------------------------------------------------------------ */
 
 /** 记录沟通跟进入参（按设计稿四项信息） */
@@ -106,7 +106,7 @@ export interface MemberFollowupRecord {
 
 /**
  * 新增沟通跟进
- * TODO(接口缺失)：预期形如 POST /admin/members/:id/followups（线索的 POST /admin/leads/:id/followup 不适用于注册会员）。
+ * TODO(接口缺失)：预期形如 POST /admin/members/:id/followups（线索的 POST /admin/leads/:id/followup 不适用于注册用户）。
  */
 export function addMemberFollowup(_memberId: number, _data: MemberFollowupBody): Promise<never> {
   return Promise.reject(new ApiPendingError('记录沟通跟进'))

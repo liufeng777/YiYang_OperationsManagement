@@ -1,5 +1,5 @@
 /**
- * 会员管理 - 注册会员列表
+ * 会员管理 - 注册用户列表
  * 数据来源：memberApi.getUsers（GET /admin/users，swagger：会员管理-注册用户）
  *   下推后端的筛选：keyword（昵称或手机号模糊）/ wx_openid（微信 OpenID）/ register_source（注册来源）
  * 保留能力：会员档案 Excel 导入 / 模板下载
@@ -7,16 +7,16 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { App, Button, Card, Input, Select, Upload } from 'antd'
+import { Button, Card, Input, Select } from 'antd'
 import FillTable from '@/components/FillTable'
 import type { ColumnsType } from 'antd/es/table'
-import { DownloadOutlined, UploadOutlined } from '@ant-design/icons'
+// import { DownloadOutlined, UploadOutlined } from '@ant-design/icons'
 import PageContainer from '@/components/PageContainer'
 import SensitiveText from '@/components/SensitiveText'
 import { memberApi } from '@/api'
 import { registerSourceText } from '@/api/modules/memberOperation'
 import type { RegisteredUserRow } from '@/api/modules/memberOperation'
-import { downloadBlob, formatAmount, formatDateTime } from '@/utils'
+import { formatAmount, formatDateTime } from '@/utils'
 import './list.less'
 
 const PAGE_SIZE = 10
@@ -39,7 +39,7 @@ interface AppliedFilters {
 const emptyFilters: AppliedFilters = { keyword: '', openid: '', sourceType: null }
 
 export default function MemberList() {
-  const { message, modal } = App.useApp()
+  // const { message, modal } = App.useApp()
   const navigate = useNavigate()
 
   const [rows, setRows] = useState<RegisteredUserRow[]>([])
@@ -55,11 +55,11 @@ export default function MemberList() {
   const [applied, setApplied] = useState<AppliedFilters>(emptyFilters)
 
   /** 模板下载 / Excel 导入进行中状态 */
-  const [templateLoading, setTemplateLoading] = useState(false)
-  const [importing, setImporting] = useState(false)
+  // const [templateLoading, setTemplateLoading] = useState(false)
+  // const [importing, setImporting] = useState(false)
 
   /**
-   * 拉取注册会员列表（GET /admin/users）
+   * 拉取注册用户列表（GET /admin/users）
    * keyword / wx_openid / register_source 下推后端
    */
   const fetchList = useCallback(
@@ -117,61 +117,61 @@ export default function MemberList() {
   }
 
   /** 下载导入模板（拦截器对 blob 响应返回完整 AxiosResponse，失败时错误提示已统一处理） */
-  const handleDownloadTemplate = async () => {
-    setTemplateLoading(true)
-    try {
-      const res = await memberApi.getMemberImportTemplate()
-      downloadBlob(res.data, '会员导入模板.xlsx')
-    } catch {
-      /* 错误提示由 request 拦截器统一处理 */
-    } finally {
-      setTemplateLoading(false)
-    }
-  }
+  // const handleDownloadTemplate = async () => {
+  //   setTemplateLoading(true)
+  //   try {
+  //     const res = await memberApi.getMemberImportTemplate()
+  //     downloadBlob(res.data, '会员导入模板.xlsx')
+  //   } catch {
+  //     /* 错误提示由 request 拦截器统一处理 */
+  //   } finally {
+  //     setTemplateLoading(false)
+  //   }
+  // }
 
   /** Excel 导入会员：成功后刷新列表；存在失败行时弹出明细 */
-  const handleImport = async (file: File) => {
-    if (!/\.(xlsx|xls)$/i.test(file.name)) {
-      message.error('请上传 Excel 文件（.xlsx / .xls）')
-      return
-    }
-    setImporting(true)
-    try {
-      const result = await memberApi.importMembers(file)
-      const failList = result.fail_list ?? []
-      if (failList.length > 0) {
-        modal.warning({
-          title: '导入完成，部分数据失败',
-          content: (
-            <div>
-              <p>
-                成功 {result.success_count} 条，失败 {result.fail_count} 条
-              </p>
-              <ul className="import-fail-list">
-                {failList.map((item) => (
-                  <li key={item.row}>
-                    第 {item.row} 行：{item.reason}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ),
-        })
-      } else {
-        message.success(`导入成功 ${result.success_count} 条`)
-      }
-      setPage(1)
-      void fetchList(1, applied, pageSize)
-    } catch {
-      /* 错误提示由 request 拦截器统一处理 */
-    } finally {
-      setImporting(false)
-    }
-  }
+  // const handleImport = async (file: File) => {
+  //   if (!/\.(xlsx|xls)$/i.test(file.name)) {
+  //     message.error('请上传 Excel 文件（.xlsx / .xls）')
+  //     return
+  //   }
+  //   setImporting(true)
+  //   try {
+  //     const result = await memberApi.importMembers(file)
+  //     const failList = result.fail_list ?? []
+  //     if (failList.length > 0) {
+  //       modal.warning({
+  //         title: '导入完成，部分数据失败',
+  //         content: (
+  //           <div>
+  //             <p>
+  //               成功 {result.success_count} 条，失败 {result.fail_count} 条
+  //             </p>
+  //             <ul className="import-fail-list">
+  //               {failList.map((item) => (
+  //                 <li key={item.row}>
+  //                   第 {item.row} 行：{item.reason}
+  //                 </li>
+  //               ))}
+  //             </ul>
+  //           </div>
+  //         ),
+  //       })
+  //     } else {
+  //       message.success(`导入成功 ${result.success_count} 条`)
+  //     }
+  //     setPage(1)
+  //     void fetchList(1, applied, pageSize)
+  //   } catch {
+  //     /* 错误提示由 request 拦截器统一处理 */
+  //   } finally {
+  //     setImporting(false)
+  //   }
+  // }
 
   const columns: ColumnsType<RegisteredUserRow> = [
     {
-      title: '注册会员 / 手机号',
+      title: '注册用户 / 手机号',
       key: 'member',
       render: (_, record) => (
         <div className="table-cell">
@@ -230,14 +230,14 @@ export default function MemberList() {
   return (
     <PageContainer
       fixed
-      title="注册会员管理"
-      description="查看注册会员来源与下单结果，支持档案导入"
+      title="注册用户管理"
+      description="查看注册用户来源与下单结果，支持档案导入"
     >
       <div className="member-list">
         <Card variant="borderless" className="filter-bar member-list__filter">
           <Input
             allowClear
-            placeholder="注册会员昵称或手机号"
+            placeholder="注册用户昵称或手机号"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             onPressEnter={applyFilters}
@@ -265,9 +265,9 @@ export default function MemberList() {
         <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
-              <span className="list-card__header__title">注册会员列表</span>
+              <span className="list-card__header__title">注册用户列表</span>
             </div>
-            <div className="member-list__actions">
+            {/* <div className="member-list__actions">
               <Button
                 icon={<DownloadOutlined />}
                 loading={templateLoading}
@@ -288,7 +288,7 @@ export default function MemberList() {
                   Excel 导入
                 </Button>
               </Upload>
-            </div>
+            </div> */}
           </div>
           <FillTable<RegisteredUserRow>
             rowKey="id"

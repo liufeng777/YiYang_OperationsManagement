@@ -1,5 +1,5 @@
 /**
- * 注册会员 - 会员详情 Drawer
+ * 注册用户 - 会员详情 Drawer
  * 数据来源：memberApi.getMember(id)（§4.1，含地址、标签、关系、风险等级；当前 DTO 返回基础档案 + 标签）
  * 机构 / 标签名称：由列表页传入 institutionMap / tagMap 匹配（institution_id → 机构名，tag_id → tag_name/tag_color）
  * 证件号：默认中间 * 掩码，点击眼睛图标切换显示完整证件号

@@ -1,5 +1,5 @@
 /**
- * 会员管理 - 注册会员详情（设计稿：基本资料 / 本人及关联家属 / 订单记录）
+ * 会员管理 - 注册用户详情（设计稿：基本资料 / 本人及关联家属 / 订单记录）
  * 数据来源：memberApi.getUser（GET /admin/users/:id，实测返回 UserDTO）
  *   - 基本资料：注册来源 / 邀请人、注册时间、购买情况、账号状态（status）、推广码（referral_code）、微信 OpenID
  *   - 本人及关联家属：bound_members（name / relation_text / gender / age / health_access_status）
@@ -215,7 +215,7 @@ export default function MemberDetailPage() {
 
   return (
     <PageContainer
-      title="注册会员详情"
+      title="注册用户详情"
       description={
         detail ? (
           <>

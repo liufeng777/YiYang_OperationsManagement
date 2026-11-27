@@ -1,5 +1,5 @@
 /**
- * 注册会员模块共享枚举文案
+ * 注册用户模块共享枚举文案
  * 实名状态见 member.ts §4.1：1-未实名 2-已实名 9-禁用
  */
 import type { MemberDTO, MemberTagBrief } from '@/api/modules/member'
