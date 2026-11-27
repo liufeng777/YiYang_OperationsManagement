@@ -13,60 +13,131 @@ import type { ApiPageParams, ApiPageResult } from '@/types/api'
 /* ------------------------------------------------------------------ */
 
 
-/** 退款单（列表项与详情字段一致） */
+/**
+ * 金额字段说明：退款详情接口以「元」字符串返回（如 "150.00"），
+ * 与订单模块一致（DECIMAL(10,2)），页面直接 formatAmount 展示，不再除以 100。
+ */
+export type RefundAmount = number | string
+
+/** 退款审批记录（通常是 2 条：业务审批 → 财务审批） */
+export interface RefundApproval {
+  record_id: number
+  /** 审批结果：1-通过 2-拒绝 */
+  approve_result: number
+  /** 审批步骤：1-业务审批 2-财务审批（按升序展示） */
+  approve_step: number
+  approver_id: number
+  approver_name: string
+  /** 审批环节：business-业务 finance-财务 */
+  approver_type: string
+  /** 审批时间（UTC 秒） */
+  created_at: number
+  /** 审批意见 */
+  opinion: string
+  /** 核定退款金额（元） */
+  refund_amount: RefundAmount
+  /** 退款渠道，如 wxpay */
+  refund_channel: string
+}
+
+/** 退款渠道执行日志（首次执行 + 失败重试时可能多条） */
+export interface RefundChannelLog {
+  log_id: number
+  amount: RefundAmount
+  channel: string
+  /** 创建时间（UTC 秒） */
+  create_at: number
+  fail_reason: string
+  /** 完成时间（UTC 秒） */
+  finished_at: number
+  operator_id: number
+  operator_name: string
+  operator_type: string
+  order_id: number
+  order_type: number
+  out_refund_no: string
+  refund_id: number
+  refund_mode: number
+  refund_no: string
+  remark: string
+  /** 渠道记录状态：3-退款中 4-已退款 6-退款失败 */
+  status: number
+  transaction_id: string
+  /** 触发时间（UTC 秒） */
+  triggered_at: number
+  wx_refund_id: string
+}
+
+/** 退款单关联的履约工单摘要（退款详情接口直接返回，无需再查工单列表） */
+export interface RefundWorkOrder {
+  work_order_id: number
+  work_order_no: string
+  /** 第几次服务（1 起） */
+  order_seq: number
+  wo_status: number
+  /** 后端返回的工单状态文案（优先展示） */
+  wo_status_name?: string
+  assigned_staff_id?: number
+  /** 服务人员 */
+  staff_name?: string
+  /** 期望上门时间（UTC 秒） */
+  expected_start_at?: number
+  /** 完成时间（UTC 秒） */
+  completed_at?: number
+  /** 取消时间（UTC 秒） */
+  cancelled_at?: number
+}
+
+/** 退款单（列表项与详情字段一致，详情额外返回订单 / 履约摘要） */
 export interface RefundItem {
+  id: number
   refund_id: number
   refund_no: string
   refund_type: number // 1 用户申请 2.专业审核未通过 3.其他
   refunded_at: number // 退款时间
   status: number //  1-待审批 2-审批通过 3-退款中 4-已退款 5-已拒绝 6-退款失败 8.待财务审批
-  amount: number // 总金额
+  /** 申请退款金额（元） */
+  amount: RefundAmount
   reason: string
+  remark?: string
   member_id: number // 申请人
   member_name: string
+  /** 下单账号 */
+  user_id?: number
+  user_name?: string
   applied_at: number // 申请时间
   approved_at: number // 通过时间
   approved_by: number | null // 通过人
   approved_by_name: string // 通过人名称
-  create_at: number // 创建时间
+  /** 退款单创建时间（UTC 秒） */
+  create_at: number
+  /** 关联订单下单时间（UTC 秒） */
+  created_at?: number
   // 订单信息
   order_id: number
   order_no: string
   order_type: number
-  approvals: {
-    approve_result: number
-    approve_step: number
-    approver_id: number
-    approver_name: string
-    approver_type: string
-    created_at: number
-    opinion: string
-    record_id: string
-    refund_amount: string
-    refund_channel: string
-  }[] // 审批记录 通常是2条数据
-  refund_channel_logs: {
-    amount: number
-    channel: string
-    create_at: number
-    fail_reason: string
-    finished_at: number
-    log_id: number
-    operator_id: number
-    operator_name: string
-    operator_type: string
-    order_id: number
-    order_type: number
-    out_refund_no: string
-    refund_id: number
-    refund_mode: number
-    refund_no: string
-    remark: string
-    status: number
-    transaction_id: string
-    triggered_at: number
-    wx_refund_id: string
-  }[] // 退款渠道记录，通常是1条
+  order_status: number
+  institution_id: number
+  institution_name?: string
+  service_id?: number
+  service_name?: string
+  /** 联系人 / 联系电话 */
+  contact_name?: string
+  contact_phone?: string
+  /** 是否使用耗材：1-是 0-否 */
+  is_use_consumables?: number
+  /** 订单原价 / 优惠 / 实付（元） */
+  total_amount?: RefundAmount
+  discount_amount?: RefundAmount
+  paid_amount?: RefundAmount
+  /** 购买服务次数 / 已服务次数 */
+  service_count?: number
+  served_count?: number
+  approvals: RefundApproval[] // 审批记录 通常是2条数据
+  refund_channel_logs: RefundChannelLog[] // 退款渠道记录，通常是1条
+  /** 履约工单摘要（详情接口返回） */
+  work_orders?: RefundWorkOrder[]
 }
 
 /** 退款单列表 GET /api/admin/refunds（swagger：page / page_size / status / institution_id / start_time / end_time） */

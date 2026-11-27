@@ -46,7 +46,7 @@ export default function RefundApproveModal({ refund, open, onClose, onSuccess }:
     form.resetFields()
     form.setFieldsValue({
       approve: true,
-      refund_amount: refund.amount,
+      refund_amount: Number(refund.amount),
       refund_channel: undefined,
       opinion: undefined,
     })
@@ -100,7 +100,7 @@ export default function RefundApproveModal({ refund, open, onClose, onSuccess }:
         form={form}
         layout="vertical"
         preserve={false}
-        initialValues={{ approve: true, refund_amount: refund?.amount }}
+        initialValues={{ approve: true, refund_amount: Number(refund?.amount) }}
       >
         <Form.Item
           name="approve"

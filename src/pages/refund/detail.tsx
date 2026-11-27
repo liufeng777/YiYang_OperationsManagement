@@ -1,29 +1,37 @@
 /**
  * 退款管理 - 退款详情
- * 数据来源：refundApi.getRefund（金额单位为「分」，展示统一换算为「元」）
+ * 数据来源：refundApi.getRefund（详情接口已返回订单 / 服务 / 履约工单摘要，无需额外请求）
+ * 金额单位：接口以「元」返回（如 "150.00"），直接 formatAmount 展示
+ * 页面结构：
+ *   状态摘要（状态 / 退款金额 / 关联订单 / 申请人 / 申请时间）
+ *   退款单信息（Descriptions）+ 退款进度（Timeline：申请 → 业务审批 → 财务审批 → 渠道执行 → 到账）
+ *   订单与服务信息（Descriptions：机构 / 服务项目 / 会员 / 联系人 / 金额构成 / 服务次数）
+ *   履约记录（Timeline：work_orders 按次服务，含服务人员与关键时间）
  * 审批入口：status === 8（待财务审批）时展示「审批」按钮，弹出 RefundApproveModal
- * 审批记录：refund.approvals 用 Table 渲染，核定退款金额重点突出
- * 退款渠道记录：refund.refund_channel_logs 为动态日志（可能多条重试），用 Timeline 渲染
- * 部分退款：order_type === 2 时按 order_id 拉取订单（orderApi.getOrder），
- *           在退款单信息中展示套餐履约（served_count / service_count 高亮），标明「退剩余次数费用」
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, Descriptions, Space, Spin, Table, Timeline } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
+import type { ReactNode } from 'react'
+import { Button, Card, Descriptions, Space, Spin, Timeline } from 'antd'
 import { ArrowLeftOutlined, FileTextOutlined, SyncOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import PageContainer from '@/components/PageContainer'
 import SensitiveText from '@/components/SensitiveText'
 import ChannelQueryResultModal from '@/components/ChannelQueryResultModal'
-import { orderApi, refundApi } from '@/api'
-import type { OrderDetail } from '@/api/modules/order'
-import type { RefundItem, RefundQueryResult } from '@/api/modules/refund'
+import { refundApi } from '@/api'
+import type {
+  RefundApproval,
+  RefundChannelLog,
+  RefundItem,
+  RefundQueryResult,
+  RefundWorkOrder,
+} from '@/api/modules/refund'
 import { formatAmount, formatDateTime } from '@/utils'
+import { ORDER_STATUS_TEXT, ORDER_STATUS_TONE } from '@/pages/order/constants'
 import RefundApproveModal from './components/RefundApproveModal'
 import { REFUND_STATUS_TEXT, REFUND_STATUS_TONE, REFUND_TYPE_TEXT } from './list'
 import './detail.less'
 
-/** 订单退款类型 */
+/** 订单退款类型（order_type） */
 export const ORDER_REFUND_TYPE: Record<number, string> = {
   1: '全额退款',
   2: '部分退款',
@@ -37,18 +45,89 @@ const REFUND_QUERY_STATUS_TEXT: Record<string, string> = {
   NOT_EXIST: '微信侧退款单不存在',
 }
 
-/** 审批结果（契约未定义数值枚举，按常见约定 1-通过 2-拒绝，未知值回显原始值） */
+/** 审批结果（1-通过 2-拒绝，未知值回显原始值） */
 const APPROVE_RESULT_TEXT: Record<number, string> = {
   1: '通过',
   2: '拒绝',
 }
 
+/** 审批环节（approver_type） */
+const APPROVER_TYPE_TEXT: Record<string, string> = {
+  business: '业务审批',
+  finance: '财务审批',
+  staff: '运营审批',
+}
 
-type RefundApproval = RefundItem['approvals'][number]
+/** 退款渠道（后端为字符串枚举，未知值回显原始值） */
+const REFUND_CHANNEL_TEXT: Record<string, string> = {
+  wxpay: '微信支付',
+  wechat: '微信支付',
+  alipay: '支付宝',
+  bank: '银行卡',
+  balance: '余额',
+  offline: '线下转账',
+}
 
-/** 渠道记录状态色（复用退款状态语义：4-已退款 6-退款失败 3-退款中） */
-const channelLogDotColor = (status: number) =>
-  status === 4 ? 'green' : status === 6 ? 'red' : status === 3 ? 'blue' : 'gray'
+/** 工单状态文案（与工单列表一致；后端返回 wo_status_name 时优先使用） */
+const WORK_ORDER_STATUS_TEXT: Record<number, string> = {
+  1: '待排单',
+  2: '待接单',
+  3: '已接单',
+  4: '已签到',
+  5: '服务中',
+  6: '已完成',
+  7: '已取消',
+}
+
+const WORK_ORDER_STATUS_TONE: Record<number, string> = {
+  1: 'warning',
+  2: 'warning',
+  3: 'info',
+  4: 'info',
+  5: 'success',
+  6: 'success',
+  7: 'danger',
+}
+
+/** 时间戳（UTC 秒）格式化，空值显示占位 */
+const fmtTime = (seconds?: number | null, format = 'YYYY-MM-DD HH:mm') =>
+  seconds ? formatDateTime(seconds * 1000, format) : '—'
+
+/** 退款渠道文案 */
+const channelText = (channel?: string) =>
+  channel ? REFUND_CHANNEL_TEXT[channel.toLowerCase()] ?? channel : '—'
+
+/** 工单状态徽标（优先按后端返回的中文文案判定语义） */
+const workOrderStatus = (record: RefundWorkOrder) => {
+  const text = record.wo_status_name || WORK_ORDER_STATUS_TEXT[record.wo_status] || '—'
+  const tone = /取消|失败|拒绝/.test(text)
+    ? 'danger'
+    : /完成/.test(text)
+      ? 'success'
+      : WORK_ORDER_STATUS_TONE[record.wo_status] ?? 'info'
+  return { text, tone }
+}
+
+/** 退款进度节点（Timeline 渲染） */
+interface ProgressEvent {
+  key: string
+  /** 节点标题 */
+  title: string
+  /** 发生时间（UTC 秒），为空表示尚未发生 */
+  time?: number
+  /** 尚未发生的节点（时间位置展示「进行中」） */
+  pending?: boolean
+  /** Timeline 节点颜色 */
+  dot: 'green' | 'red' | 'blue' | 'gray'
+  /** 状态徽标文案 */
+  badge?: string
+  /** 徽标色调（对应 global.less 的 status--xxx） */
+  tone?: string
+  /** 关键字段 */
+  meta?: Array<{ label: string; value: ReactNode }>
+  /** 补充说明（审批意见 / 失败原因 / 备注） */
+  note?: string
+}
 
 export default function RefundDetail() {
   const navigate = useNavigate()
@@ -61,8 +140,6 @@ export default function RefundDetail() {
   const [refundResult, setRefundResult] = useState<RefundQueryResult | null>(null)
   /** 审批弹窗开关：仅 status === 8（待财务审批）时可打开 */
   const [approveOpen, setApproveOpen] = useState(false)
-  /** 部分退款（order_type === 2）时关联订单详情，用于展示履约次数 */
-  const [order, setOrder] = useState<OrderDetail | null>(null)
 
   /** 拉取退款单详情 */
   const fetchRefund = useCallback(async () => {
@@ -76,20 +153,6 @@ export default function RefundDetail() {
       setLoading(false)
     }
   }, [refundId])
-
-  /** 部分退款时拉取关联订单详情（取 served_count / service_count 履约次数） */
-  const fetchOrder = useCallback(async () => {
-    if (refund?.order_type !== 2 || !refund.order_id) {
-      setOrder(null)
-      return
-    }
-    try {
-      setOrder(await orderApi.getOrder(refund.order_id))
-    } catch {
-      /* 错误提示由 request 拦截器统一处理 */
-      setOrder(null)
-    }
-  }, [refund?.order_id, refund?.order_type])
 
   /** 主动向退款渠道查询并回写结果，再刷新退款单及渠道记录。 */
   const handleQueryRefund = async () => {
@@ -110,14 +173,48 @@ export default function RefundDetail() {
     void fetchRefund()
   }, [fetchRefund])
 
-  useEffect(() => {
-    void fetchOrder()
-  }, [fetchOrder])
+  /** 审批记录：按步骤升序（业务审批 → 财务审批） */
+  const approvals = useMemo(
+    () => [...(refund?.approvals ?? [])].sort((a, b) => a.approve_step - b.approve_step),
+    [refund?.approvals],
+  )
 
-  /** 套餐履约：剩余次数（部分退款退的是剩余次数费用） */
-  const remainingCount = order ? Math.max((order.service_count ?? 0) - (order.served_count ?? 0), 0) : 0
+  /** 退款渠道执行记录：按触发时间升序（失败重试时多条） */
+  const channelLogs = useMemo(
+    () =>
+      [...(refund?.refund_channel_logs ?? [])].sort(
+        (a, b) => (a.triggered_at ?? a.create_at ?? 0) - (b.triggered_at ?? b.create_at ?? 0),
+      ),
+    [refund?.refund_channel_logs],
+  )
 
-  /** 退款单信息（Descriptions 渲染）；部分退款时并入套餐履约（已消费 / 总次数高亮） */
+  /** 履约工单：按服务次序升序 */
+  const workOrders = useMemo(
+    () => [...(refund?.work_orders ?? [])].sort((a, b) => (a.order_seq ?? 0) - (b.order_seq ?? 0)),
+    [refund?.work_orders],
+  )
+
+  /** 最终通过审批：取最后一步通过记录（审批人 / 通过时间 / 退款渠道口径） */
+  const finalApproval = useMemo(() => {
+    const passed = approvals.filter((item) => item.approve_result === 1)
+    return passed.length ? passed[passed.length - 1] : null
+  }, [approvals])
+
+  /** 剩余可服务次数（总次数 - 已服务次数）；接口未返回次数时留空占位 */
+  const remainingCount = useMemo(() => {
+    if (refund?.served_count == null || refund?.service_count == null) return undefined
+    return Math.max(refund.service_count - refund.served_count, 0)
+  }, [refund?.service_count, refund?.served_count])
+
+  /** 退款金额占订单实付比例（便于判断全额 / 部分退款） */
+  const paidRatio = useMemo(() => {
+    const paid = Number(refund?.paid_amount ?? 0)
+    const amount = Number(refund?.amount ?? 0)
+    if (!paid || !amount) return null
+    return Math.round((amount / paid) * 100)
+  }, [refund?.amount, refund?.paid_amount])
+
+  /** 退款单信息（Descriptions 渲染） */
   const refundDescriptions = useMemo(
     () => [
       { key: 'refund_no', label: '退款单号', children: refund?.refund_no || '—' },
@@ -128,145 +225,305 @@ export default function RefundDetail() {
       },
       {
         key: 'order_type',
-        label: '订单类型',
+        label: '退款方式',
         children: refund?.order_type ? ORDER_REFUND_TYPE[refund.order_type] : '—',
       },
-      // 部分退款（order_type === 2）：套餐履约情况，已消费 / 总次数高亮
-      ...(order
-        ? [
-            {
-              key: 'package_progress',
-              label: '套餐履约',
-              span: { xs: 1, sm: 2, lg: 3 },
-              children: (
-                <span className="package-progress-inline">
-                  <strong className="amount-highlight">
-                    {order.served_count ?? 0} / {order.service_count ?? 0} 次
-                  </strong>
-                  <span className="package-progress-inline__hint">
-                    <span>（已消费 / 总次数）</span>
-                    剩余 {remainingCount} 次，退还剩余次数费用
-                  </span>
-                </span>
-              ),
-            },
-          ]
-        : []),
+      {
+        key: 'order_no',
+        label: '关联订单',
+        children: refund?.order_no ? (
+          <span
+            className="order-link"
+            role="button"
+            tabIndex={0}
+            onClick={() => navigate(`/order/detail/${refund.order_id}`)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                navigate(`/order/detail/${refund.order_id}`)
+              }
+            }}
+          >
+            {refund.order_no}
+          </span>
+        ) : (
+          '—'
+        ),
+      },
       {
         key: 'approved_by',
-        label: '审批人',
-        children: refund?.approved_by_name || (refund?.approved_by ?? '—'),
+        label: '审批通过人',
+        children: finalApproval
+          ? finalApproval.approver_name || `ID ${finalApproval.approver_id}`
+          : '—',
       },
       {
         key: 'approved_at',
         label: '审批通过时间',
-        children: refund?.approved_at
-          ? formatDateTime(refund.approved_at * 1000, 'YYYY-MM-DD HH:mm')
-          : '—',
+        children: fmtTime(finalApproval?.created_at ?? refund?.approved_at),
       },
       {
-        key: 'refunded_at',
-        label: '退款时间',
-        children: refund?.refunded_at
-          ? formatDateTime(refund.refunded_at * 1000, 'YYYY-MM-DD HH:mm')
-          : '—',
+        key: 'refund_channel',
+        label: '退款渠道',
+        children: channelText(finalApproval?.refund_channel),
       },
-      {
-        key: 'create_at',
-        label: '创建时间',
-        children: formatDateTime(refund?.create_at && refund.create_at * 1000, 'YYYY-MM-DD HH:mm'),
-      },
+      { key: 'refunded_at', label: '退款时间', children: fmtTime(refund?.refunded_at) },
+      { key: 'create_at', label: '申请时间', children: fmtTime(refund?.applied_at || refund?.create_at) },
       {
         key: 'reason',
         label: '退款原因',
-        span: { xs: 1, sm: 2, lg: 3 },
         children: refund?.reason || '—',
       },
+      {
+        key: 'remark',
+        label: '退款备注',
+        children: refund?.remark || '—',
+      },
     ],
-    [refund, order, remainingCount],
+    [finalApproval, navigate, refund],
   )
 
-  /** 审批记录表格列（核定退款金额重点突出） */
-  const approvalColumns: ColumnsType<RefundApproval> = useMemo(
+  /** 订单与服务信息（退款单关联的原始订单快照） */
+  const orderDescriptions = useMemo(
     () => [
+      { key: 'order_no', label: '订单号', children: refund?.order_no || '—' },
       {
-        title: '审批步骤',
-        key: 'approve_step',
-        width: 90,
-        render: (_, record) => `${record.approve_step}`,
+        key: 'order_status',
+        label: '订单状态',
+        children: refund?.order_status != null ? (
+          <span className={`status-btn status--${ORDER_STATUS_TONE[refund.order_status] ?? 'cancel'}`}>
+            {ORDER_STATUS_TEXT[refund.order_status] ?? refund.order_status}
+          </span>
+        ) : (
+          '—'
+        ),
       },
+      { key: 'institution', label: '服务机构', children: refund?.institution_name || '—' },
+      { key: 'service_name', label: '服务项目', children: refund?.service_name || '—' },
       {
-        title: '审批环节',
-        dataIndex: 'approver_type',
-        key: 'approver_type',
-        width: 110,
-        render: (value?: string) => value || '—',
-      },
-      {
-        title: '审批人',
-        key: 'approver_name',
-        width: 110,
-        render: (_, record) => record.approver_name || record.approver_id || '—',
-      },
-      {
-        title: '审批结果',
-        key: 'approve_result',
-        width: 100,
-        render: (_, record) => (
-          <span className={`status-btn ${record.approve_result === 1 ? 'status--success' : 'status--danger'}`}>{APPROVE_RESULT_TEXT[record.approve_result] ?? record.approve_result ?? '—'}</span>
+        key: 'member',
+        label: '服务对象',
+        children: (
+          <span>
+            <SensitiveText allowReveal type="name" value={refund?.member_name} />
+          </span>
         ),
       },
       {
-        title: '核定退款金额',
-        key: 'refund_amount',
-        width: 140,
-        render: (_, record) => (
-          <strong className="amount-highlight">
-            {formatAmount(Number(record.refund_amount || 0) / 100)}
-          </strong>
+        key: 'user',
+        label: '下单账号',
+        children: (
+          <span>
+            <SensitiveText allowReveal type="name" value={refund?.user_name} />
+          </span>
         ),
       },
       {
-        title: '退款渠道',
-        dataIndex: 'refund_channel',
-        key: 'refund_channel',
-        width: 110,
-        render: (value?: string) => value || '—',
+        key: 'contact',
+        label: '联系人',
+        children: <SensitiveText allowReveal type="name" value={refund?.contact_name} />,
       },
       {
-        title: '审批意见',
-        dataIndex: 'opinion',
-        key: 'opinion',
-        render: (value?: string) => value || '—',
+        key: 'contact_phone',
+        label: '联系电话',
+        children: <SensitiveText allowReveal type="phone" value={refund?.contact_phone} />,
+      },
+      { key: 'created_at', label: '下单时间', children: fmtTime(refund?.created_at) },
+      {
+        key: 'service_count',
+        label: '服务次数',
+        children:
+          refund?.service_count == null ? (
+            '—'
+          ) : (
+            <span className="package-progress-inline">
+              <strong className="amount-highlight">
+                {refund.served_count ?? 0} / {refund.service_count} 次
+              </strong>
+              <span className="package-progress-inline__hint">
+                （已消费 / 总次数
+                {remainingCount != null ? `，剩余 ${remainingCount} 次` : ''}）
+              </span>
+            </span>
+          ),
       },
       {
-        title: '审批时间',
-        dataIndex: 'created_at',
-        key: 'created_at',
-        width: 150,
-        render: (value?: number) => formatDateTime(value && value * 1000, 'YYYY-MM-DD HH:mm'),
+        key: 'is_use_consumables',
+        label: '是否使用耗材',
+        children: refund?.is_use_consumables == null ? '—' : refund.is_use_consumables === 1 ? '是' : '否',
+      },
+      {
+        key: 'total_amount',
+        label: '订单原价',
+        children: refund?.total_amount == null ? '—' : formatAmount(refund.total_amount),
+      },
+      {
+        key: 'discount_amount',
+        label: '优惠金额',
+        children: refund?.discount_amount == null ? '—' : formatAmount(refund.discount_amount),
+      },
+      {
+        key: 'paid_amount',
+        label: '实付金额',
+        children: refund?.paid_amount == null ? '—' : formatAmount(refund.paid_amount),
+      },
+      {
+        key: 'amount',
+        label: '本次退款',
+        children: refund?.amount == null ? (
+          '—'
+        ) : (
+          <strong className="amount-highlight">{formatAmount(refund.amount)}</strong>
+        ),
       },
     ],
-    [],
+    [refund, remainingCount],
   )
 
-  /** 审批记录（通常 2 条），按步骤升序 */
-  const approvals = useMemo(
-    () => [...(refund?.approvals ?? [])].sort((a, b) => a.approve_step - b.approve_step),
-    [refund?.approvals],
-  )
+  /**
+   * 退款进度节点：把「申请 → 审批步骤 → 渠道执行 → 退款到账」合成一条时间线，
+   * 按发生时间升序；尚未发生的当前状态追加到最后，便于财务判断卡在哪一步。
+   */
+  const progressEvents = useMemo<ProgressEvent[]>(() => {
+    if (!refund) return []
+    const events: ProgressEvent[] = [
+      {
+        key: 'apply',
+        title: '提交退款申请',
+        time: refund.applied_at || refund.create_at,
+        dot: 'gray',
+        badge: '已提交',
+        tone: 'info',
+        meta: [
+          {
+            label: '申请人',
+            value: <SensitiveText allowReveal type="name" value={refund.member_name} />,
+          },
+          {
+            label: '退款类型',
+            value: REFUND_TYPE_TEXT[refund.refund_type] ?? refund.refund_type ?? '—',
+          },
+          {
+            label: '申请金额',
+            value: <strong className="amount-highlight">{formatAmount(refund.amount)}</strong>,
+          },
+        ],
+        note: refund.reason ? `退款原因：${refund.reason}` : undefined,
+      },
+    ]
 
-  /** 退款渠道记录（通常 1 条，失败重试时多条），按创建时间升序 */
-  const channelLogs = useMemo(
-    () => [...(refund?.refund_channel_logs ?? [])].sort((a, b) => a.create_at - b.create_at),
-    [refund?.refund_channel_logs],
-  )
+    approvals.forEach((record: RefundApproval) => {
+      const passed = record.approve_result === 1
+      events.push({
+        key: `approval-${record.record_id}`,
+        title: `${APPROVER_TYPE_TEXT[record.approver_type] ?? record.approver_type ?? '审批'}（第 ${record.approve_step} 步）`,
+        time: record.created_at,
+        dot: passed ? 'green' : 'red',
+        badge: APPROVE_RESULT_TEXT[record.approve_result] ?? String(record.approve_result ?? '—'),
+        tone: passed ? 'success' : 'danger',
+        meta: [
+          {
+            label: '审批人',
+            value: record.approver_name || (record.approver_id ? `ID ${record.approver_id}` : '—'),
+          },
+          ...(passed
+            ? [
+                {
+                  label: '核定退款金额',
+                  value: <strong className="amount-highlight">{formatAmount(record.refund_amount)}</strong>,
+                },
+                { label: '退款渠道', value: channelText(record.refund_channel) },
+              ]
+            : []),
+        ],
+        note: record.opinion ? `审批意见：${record.opinion}` : undefined,
+      })
+    })
+
+    channelLogs.forEach((log: RefundChannelLog) => {
+      const dot = log.status === 4 ? 'green' : log.status === 6 ? 'red' : 'blue'
+      events.push({
+        key: `channel-${log.log_id}`,
+        title: '渠道退款执行',
+        time: log.triggered_at || log.create_at,
+        dot,
+        badge: REFUND_STATUS_TEXT[log.status] ?? String(log.status ?? '—'),
+        tone: REFUND_STATUS_TONE[log.status] ?? 'cancel',
+        meta: [
+          { label: '退款渠道', value: channelText(log.channel) },
+          { label: '退款金额', value: <strong className="amount-highlight">{formatAmount(log.amount)}</strong> },
+          { label: '完成时间', value: fmtTime(log.finished_at) },
+          {
+            label: '操作人',
+            value: log.operator_name
+              ? `${log.operator_name}${log.operator_type ? `（${log.operator_type}）` : ''}`
+              : '—',
+          },
+          { label: '渠道退款单号', value: log.out_refund_no || '—' },
+          { label: '微信退款单号', value: log.wx_refund_id || '—' },
+          { label: '支付交易单号', value: log.transaction_id || '—' },
+        ],
+        note: log.fail_reason
+          ? `失败原因：${log.fail_reason}`
+          : log.remark
+            ? `备注：${log.remark}`
+            : undefined,
+      })
+    })
+
+    if (refund.refunded_at) {
+      events.push({
+        key: 'refunded',
+        title: '退款到账',
+        time: refund.refunded_at,
+        dot: 'green',
+        badge: '已完成',
+        tone: 'success',
+        meta: [
+          { label: '退款金额', value: <strong className="amount-highlight">{formatAmount(refund.amount)}</strong> },
+        ],
+      })
+    } else if (refund.status === 4) {
+      // 已退款但未回写退款时间：仍补一个完成节点，避免时间线停在渠道执行
+      events.push({
+        key: 'refunded',
+        title: '退款到账',
+        dot: 'green',
+        badge: '已完成',
+        tone: 'success',
+        meta: [{ label: '退款金额', value: <strong className="amount-highlight">{formatAmount(refund.amount)}</strong> }],
+      })
+    } else if ([1, 3, 8].includes(refund.status)) {
+      // 流程未结束：把当前状态作为最后一个「进行中」节点
+      events.push({
+        key: 'current',
+        title: '当前状态',
+        pending: true,
+        dot: 'blue',
+        badge: REFUND_STATUS_TEXT[refund.status] ?? String(refund.status),
+        tone: REFUND_STATUS_TONE[refund.status] ?? 'cancel',
+        meta: [
+          {
+            label: '待处理',
+            value:
+              refund.status === 8
+                ? '等待财务审批（可点击右上角「审批」处理）'
+                : refund.status === 3
+                  ? '等待退款渠道返回结果'
+                  : '等待业务审批',
+          },
+        ],
+      })
+    }
+
+    return events.sort((a, b) => (a.time ?? Number.POSITIVE_INFINITY) - (b.time ?? Number.POSITIVE_INFINITY))
+  }, [approvals, channelLogs, refund])
 
   return (
     <PageContainer
       fixed
       title="退款详情"
-      description={refund ? `${refund.refund_no}` : '退款详情'}
+      description={refund ? `${refund.refund_no} · ${refund.institution_name ?? '—'}` : '退款详情'}
       extra={
         <Space>
           <Button
@@ -313,6 +570,17 @@ export default function RefundDetail() {
               </em>
             </div>
             <div className="summary-item">
+              <span>退款金额</span>
+              <strong className="amount-highlight amount-highlight--large">
+                {formatAmount(refund?.amount)}
+              </strong>
+              {paidRatio != null && (
+                <em className="summary-item__hint">
+                  订单实付 {formatAmount(refund?.paid_amount)}，占比 {paidRatio}%
+                </em>
+              )}
+            </div>
+            <div className="summary-item">
               <span>关联订单</span>
               <strong className="order-link" onClick={() => navigate(`/order/detail/${refund?.order_id}`)}>
                 {refund?.order_no ?? '—'}
@@ -323,109 +591,127 @@ export default function RefundDetail() {
               <strong><SensitiveText allowReveal type="name" value={refund?.member_name} /></strong>
             </div>
             <div className="summary-item">
-              <span>退款金额</span>
-              <strong className="amount-highlight amount-highlight--large">
-                {formatAmount((refund?.amount))}
-              </strong>
-            </div>
-            <div className="summary-item">
               <span>申请时间</span>
-              <strong>
-                {formatDateTime(refund?.applied_at && refund.applied_at * 1000, 'YYYY-MM-DD HH:mm')}
-              </strong>
+              <strong>{fmtTime(refund?.applied_at || refund?.create_at)}</strong>
             </div>
           </Card>
 
+          <div className="refund-detail__grid">
+            <Card variant="borderless" className="detail-card">
+              <div className="detail-card__header">
+                <h3>退款单信息</h3>
+                <span>{refund?.refund_no ?? '—'}</span>
+              </div>
+              <Descriptions
+                column={{ xs: 1, sm: 2, lg: 3 }}
+                size="small"
+                colon={false}
+                bordered
+                items={refundDescriptions}
+              />
+            </Card>
+
+            {/* 退款进度：申请 → 审批步骤 → 渠道执行 → 到账，统一按时间线展示 */}
+            <Card variant="borderless" className="detail-card">
+              <div className="detail-card__header">
+                <h3>退款进度</h3>
+              </div>
+              <Timeline
+                className="progress-timeline"
+                items={progressEvents.map((event) => ({
+                  key: event.key,
+                  color: event.dot,
+                  children: (
+                    <div className="progress-event">
+                      <div className="progress-event__head">
+                        <strong>{event.title}</strong>
+                        {event.badge ? (
+                          <em className={`status-btn status--${event.tone ?? 'cancel'}`}>{event.badge}</em>
+                        ) : null}
+                        <span>{event.pending ? '进行中' : fmtTime(event.time)}</span>
+                      </div>
+                      {event.meta?.length ? (
+                        <div className="progress-event__meta">
+                          {event.meta.map((field) => (
+                            <span key={field.label}>
+                              <i>{field.label}</i>
+                              {field.value}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                      {event.note ? <p className="progress-event__note">{event.note}</p> : null}
+                    </div>
+                  ),
+                }))}
+              />
+            </Card>
+          </div>
+
           <Card variant="borderless" className="detail-card">
             <div className="detail-card__header">
-              <h3>退款单信息</h3>
-              <span>{refund?.refund_no ?? '—'}</span>
+              <h3>订单与服务信息</h3>
+              <span>{refund?.institution_name ?? '—'}</span>
             </div>
             <Descriptions
               column={{ xs: 1, sm: 2, lg: 3 }}
               size="small"
               colon={false}
               bordered
-              items={refundDescriptions}
+              items={orderDescriptions}
             />
           </Card>
 
-          {/* 审批记录（approvals）：Table 渲染，金额列重点突出 */}
-          {approvals.length > 0 && (
+          {/* 履约记录：按服务次序展示工单状态与服务人员，退款次数核对更直观 */}
+          {workOrders.length > 0 && (
             <Card variant="borderless" className="detail-card">
               <div className="detail-card__header">
-                <h3>审批记录</h3>
-                <span>共 {approvals.length} 条</span>
-              </div>
-              <Table<RefundApproval>
-                rowKey="record_id"
-                size="small"
-                columns={approvalColumns}
-                dataSource={approvals}
-                pagination={false}
-              />
-            </Card>
-          )}
-
-          {/* 退款渠道记录（refund_channel_logs）：动态日志用 Timeline 渲染 */}
-          {channelLogs.length > 0 && (
-            <Card variant="borderless" className="detail-card">
-              <div className="detail-card__header">
-                <h3>退款渠道记录</h3>
-                <span>共 {channelLogs.length} 条</span>
+                <h3>履约记录</h3>
+                <span>共 {workOrders.length} 次服务</span>
               </div>
               <Timeline
-                className="channel-log-timeline"
-                items={channelLogs.map((log) => ({
-                  key: log.log_id,
-                  color: channelLogDotColor(log.status),
-                  children: (
-                    <div className="channel-log">
-                      <div className="channel-log__head">
-                        <em className={`status-btn status--${REFUND_STATUS_TONE[log.status] ?? 'cancel'}`}>
-                          {REFUND_STATUS_TEXT[log.status] ?? log.status}
-                        </em>
-                        <strong>{log.channel || '—'}</strong>
-                        <strong className="amount-highlight">
-                          {formatAmount((log.amount))}
-                        </strong>
-                      </div>
-                      <div className="channel-log__grid">
-                        <div className="channel-log__field">
-                          <span>触发时间</span>
-                          {formatDateTime(log.triggered_at && log.triggered_at * 1000)}
+                className="work-order-timeline"
+                items={workOrders.map((record) => {
+                  const status = workOrderStatus(record)
+                  return {
+                    key: record.work_order_id ?? record.work_order_no,
+                    color: /取消|失败|拒绝/.test(status.text)
+                      ? 'red'
+                      : /完成/.test(status.text)
+                        ? 'green'
+                        : 'blue',
+                    children: (
+                      <div className="work-order-event">
+                        <div className="work-order-event__head">
+                          <strong>
+                            第 {record.order_seq ?? '—'} 次服务 · {record.work_order_no || '—'}
+                          </strong>
+                          <em className={`status-btn status--${status.tone}`}>{status.text}</em>
                         </div>
-                        <div className="channel-log__field">
-                          <span>完成时间</span>
-                          {formatDateTime(log.finished_at && log.finished_at * 1000)}
-                        </div>
-                        <div className="channel-log__field">
-                          <span>操作人</span>
-                          {log.operator_name || '—'}
-                          {log.operator_type ? `（${log.operator_type}）` : ''}
-                        </div>
-                        <div className="channel-log__field">
-                          <span>渠道退款单号</span>
-                          {log.out_refund_no || '—'}
-                        </div>
-                        <div className="channel-log__field">
-                          <span>支付交易单号</span>
-                          {log.transaction_id || '—'}
-                        </div>
-                        <div className="channel-log__field">
-                          <span>微信退款单号</span>
-                          {log.wx_refund_id || '—'}
+                        <div className="work-order-event__meta">
+                          <span>
+                            <i>服务人员</i>
+                            {record.staff_name || '待分配'}
+                          </span>
+                          <span>
+                            <i>期望上门</i>
+                            {fmtTime(record.expected_start_at)}
+                          </span>
+                          <span>
+                            <i>完成时间</i>
+                            {fmtTime(record.completed_at)}
+                          </span>
+                          {record.cancelled_at ? (
+                            <span>
+                              <i>取消时间</i>
+                              {fmtTime(record.cancelled_at)}
+                            </span>
+                          ) : null}
                         </div>
                       </div>
-                      {log.fail_reason ? (
-                        <div className="channel-log__fail">失败原因:{log.fail_reason}</div>
-                      ) : null}
-                      {log.remark ? (
-                        <div className="channel-log__remark">备注:{log.remark}</div>
-                      ) : null}
-                    </div>
-                  ),
-                }))}
+                    ),
+                  }
+                })}
               />
             </Card>
           )}

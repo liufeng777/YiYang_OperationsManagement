@@ -1,4 +1,4 @@
-/* 退款详情：状态摘要 + 退款单信息（含部分退款套餐履约）+ 审批记录（Table）+ 渠道记录（Timeline） */
+/* 退款详情：状态摘要 + 退款单信息 / 退款进度（Timeline）+ 订单与服务信息 + 履约记录（Timeline） */
 .refund-detail {
   display: flex;
   flex-direction: column;
@@ -6,7 +6,7 @@
   height: 100%;
   overflow-y: auto;
 
-  /* 金额重点突出（摘要大字号 / 表格与时间线常规字号） */
+  /* 金额重点突出（摘要大字号 / 时间线与描述列表常规字号） */
   .amount-highlight {
     color: @color-primary !important;
     font-weight: @font-weight-body-medium;
@@ -21,6 +21,13 @@
   .order-link {
     color: @color-primary !important;
     cursor: pointer;
+  }
+
+  /* 描述列表内的 ID 等辅助说明 */
+  .field-hint {
+    color: @color-text-secondary;
+    margin-left: @spacing-2xs;
+    .text-auxiliary();
   }
 
   &__summary {
@@ -49,7 +56,19 @@
         align-self: flex-start;
         font-style: normal;
       }
+
+      &__hint {
+        .text-auxiliary();
+      }
     }
+  }
+
+  /* 退款单信息 + 退款进度两栏（进度靠右，窄屏折为单栏） */
+  &__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 400px;
+    gap: @spacing-md;
+    align-items: start;
   }
 
   .detail-card {
@@ -79,7 +98,7 @@
     }
   }
 
-  /* 退款单信息：label / 内容样式对齐设计规范 */
+  /* 退款单 / 订单信息：label 与内容样式对齐设计规范 */
   .ant-descriptions {
     .ant-descriptions-item-label {
       .text-label();
@@ -90,8 +109,7 @@
     }
   }
 
-
-  /* 部分退款：套餐履约内联展示（已消费 / 总次数高亮） */
+  /* 服务次数：已消费 / 总次数高亮 */
   .package-progress-inline {
     display: inline-flex;
     align-items: baseline;
@@ -108,54 +126,79 @@
     }
   }
 
-  /* 退款渠道记录：Timeline 日志卡片 */
-  .channel-log-timeline {
-    margin-top: @spacing-xs;
+  /* 退款进度 / 履约记录 Timeline 公共节奏 */
+  .progress-timeline,
+  .work-order-timeline {
+    padding-top: @spacing-2xs;
 
-    .ant-timeline-item-content {
+    .ant-timeline-item {
       padding-bottom: @spacing-lg;
+    }
+
+    .ant-timeline-item:last-child {
+      padding-bottom: 0;
     }
   }
 
-  .channel-log {
+  .progress-event,
+  .work-order-event {
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-2xs;
+
     &__head {
       display: flex;
       align-items: center;
-      gap: @spacing-sm;
-      margin-bottom: @spacing-xs;
+      gap: @spacing-xs;
+      flex-wrap: wrap;
 
       > strong {
         .text-body-medium();
       }
-    }
 
-    &__grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: @spacing-2xs @spacing-lg;
-    }
+      > em {
+        font-style: normal;
+      }
 
-    &__field {
-      .text-auxiliary();
-      color: @color-text-primary;
-
+      /* 时间靠右显示 */
       > span {
-        color: @color-text-secondary;
-        margin-right: @spacing-2xs;
+        .text-auxiliary();
+        margin-left: auto;
+        flex: none;
       }
     }
 
-    &__fail {
-      margin-top: @spacing-2xs;
-      font-size: @font-size-auxiliary;
-      line-height: @line-height-auxiliary;
-      color: @color-danger;
+    &__meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: @spacing-2xs @spacing-lg;
+
+      > span {
+        .text-auxiliary();
+        color: @color-text-primary;
+        display: flex;
+        gap: @spacing-2xs;
+
+        > i {
+          flex: none;
+          font-style: normal;
+          color: @color-text-secondary;
+        }
+      }
     }
 
-    &__remark {
-      margin-top: @spacing-2xs;
+    &__note {
+      margin: 0;
       .text-auxiliary();
+      color: @color-text-primary;
     }
+  }
+
+  /* 履约记录：时间线铺满一行，字段横向排布 */
+  .work-order-event__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: @spacing-2xs @spacing-xl;
   }
 }
 
@@ -163,6 +206,10 @@
   .refund-detail {
     &__summary {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    &__grid {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 }
@@ -173,7 +220,7 @@
       grid-template-columns: 1fr;
     }
 
-    .channel-log__grid {
+    .progress-event__meta {
       grid-template-columns: 1fr;
     }
   }
