@@ -1,8 +1,8 @@
 /**
- * 新增 / 编辑用户 Drawer（账号 / 角色 / 头像 / 表单校验）
+ * 新增 / 编辑人员 Drawer（账号 / 角色 / 头像 / 表单校验）
  * - 数据来源：systemApi.createAdmin / updateAdmin / assignAdminRoles，角色下拉取自 systemApi.getRoles
  * - 受控组件：open / onClose 由父组件 AccountList 管理，保存成功后通过 onSaved 回调通知父组件刷新
- * - 密码规则：仅**新增**时必填；编辑不提交密码（改密请在用户列表使用「重置密码」）
+ * - 密码规则：仅**新增**时必填；编辑不提交密码（改密请在人员列表使用「重置密码」）
  * - 头像通过共通上传接口（uploadApi.uploadFile）上传，成功后的服务器地址写入 avatar_url
  */
 import { useEffect, useMemo, useState } from 'react'
@@ -157,10 +157,10 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
         await systemApi.updateAdmin(initial.id, body)
         // 角色另走分配接口，避免后端编辑接口不处理 role_ids
         await systemApi.assignAdminRoles(initial.id, values.role_ids)
-        message.success(`用户 ${body.nickname} 已更新`)
+        message.success(`人员 ${body.nickname} 已更新`)
       } else {
         await systemApi.createAdmin(body)
-        message.success(`用户 ${body.nickname} 已创建`)
+        message.success(`人员 ${body.nickname} 已创建`)
       }
       onSaved()
       setAvatarUrl(undefined)
@@ -183,13 +183,13 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
     <Drawer
       open={open}
       width={480}
-      title={isEdit ? '编辑用户' : '新增用户'}
+      title={isEdit ? '编辑人员' : '新增人员'}
       onClose={onClose}
       footer={
         <div className="account-drawer__footer">
           <Button onClick={onClose}>取消</Button>
           <Button type="primary" loading={submitting} onClick={handleSubmit}>
-            {isEdit ? '保存' : '创建用户'}
+            确认
           </Button>
         </div>
       }
@@ -197,7 +197,7 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
       <div className="account-drawer">
         <div className="account-drawer__tip">
           <strong>权限由所属角色统一决定</strong>
-          <p>可为一个用户分配多个角色，权限为各角色权限的并集。</p>
+          <p>可为一个人员分配多个角色，权限为各角色权限的并集。</p>
         </div>
         <Form
           form={form}
@@ -259,7 +259,7 @@ export default function AddAccount({ open, initial = null, onClose, onSaved }: A
           <Form.Item
             name="status"
             label="启用"
-            extra="启用后允许用户登录运营平台"
+            extra="启用后允许人员登录运营平台"
             valuePropName="checked"
             getValueFromEvent={onStatusChecked}
             getValueProps={(value: CommonStatus) => ({ checked: value === STATUS_ENABLED })}

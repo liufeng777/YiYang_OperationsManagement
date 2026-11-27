@@ -1,5 +1,5 @@
 /**
- * 系统设置 - 用户管理
+ * 系统设置 - 人员管理
  * 数据来源：systemApi.getAdminList（服务端分页；筛选条件全部下推后端，前端不做本地过滤）
  * 字段按后端实测：username / nickname / mobile(phone) / role_ids / role_names /
  *                status(1 启用 9 停用) / last_login_at('YYYY-MM-DD HH:mm:ss') /
@@ -20,7 +20,7 @@ import type { CommonStatus } from '@/types/api'
 import AddAccount from './AddAccount'
 import './account.less'
 
-/** 用户状态：1 启用 / 9 停用（后端 CommonStatus） */
+/** 人员状态：1 启用 / 9 停用（后端 CommonStatus） */
 const STATUS_ENABLED: CommonStatus = 1
 const STATUS_DISABLED: CommonStatus = 9
 
@@ -34,7 +34,7 @@ interface AccountFilters {
 
 const emptyFilters: AccountFilters = { keyword: '', role: null, status: null}
 
-/** 用户状态文案：1-已激活 9-已禁用 */
+/** 人员状态文案：1-已激活 9-已禁用 */
 const statusText: Record<number, string> = {
   1: '已激活',
   9: '已禁用',
@@ -57,7 +57,7 @@ export default function AccountList() {
   const [editing, setEditing] = useState<AdminItem | null>(null)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
-  /** 重置密码弹框：目标用户 + 新密码 */
+  /** 重置密码弹框：目标人员 + 新密码 */
   const [resetTarget, setResetTarget] = useState<AdminItem | null>(null)
   const [resetting, setResetting] = useState(false)
   const [resetForm] = Form.useForm<{ new_password: string }>()
@@ -75,7 +75,7 @@ export default function AccountList() {
     }
   }, [])
 
-  /** 拉取用户列表（分页 + 筛选） */
+  /** 拉取人员列表（分页 + 筛选） */
   const fetchList = useCallback(
     async (targetPage: number, filters: AccountFilters, size: number = PAGE_SIZE) => {
       setLoading(true)
@@ -116,13 +116,13 @@ export default function AccountList() {
     [fetchList, applied, page],
   )
 
-  /** 打开新增用户 Drawer */
+  /** 打开新增人员 Drawer */
   const openCreate = () => {
     setEditing(null)
     setDrawerOpen(true)
   }
 
-  /** 打开编辑用户 Drawer */
+  /** 打开编辑人员 Drawer */
   const openEdit = (record: AdminItem) => {
     setEditing(record)
     setDrawerOpen(true)
@@ -140,7 +140,7 @@ export default function AccountList() {
     void fetchList(1, merged, pageSize)
   }
 
-  /** 用户状态筛选：与状态下拉同维度，切换即下推查询 */
+  /** 人员状态筛选：与状态下拉同维度，切换即下推查询 */
   const changeStatus = (value: AccountFilters['status']) => {
     setStatus(value)
     applyFilters({ status: value })
@@ -160,9 +160,9 @@ export default function AccountList() {
     const toDisable = record.status === STATUS_ENABLED
     modal.confirm({
       title: toDisable
-        ? `确认停用用户「${maskName(record.nickname)}」？`
-        : `确认启用用户「${maskName(record.nickname)}」？`,
-      content: toDisable ? '停用后该用户将无法登录运营平台。' : '启用后该用户可正常登录运营平台。',
+        ? `确认停用人员「${maskName(record.nickname)}」？`
+        : `确认启用人员「${maskName(record.nickname)}」？`,
+      content: toDisable ? '停用后该人员将无法登录运营平台。' : '启用后该人员可正常登录运营平台。',
       okText: '确认',
       cancelText: '取消',
       onOk: async () => {
@@ -176,14 +176,14 @@ export default function AccountList() {
   /** 删除二次确认 */
   const confirmDelete = (record: AdminItem) => {
     modal.confirm({
-      title: `确认删除用户「${maskName(record.nickname)}」？`,
+      title: `确认删除人员「${maskName(record.nickname)}」？`,
       content: '删除后不可恢复。',
       okText: '删除',
       okButtonProps: { danger: true },
       cancelText: '取消',
       onOk: async () => {
         await systemApi.deleteAdmin(record.id)
-        message.success(`用户 ${record.username} 已删除`)
+        message.success(`人员 ${record.username} 已删除`)
         refresh()
       },
     })
@@ -207,7 +207,7 @@ export default function AccountList() {
     setResetting(true)
     try {
       await systemApi.resetAdminPassword(resetTarget.id, { new_password: values.new_password })
-      message.success(`用户 ${resetTarget.username} 的密码已重置`)
+      message.success(`人员 ${resetTarget.username} 的密码已重置`)
       setResetTarget(null)
       resetForm.resetFields()
     } catch {
@@ -226,7 +226,7 @@ export default function AccountList() {
 
   const columns: ColumnsType<AdminItem> = [
     {
-      title: '用户名 / 昵称',
+      title: '人员名 / 昵称',
       key: 'username',
       render: (_, record) => (
         <div className="account-name">
@@ -260,7 +260,7 @@ export default function AccountList() {
       render: (_, record) => <SensitiveText type="phone" value={record.mobile || record.phone} />,
     },
     {
-      title: '用户状态',
+      title: '人员状态',
       dataIndex: 'status',
       key: 'status',
       width: 100,
@@ -310,9 +310,9 @@ export default function AccountList() {
 
   /** 统计卡片：待后端统计接口接入，先占位 */
   // const metrics = [
-  //   { key: 'all', label: '全部用户', note: '运营平台内部用户', tone: 'primary' },
-  //   { key: 'enabled', label: '启用用户', note: '可登录运营平台', tone: 'info' },
-  //   { key: 'disabled', label: '停用用户', note: '停用后不允许登录', tone: 'warning' },
+  //   { key: 'all', label: '全部人员', note: '运营平台内部人员', tone: 'primary' },
+  //   { key: 'enabled', label: '启用人员', note: '可登录运营平台', tone: 'info' },
+  //   { key: 'disabled', label: '停用人员', note: '停用后不允许登录', tone: 'warning' },
   //   { key: 'role', label: '角色数量', note: '在角色管理中统一维护', tone: 'danger' },
   // ]
 
@@ -320,7 +320,7 @@ export default function AccountList() {
     <PageContainer
       fixed
       title="人员管理"
-      description="创建运营平台管理员并分配角色，用户权限全部继承所属角色"
+      description="创建运营平台管理员并分配角色，人员权限全部继承所属角色"
       extra={
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           新增人员
@@ -348,13 +348,13 @@ export default function AccountList() {
         <Card variant="borderless" className="filter-bar account-list__filter">
           <Input
             allowClear
-            placeholder="用户名 / 昵称"
+            placeholder="名称 / 昵称"
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             onPressEnter={() => applyFilters()}
           />
           <Select
-            placeholder="用户角色"
+            placeholder="角色"
             allowClear
             value={role}
             onChange={setRole}
@@ -363,7 +363,7 @@ export default function AccountList() {
             ]}
           />
           <Select
-            placeholder="用户状态"
+            placeholder="状态"
             allowClear
             value={status}
             onChange={(value) => changeStatus(value as AccountFilters['status'])}
@@ -381,7 +381,7 @@ export default function AccountList() {
         <Card variant="borderless" className="list-card list-card--fill">
           <div className="list-card__header">
             <div>
-              <span className="list-card__header__title">用户列表</span>
+              <span className="list-card__header__title">人员列表</span>
             </div>
           </div>
           <FillTable<AdminItem>
@@ -415,7 +415,7 @@ export default function AccountList() {
       {/* 重置密码：需填写 new_password */}
       <Modal
         open={!!resetTarget}
-        title={`重置用户「${resetTarget?.nickname ?? ''}」的密码`}
+        title={`重置人员「${resetTarget?.nickname ?? ''}」的密码`}
         okText="确认重置"
         cancelText="取消"
         confirmLoading={resetting}
@@ -430,7 +430,7 @@ export default function AccountList() {
           <Form.Item
             name="new_password"
             label="新密码"
-            extra="重置后该用户需使用新密码登录运营平台"
+            extra="重置后该人员需使用新密码登录运营平台"
             rules={[
               { required: true, message: '请输入新密码' },
               { min: 6, message: '密码至少 6 位' },
